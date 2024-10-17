@@ -1,0 +1,98 @@
+NAME =yuseong
+EXTENSION =.exe
+OUTPUT =$(NAME)$(EXTENSION)
+BUILD_DIR =build
+OBJ_DIR =build/obj
+TESTDIR =obj
+CC =clang 
+CPP =clang++
+
+SRC_DIR =src
+SRC_1_DIR =src/platform
+SRC_2_DIR =src/core
+SRC_3_DIR =src/renderer
+SRC_4_DIR =src/renderer/vulkan
+
+INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include\
+	-IC:\Lib\tracy\public -IC:\Lib\tracy\public\tracy
+
+LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 
+LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
+
+CFLAGS =-std=c23 -Wall -Wextra -Werror
+CFLAGS +=-fno-inline -fno-omit-frame-pointer
+CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
+# CFLAGS +=-Wno-uninitialized
+CFLAGS += -DPLATFORM_WINDOWS
+CFLAGS +=-g -Wvarargs -O0
+CFLAGS += -D_DEBUG -DDEBUG
+# CFLAGS +=-DTRACY_ENABLE
+CFLAGS +=-fsanitize=address
+
+CPPFLAGS =-Wno-format
+# CPPFLAGS +=-DTRACY_ENABLE
+
+FILES = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_1_DIR)/*.c)\
+		$(wildcard $(SRC_2_DIR)/*.c) $(wildcard $(SRC_3_DIR)/*.c)\
+		$(wildcard $(SRC_4_DIR)/*.c)
+
+CPP_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+
+OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
+OBJS :=$(patsubst $(OBJ_DIR)/platform/%.o, $(OBJ_DIR)/%.o, $(OBJS))
+OBJS :=$(patsubst $(OBJ_DIR)/core/%.o, $(OBJ_DIR)/%.o, $(OBJS))
+OBJS :=$(patsubst $(OBJ_DIR)/renderer/%.o, $(OBJ_DIR)/%.o, $(OBJS))
+OBJS :=$(patsubst $(OBJ_DIR)/vulkan/%.o, $(OBJ_DIR)/%.o, $(OBJS))
+
+CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+
+sorry: re
+
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT)
+
+$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	-$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_1_DIR)/%.c
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_2_DIR)/%.c
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_3_DIR)/%.c
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_4_DIR)/%.c
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(BUILD_DIR)/$(TESTDIR):
+	@mkdir -p build/obj
+
+compile_commands.json: $(OBJS)
+	@pwsh .\sed.ps1
+
+clean:
+	@echo Deleting files..
+	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
+	@rm -f $(BUILD_DIR)/$(NAME).pdb
+	@rm -f $(BUILD_DIR)/$(NAME).exp
+	@rm -f $(BUILD_DIR)/$(NAME).lib
+	@rm -f $(BUILD_DIR)/vc140.pdb
+	@rm -f $(BUILD_DIR)/*.obj
+	@rm -f $(BUILD_DIR)/obj/*.o
+	@rm -f $(BUILD_DIR)/obj/*.o.json
+	@rm -f $(BUILD_DIR)/*.ilk
+
+fclean: clean
+	rm -f compile_commands.json
+
+re: clean
+	@make --no-print-directory -f Makefile.win32 -j24 all
+
+.PHONY: all clean re bat

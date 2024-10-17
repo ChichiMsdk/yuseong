@@ -1,0 +1,80 @@
+NAME =yuseong
+EXTENSION =
+OUTPUT =$(NAME)$(EXTENSION)
+BUILD_DIR =build
+OBJ_DIR =build/obj
+TESTDIR =obj
+CC =clang-19
+CPP =clang++
+
+SRC_DIR =src
+SRC_1_DIR =src/platform
+SRC_2_DIR =src/core
+SRC_3_DIR =src/renderer
+SRC_4_DIR =src/renderer/vulkan
+
+INCLUDE_DIRS =-Isrc -Isrc/core
+
+LIBS =-lvulkan -lwayland-client
+LIB_PATH =
+
+CFLAGS =-std=c23 -Wall -Wextra -Werror
+CFLAGS +=-fno-inline -fno-omit-frame-pointer
+CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
+# CFLAGS +=-Wno-uninitialized
+CFLAGS += -DPLATFORM_LINUX
+CFLAGS +=-g -Wvarargs -O0
+CFLAGS +=-D_DEBUG -DDEBUG
+# CFLAGS +=-DTRACY_ENABLE
+# CFLAGS +=-fsanitize=address
+# CFLAGS +=-fsanitize=thread
+
+CPPFLAGS =-Wno-format
+# CPPFLAGS +=-DTRACY_ENABLE
+
+FILES =$(shell find $(SRC_DIR) -type f -name '*.c')
+OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
+CPP_FILES =$(shell find $(SRC_DIR) -type f -name '*.cpp')
+
+CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+
+sorry: re
+
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT)
+
+$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+
+$(BUILD_DIR)/$(TESTDIR):
+	@mkdir -p build/obj
+
+compile_commands.json: $(OBJS)
+	@pwsh sed.ps1
+
+clean:
+	@echo Deleting files..
+	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
+	@rm -f $(BUILD_DIR)/$(NAME).pdb
+	@rm -f $(BUILD_DIR)/$(NAME).exp
+	@rm -f $(BUILD_DIR)/$(NAME).lib
+	@rm -f $(BUILD_DIR)/vc140.pdb
+	@rm -f $(BUILD_DIR)/*.obj
+	@rm -f $(BUILD_DIR)/obj/*.o
+	@rm -f $(BUILD_DIR)/obj/*.o.json
+	@rm -f $(BUILD_DIR)/*.ilk
+
+fclean: clean
+	rm -f compile_commands.json
+
+re: clean
+	make --no-print-directory -f Makefile.linux -j24 all
+
+.PHONY: all clean re bat
