@@ -4,7 +4,7 @@ OUTPUT =$(NAME)$(EXTENSION)
 BUILD_DIR =build
 OBJ_DIR =build/obj
 TESTDIR =obj
-CC =clang-19
+CC =clang
 CPP =clang++
 
 SRC_DIR =src
@@ -34,9 +34,9 @@ CPPFLAGS =-Wno-format
 
 FILES =$(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
-CPP_FILES =$(shell find $(SRC_DIR) -type f -name '*.cpp')
 
-CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+# CPP_FILES =$(shell find $(SRC_DIR) -type f -name '*.cpp')
+# CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 
 sorry: re
 

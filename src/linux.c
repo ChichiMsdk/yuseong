@@ -5,8 +5,13 @@
 #	include "core/input.h"
 #	include "core/logger.h"
 #	include "core/assert.h"
-
 #	include "xdg-shell-client-protocol.h"
+
+#	include <errno.h>
+#	include <sys/types.h>
+#	include <sys/mman.h>
+#	include <sys/stat.h>					/* For mode constants */
+#	include <fcntl.h>						/* For O_* constants */
 #	include <wayland-client.h>
 #	include <vulkan/vulkan_wayland.h>
 #	include <stdio.h>
@@ -17,6 +22,8 @@
 #	include <vulkan/vk_enum_string_helper.h>
 
 void ErrorExit(char *pMsg, unsigned long dw);
+
+extern int ftruncate (int __fd, __off_t __length) __THROW __wur;
 
 typedef struct internal_state
 {
@@ -61,9 +68,9 @@ static struct xdg_toplevel_listener gTopLevelListener = {
 [[nodiscard]] b8 
 OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
 {
-	/* WARN: Check errors !! */
+	// TODO: Check errors !!
 
-	(void)pAppName; (void)x; (void)y; (void)w; (void)h;
+	(void)pAppName; (void)x; (void)y;
 
 	pState->pInternalState = calloc(1, sizeof(InternalState));
 	InternalState *state = (InternalState *)pState->pInternalState;
@@ -91,6 +98,16 @@ OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w,
 	xdg_wm_base_add_listener(state->pWMBase, &gWMBaseListener, state);
 	wl_surface_commit(state->pSurface);
 	YDEBUG("Surface commited !");
+
+	[[maybe_unused]]struct wl_shm_pool *pPool;
+	[[maybe_unused]]struct wl_buffer *pBuffer;
+
+	int stride = w * 4;
+	int size = stride * h;
+
+	int fd = shm_open("/some_tmp_buffer", O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+	int val = ftruncate(fd, size);
+	if (val != 0) YFATAL("Error = %s", strerror(errno));
 
 		/*
 		 * 
