@@ -15,7 +15,7 @@ SRC_4_DIR =src/renderer/vulkan
 
 INCLUDE_DIRS =-Isrc -Isrc/core
 
-LIBS =-lvulkan -lwayland-client
+LIBS =-lvulkan -lwayland-client -lxkbcommon
 LIB_PATH =
 
 CFLAGS =-Wall -Wextra -Werror
@@ -62,6 +62,7 @@ compile_commands.json: $(OBJS)
 
 clean:
 	@echo Deleting files..
+	rm -rf $(BUILD_DIR)
 	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
 	@rm -f $(BUILD_DIR)/$(NAME).pdb
 	@rm -f $(BUILD_DIR)/$(NAME).exp

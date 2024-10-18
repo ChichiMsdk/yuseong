@@ -42,7 +42,6 @@ main(void)
 	return 0;
 }
 #elif PLATFORM_LINUX
-
 int
 main(void)
 {
@@ -52,7 +51,6 @@ main(void)
 	while(gRunning)
 	{
 		OS_PumpMessages(&state);
-		YINFO("time: %2f", OS_GetAbsoluteTime());
 	}
 	OS_Shutdown(&state);
 	return 0;

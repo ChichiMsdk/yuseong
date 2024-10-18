@@ -56,7 +56,7 @@ LogOutput(LogLevel level, const char *pMessage, ...)
 
 	/* NOTE: microsoft bullshit so if using clang __builtin_va_list */
 	va_list argPtr;
-	va_start(argPtr, message);
+	va_start(argPtr, pMessage);
 	vsnprintf(pOutMessage, msgLength, pMessage, argPtr);
 	va_end(argPtr);
 
