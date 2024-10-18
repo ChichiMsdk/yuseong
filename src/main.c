@@ -52,6 +52,7 @@ main(void)
 	while(gRunning)
 	{
 		OS_PumpMessages(&state);
+		YINFO("time: %2f", OS_GetAbsoluteTime());
 	}
 	OS_Shutdown(&state);
 	return 0;
