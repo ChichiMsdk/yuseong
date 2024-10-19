@@ -2,7 +2,7 @@
 $outputFile = "compile_commands.json"
 
 # Get all .o.json files in the current directory
-$oJsonFiles = Get-ChildItem -Path .\build\obj -Filter *.o.json
+$oJsonFiles = Get-ChildItem -Recurse -Path .\build\obj -Filter *.o.json
 
 # Check if there are any files
 if ($oJsonFiles.Count -eq 0) {

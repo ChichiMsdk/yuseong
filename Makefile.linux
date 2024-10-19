@@ -62,15 +62,13 @@ compile_commands.json: $(OBJS)
 
 clean:
 	@echo Deleting files..
-	rm -rf $(BUILD_DIR)
+	rm -rf $(OBJ_DIR)
 	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
 	@rm -f $(BUILD_DIR)/$(NAME).pdb
 	@rm -f $(BUILD_DIR)/$(NAME).exp
 	@rm -f $(BUILD_DIR)/$(NAME).lib
 	@rm -f $(BUILD_DIR)/vc140.pdb
 	@rm -f $(BUILD_DIR)/*.obj
-	@rm -f $(BUILD_DIR)/obj/*.o
-	@rm -f $(BUILD_DIR)/obj/*.o.json
 	@rm -f $(BUILD_DIR)/*.ilk
 
 fclean: clean
