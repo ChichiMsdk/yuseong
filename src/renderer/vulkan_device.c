@@ -88,12 +88,12 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 		{
             if (pOutSwapchainSupport->pFormats)
 			{
-				yfree(pOutSwapchainSupport->pFormats,
+				yFree(pOutSwapchainSupport->pFormats,
 						sizeof(VkSurfaceFormatKHR) * pOutSwapchainSupport->formatCount, MEMORY_TAG_RENDERER);
 			}
             if (pOutSwapchainSupport->pPresentModes)
                 {
-					yfree(pOutSwapchainSupport->pPresentModes,
+					yFree(pOutSwapchainSupport->pPresentModes,
 							sizeof(VkPresentModeKHR) * pOutSwapchainSupport->presentModeCount, MEMORY_TAG_RENDERER);
 				}
             YINFO("Required swapchain support not present, skipping device.");
@@ -109,7 +109,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
             if (availableExtensionCount != 0)
 			{
                 pAvailableExtensions =
-					yalloc(sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
+					yAlloc(sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
                 errcode =
 					vkEnumerateDeviceExtensionProperties( device, 0, &availableExtensionCount, pAvailableExtensions);
 				if (errcode != VK_SUCCESS) {YFATAL("%s", string_VkResult(errcode)); exit(errcode); }
@@ -130,12 +130,12 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 					{
                         YINFO("Required extension not found: '%s', skipping device.",
 								pRequirements->ppDeviceExtensionNames[i]);
-                        yfree(pAvailableExtensions,
+                        yFree(pAvailableExtensions,
 								sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
                         return FALSE;
                     }
                 }
-				yfree(pAvailableExtensions, sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
+				yFree(pAvailableExtensions, sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
             }
         }
         // Sampler anisotropy

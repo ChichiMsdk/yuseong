@@ -1,105 +1,105 @@
 #include "darray.h"
 #include "event.h"
 
-typedef struct registered_event 
+typedef struct RegisteredEvent 
 {
-	void *listener;
+	void* pListener;
 	PFN_OnEvent callback;
-} registered_event;
+} RegisteredEvent;
 
-typedef struct event_code_entry 
+typedef struct EventCodeEntry 
 {
-	registered_event *events;
-} event_code_entry;
+	RegisteredEvent* pEvents;
+} EventCodeEntry;
 
 #define MAX_MESSAGE_CODES 16384
 
-typedef struct event_system_state
+typedef struct EventSystemState
 {
-	event_code_entry registered[MAX_MESSAGE_CODES];
-} event_system_state;
+	EventCodeEntry pRegistered[MAX_MESSAGE_CODES];
+} EventSystemState;
 
 /**
  * Event system internal state.
  */
-static b8 is_initialized = FALSE;
-static event_system_state state = {0};
+static b8 bInitialized = FALSE;
+static EventSystemState state = {0};
 
 void
 EventInit(void)
 {
-	is_initialized = TRUE;
+	bInitialized = TRUE;
 }
 
 void
 EventShutdown(void)
 {
     // Free the events arrays. And objects pointed to should be destroyed on their own.
-    for(u16 i = 0; i < MAX_MESSAGE_CODES; ++i)
+    for(uint16_t i = 0; i < MAX_MESSAGE_CODES; ++i)
 	{
-        if(state.registered[i].events != 0)
+        if(state.pRegistered[i].pEvents != 0)
 		{
-            darray_destroy(state.registered[i].events);
-            state.registered[i].events = 0;
+            darray_destroy(state.pRegistered[i].pEvents);
+            state.pRegistered[i].pEvents = 0;
         }
     }
 }
 
 b8
-EventRegister(u16 code, void* listener, PFN_OnEvent on_event)
+EventRegister(uint16_t code, void* pListener, PFN_OnEvent on_event)
 {
-    if(is_initialized == FALSE)
+    if(bInitialized == FALSE)
 	{
         return FALSE;
     }
 
-    if(state.registered[code].events == 0)
+    if(state.pRegistered[code].pEvents == 0)
 	{
-        state.registered[code].events = darray_create(registered_event);
+        state.pRegistered[code].pEvents = darray_create(RegisteredEvent);
     }
 
-    u64 registered_count = darray_length(state.registered[code].events);
-    for(u64 i = 0; i < registered_count; ++i)
+    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
+    for(uint64_t i = 0; i < registered_count; ++i)
 	{
-        if(state.registered[code].events[i].listener == listener)
+        if(state.pRegistered[code].pEvents[i].pListener == pListener)
 		{
             // TODO: warn
             return FALSE;
         }
     }
     // If at this point, no duplicate was found. Proceed with registration.
-    registered_event event;
-    event.listener = listener;
+    RegisteredEvent event;
+    event.pListener = pListener;
     event.callback = on_event;
-    darray_push(state.registered[code].events, event);
+    darray_push(state.pRegistered[code].pEvents, event);
 
     return TRUE;
 }
 
 b8 
-EventUnregister(u16 code, void* listener, PFN_OnEvent on_event)
+EventUnregister(uint16_t code, void* pListener, PFN_OnEvent on_event)
 {
-    if(is_initialized == FALSE)
+    if(bInitialized == FALSE)
 	{
         return FALSE;
     }
 
     // On nothing is registered for the code, boot out.
-    if(state.registered[code].events == 0)
+    if(state.pRegistered[code].pEvents == 0)
 	{
         // TODO: warn
         return FALSE;
     }
 
-    u64 registered_count = darray_length(state.registered[code].events);
-    for(u64 i = 0; i < registered_count; ++i)
+    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
+    for(uint64_t i = 0; i < registered_count; ++i)
 	{
-        registered_event e = state.registered[code].events[i];
-        if(e.listener == listener && e.callback == on_event)
+        RegisteredEvent e = state.pRegistered[code].pEvents[i];
+        if(e.pListener == pListener && e.callback == on_event)
 		{
             // Found one, remove it
-            registered_event popped_event;
-            darray_pop_at(state.registered[code].events, i, &popped_event);
+            RegisteredEvent popped_event;
+            darray_pop_at(state.pRegistered[code].pEvents, i, &popped_event);
             return TRUE;
         }
     }
@@ -109,26 +109,26 @@ EventUnregister(u16 code, void* listener, PFN_OnEvent on_event)
 }
 
 b8 
-EventFire(u16 code, void* sender, EventContext context)
+EventFire(uint16_t code, void* pSender, EventContext context)
 {
-    if(is_initialized == FALSE) 
+    if(bInitialized == FALSE) 
 	{
         return FALSE;
     }
 
     // If nothing is registered for the code, boot out.
-    if(state.registered[code].events == 0)
+    if(state.pRegistered[code].pEvents == 0)
 	{
         return FALSE;
     }
 
-    u64 registered_count = darray_length(state.registered[code].events);
-    for(u64 i = 0; i < registered_count; ++i) 
+    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
+    for(uint64_t i = 0; i < registered_count; ++i) 
 	{
-        registered_event e = state.registered[code].events[i];
-        if(e.callback(code, sender, e.listener, context))
+        RegisteredEvent e = state.pRegistered[code].pEvents[i];
+        if(e.callback(code, pSender, e.pListener, context))
 		{
-            // Message has been handled, do not send to other listeners.
+            // Message has been handled, do not send to other pListeners.
             return TRUE;
         }
     }

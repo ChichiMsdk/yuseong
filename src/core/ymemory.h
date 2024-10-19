@@ -3,7 +3,7 @@
 
 #	include "mydefines.h"
 
-typedef enum memory_tag
+typedef enum MemoryTags
 {
 	MEMORY_TAG_UNKNOWN,
 	MEMORY_TAG_ARRAY,
@@ -24,14 +24,14 @@ typedef enum memory_tag
 	MEMORY_TAG_SCENE,
 
 	MEMORY_TAG_MAX_TAGS,
-}memory_tag;
+}MemoryTags;
 
-void *yalloc(u64 size, memory_tag tag);
-void yfree(void *block, u64 size, memory_tag tag);
-char *get_memory_usage_str(void);
+void *yAlloc(uint64_t size, MemoryTags tag);
+void yFree(void *pBlock, uint64_t size, MemoryTags tag);
+char *StrGetMemoryUsage(void);
 
-void *yzero_memory(void *block, u64 size);
-void *ycopy_memory(void *dest, const void *source, u64 size);
-void *yset_memory(void *dest, i32 value, u64 size);
+void *yZeroMemory(void *pBlock, uint64_t size);
+void *yCopyMemory(void *pDest, const void *pSrc, uint64_t size);
+void *ySetMemory(void *pDest, int32_t value, uint64_t size);
 
 #endif // YMEMORY_H

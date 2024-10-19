@@ -307,15 +307,15 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
         case WM_SYSKEYUP: {
             // Key pressed/released
             b8 pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
-            keys key = (u16)wParam;
-			input_process_key(key, pressed);
+            Keys key = (u16)wParam;
+			InputProcessKey(key, pressed);
 
         } break;
         case WM_MOUSEMOVE: {
             // Mouse move
             int32_t x_position = GET_X_LPARAM(lParam);
             int32_t y_position = GET_Y_LPARAM(lParam);
-            input_process_mouse_move(x_position, y_position);
+            InputProcessMouseMove(x_position, y_position);
         } break;
         case WM_MOUSEWHEEL: {
             int32_t z_delta = GET_WHEEL_DELTA_WPARAM(wParam);
@@ -323,7 +323,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
 			{
                 // Flatten the input to an OS-independent (-1, 1)
                 z_delta = (z_delta < 0) ? -1 : 1;
-				input_process_mouse_wheel(z_delta);
+				InputProcessMouseWheel(z_delta);
             }
         } break;
         case WM_LBUTTONDOWN:
@@ -333,7 +333,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
         case WM_MBUTTONUP:
         case WM_RBUTTONUP: {
             b8 pressed = msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN;
-			buttons mouse_button = BUTTON_MAX_BUTTONS;
+			Buttons mouse_button = BUTTON_MAX_BUTTONS;
 			switch(msg)
 			{
 				case WM_LBUTTONDOWN:
@@ -351,7 +351,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
 			}
 			if (mouse_button != BUTTON_MAX_BUTTONS)
 			{
-				input_process_button(mouse_button, pressed);
+				InputProcessButton(mouse_button, pressed);
 			}
         } break;
     }

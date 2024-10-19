@@ -1,17 +1,18 @@
 #include "ymemory.h"
+#include "logger.h"
 #include "os.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-struct memory_stats
+struct MemoryStats
 {
-	u64 total_allocated;
-	u64 tagged_allocations[MEMORY_TAG_MAX_TAGS];
+	uint64_t totalAllocated;
+	uint64_t pTaggedAllocations[MEMORY_TAG_MAX_TAGS];
 };
 
-static const char *memory_tag_strings[MEMORY_TAG_MAX_TAGS] = {
+static const char *MemoryTagStrings[MEMORY_TAG_MAX_TAGS] = {
 	"UNKNOWN    ",
 	"ARRAY      ",
 	"DARRAY     ",
@@ -31,78 +32,78 @@ static const char *memory_tag_strings[MEMORY_TAG_MAX_TAGS] = {
 	"SCENE      "
 };
 
-static struct memory_stats stats;
+static struct MemoryStats gStats;
 
-void *yalloc(u64 size, memory_tag tag)
+/**
+  * Returns zero'ed allocated buffer
+  */
+void *
+yAlloc(uint64_t size, MemoryTags tag)
 {
 	if (tag == MEMORY_TAG_UNKNOWN)
-	{
-		fprintf(stderr, "kallocate called using MEMORY_TAG_UNKNOWN, Re-class"
-				"this allocation.");
-	}
-	stats.total_allocated += size;
-	stats.tagged_allocations[tag] += size;
-	void *block = malloc(size);
-	memset(block, 0, size);
-	return block;
+		YDEBUG("yAlloc called using MEMORY_TAG_UNKNOWN, re-class this allocation.");
+	gStats.totalAllocated += size;
+	gStats.pTaggedAllocations[tag] += size;
+	void *pBlock = malloc(size);
+	memset(pBlock, 0, size);
+	return pBlock;
 }
 
-void yfree(void *block, u64 size, memory_tag tag)
+void 
+yFree(void *pBlock, uint64_t size, MemoryTags tag)
 {
 	if (tag == MEMORY_TAG_UNKNOWN)
-	{
-		fprintf(stderr, "kfree called using MEMORY_TAG_UNKNOWN,"
-				"Re-class this allocation.");
-	}
-	stats.total_allocated -= size;
-	stats.tagged_allocations[tag] -= size;
+		YDEBUG("yFree called using MEMORY_TAG_UNKNOWN, re-class this allocation.");
+	gStats.totalAllocated -= size;
+	gStats.pTaggedAllocations[tag] -= size;
 	// TODO: Memory alignment
-	free(block);
+	free(pBlock);
 }
 
 /**
   * Returns allocated buffer to print
   */
-char *get_memory_usage_str(void)
+[[nodiscard]] char *
+StrGetMemoryUsage(void)
 {
-	const u64 gib = 1024 * 1024 * 1024;
-	const u64 mib = 1024 * 1024;
-	const u64 kib = 1024;
+	const uint64_t gib = 1024 * 1024 * 1024;
+	const uint64_t mib = 1024 * 1024;
+	const uint64_t kib = 1024;
 	
-	char buffer[8000] = "System memory use (tagged):\n";
-	u64 offset = strlen(buffer);
-	for (u32 i = 0; i < MEMORY_TAG_MAX_TAGS; ++i)
+	char pBuffer[8000] = "System memory use (tagged):\n";
+	uint64_t offset = strlen(pBuffer);
+	for (uint32_t i = 0; i < MEMORY_TAG_MAX_TAGS; ++i)
 	{
-		char unit[4] = "XiB";
-		float amount = 1.0f;
-		if (stats.tagged_allocations[i] >= gib) 
+		char pUnit[4] = "XiB";
+		float fAmount = 1.0f;
+		if (gStats.pTaggedAllocations[i] >= gib) 
 		{
-			unit[0] = 'G';
-			amount = stats.tagged_allocations[i] / (float)gib;
+			pUnit[0] = 'G';
+			fAmount = gStats.pTaggedAllocations[i] / (float)gib;
 		} 
-		else if (stats.tagged_allocations[i] >= mib) 
+		else if (gStats.pTaggedAllocations[i] >= mib) 
 		{
-			unit[0] = 'M';
-			amount = stats.tagged_allocations[i] / (float)mib;
+			pUnit[0] = 'M';
+			fAmount = gStats.pTaggedAllocations[i] / (float)mib;
 		}
-		else if (stats.tagged_allocations[i] >= kib) 
+		else if (gStats.pTaggedAllocations[i] >= kib) 
 		{
-			unit[0] = 'K';
-			amount = stats.tagged_allocations[i] / (float)kib;
+			pUnit[0] = 'K';
+			fAmount = gStats.pTaggedAllocations[i] / (float)kib;
 		} 
 		else 
 		{
-			unit[0] = 'B';
-			unit[1] = 0;
-			amount = (float)stats.tagged_allocations[i];
+			pUnit[0] = 'B';
+			pUnit[1] = 0;
+			fAmount = (float)gStats.pTaggedAllocations[i];
 		}
-		i32 length = snprintf(buffer + offset, 8000, "  %s: %.2f%s\n", memory_tag_strings[i], amount, unit);
+		int32_t length = snprintf(pBuffer + offset, 8000, "  %s: %.2f%s\n", MemoryTagStrings[i], fAmount, pUnit);
 		offset += length;
 	}
 #ifdef PLATFORM_WINDOWS
-	char* out_string = _strdup(buffer);
+	char* pOutString = _strdup(pBuffer);
 #elif PLATFORM_LINUX
-	char* out_string = strdup(buffer);
+	char* pOutString = strdup(buffer);
 #endif
-	return out_string;
+	return pOutString;
 }

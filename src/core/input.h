@@ -4,15 +4,15 @@
 #	include "mydefines.h"
 #	define DEFINE_KEY(name, code) KEY_##name = code
 
-typedef enum buttons 
+typedef enum Buttons 
 {
     BUTTON_LEFT,
     BUTTON_RIGHT,
     BUTTON_MIDDLE,
     BUTTON_MAX_BUTTONS
-} buttons;
+}Buttons;
 
-typedef enum keys 
+typedef enum Keys 
 {
     DEFINE_KEY(BACKSPACE, 0x08),
     DEFINE_KEY(ENTER, 0x0D),
@@ -142,30 +142,30 @@ typedef enum keys
     DEFINE_KEY(GRAVE, 0xC0),
 
     KEYS_MAX_KEYS
-} keys;
+}Keys;
 
 void InputInitialize(void);
 void InputShutdown(void);
-void InputUpdate(f64 delta_time);
+void InputUpdate(f64 deltaTime);
 
 // keyboard input
-b8 input_is_key_down(keys key);
-b8 input_is_key_up(keys key);
-b8 input_was_key_down(keys key);
-b8 input_was_key_up(keys key);
+b8 InputIsKeyDown(Keys key);
+b8 InputIsKeyUp(Keys key);
+b8 InputWasKeyDown(Keys key);
+b8 InputWasKeyUp(Keys key);
 
-void input_process_key(keys key, b8 pressed);
+void InputProcessKey(Keys key, b8 bPressed);
 
 // mouse input
-b8 input_is_button_down(buttons button);
-b8 input_is_button_up(buttons button);
-b8 input_was_button_down(buttons button);
-b8 input_was_button_up(buttons button);
-void input_get_mouse_position(i32* x, i32* y);
-void input_get_previous_mouse_position(i32* x, i32* y);
+b8 InputIsButtonDown(Buttons button);
+b8 InputIsButtonUp(Buttons button);
+b8 InputWasButtonDown(Buttons button);
+b8 InputWasButtonUp(Buttons button);
+void InputGetMousePosition(int32_t* pX, int32_t* pY);
+void InputGetPreviousMousePosition(int32_t* pX, int32_t* pY);
 
-void input_process_button(buttons button, b8 pressed);
-void input_process_mouse_move(i16 x, i16 y);
-void input_process_mouse_wheel(i8 z_delta);
+void InputProcessButton(Buttons button, b8 bPressed);
+void InputProcessMouseMove(int16_t x, int16_t y);
+void InputProcessMouseWheel(int8_t zDelta);
 
 #endif // INPUT_H

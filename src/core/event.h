@@ -30,8 +30,8 @@ typedef struct event_context
 // Should return true if handled.
 typedef b8 (*PFN_OnEvent)(
 		uint16_t							code,
-		void*								sender,
-		void*								listener_inst,
+		void*								pSender,
+		void*								pListenerInst,
 		EventContext						data);
 
 void EventInit(void);

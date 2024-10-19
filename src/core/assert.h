@@ -3,14 +3,14 @@
 #include "mydefines.h"
 
 #ifdef DEBUG
-#define KASSERTIONS_ENABLED
+#define YASSERTIONS_ENABLED
 
-#ifdef KASSERTIONS_ENABLED
+#ifdef YASSERTIONS_ENABLED
 #if _MSC_VER
 #include <intrin.h>
-#define debugBreak() __debugbreak()
+#define YDebugBreak() __debugbreak()
 #else
-#define debugBreak() __builtin_trap()
+#define YDebugBreak() __builtin_trap()
 #endif
 
 #include <stdint.h>
@@ -27,7 +27,7 @@ void ReportAssertionFailure(
 	}																		\
 		else{																\
 			ReportAssertionFailure(#expr, "", __FILE__, __LINE__);		\
-			debugBreak();													\
+			YDebugBreak();													\
 		}																	\
 }
 
@@ -36,7 +36,7 @@ void ReportAssertionFailure(
         if (expr) {                                                       \
         } else {                                                          \
             ReportAssertionFailure(#expr, message, __FILE__, __LINE__); \
-            debugBreak();                                                 \
+            YDebugBreak();                                                 \
         }                                                                 \
     }
 
@@ -46,7 +46,7 @@ void ReportAssertionFailure(
         if (expr) {                                                  \
         } else {                                                     \
             ReportAssertionFailure(#expr, "", __FILE__, __LINE__); \
-            debugBreak();                                            \
+            YDebugBreak();                                            \
         }                                                            \
     }
 #else

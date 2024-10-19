@@ -1,133 +1,136 @@
 #include "darray.h"
 #include "ymemory.h"
+#include "logger.h"
 
 #include <string.h>
 #include <stdio.h>
 
-void* _darray_create(u64 length, u64 stride)
+void*
+_DarrayCreate(uint64_t length, uint64_t stride)
 {
-    u64 header_size = DARRAY_FIELD_LENGTH * sizeof(u64);
-    u64 array_size = length * stride;
-    u64* new_array = yalloc(header_size + array_size, MEMORY_TAG_DARRAY);
-    memset(new_array, 0, header_size + array_size);
-    new_array[DARRAY_CAPACITY] = length;
-    new_array[DARRAY_LENGTH] = 0;
-    new_array[DARRAY_STRIDE] = stride;
-    return (void*)(new_array + DARRAY_FIELD_LENGTH);
+    uint64_t headerSize = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
+    uint64_t arraySize = length * stride;
+    uint64_t* pNewArray = yAlloc(headerSize + arraySize, MEMORY_TAG_DARRAY);
+    memset(pNewArray, 0, headerSize + arraySize);
+    pNewArray[DARRAY_CAPACITY] = length;
+    pNewArray[DARRAY_LENGTH] = 0;
+    pNewArray[DARRAY_STRIDE] = stride;
+    return pNewArray + DARRAY_FIELD_LENGTH;
 }
 
-void _darray_destroy(void* array)
+void
+_DarrayDestroy(void* pArray)
 {
-    u64* header = (u64*)array - DARRAY_FIELD_LENGTH;
-    u64 header_size = DARRAY_FIELD_LENGTH * sizeof(u64);
-    u64 total_size = header_size + header[DARRAY_CAPACITY] * header[DARRAY_STRIDE];
-    yfree(header, total_size, MEMORY_TAG_DARRAY);
+    uint64_t* header = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
+    uint64_t header_size = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
+    uint64_t total_size = header_size + header[DARRAY_CAPACITY] * header[DARRAY_STRIDE];
+    yFree(header, total_size, MEMORY_TAG_DARRAY);
 }
 
-u64 _darray_field_get(void* array, u64 field)
+uint64_t
+_DarrayFieldGet(void* pArray, uint64_t field)
 {
-    u64* header = (u64*)array - DARRAY_FIELD_LENGTH;
+    uint64_t* header = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
     return header[field];
 }
 
-void _darray_field_set(void* array, u64 field, u64 value)
+void
+_DarrayFieldSet(void* pArray, uint64_t field, uint64_t value)
 {
-    u64* header = (u64*)array - DARRAY_FIELD_LENGTH;
-    header[field] = value;
+    uint64_t* pHeader = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
+    pHeader[field] = value;
 }
 
-void* _darray_resize(void* array)
+void*
+_DarrayResize(void* pArray)
 {
-    u64 length = darray_length(array);
-    u64 stride = darray_stride(array);
-    void* temp = _darray_create(
-        (DARRAY_RESIZE_FACTOR * darray_capacity(array)),
+    uint64_t length = darray_length(pArray);
+    uint64_t stride = darray_stride(pArray);
+    void* temp = _DarrayCreate(
+        (DARRAY_RESIZE_FACTOR * darray_capacity(pArray)),
         stride);
-    memcpy(temp, array, length * stride);
+    memcpy(temp, pArray, length * stride);
 
-    _darray_field_set(temp, DARRAY_LENGTH, length);
-    _darray_destroy(array);
+    _DarrayFieldSet(temp, DARRAY_LENGTH, length);
+    _DarrayDestroy(pArray);
     return temp;
 }
 
-void* _darray_push(void* array, const void* value_ptr)
+void*
+_DarrayPush(void* pArray, const void* pValue)
 {
-    u64 length = darray_length(array);
-    u64 stride = darray_stride(array);
-    if (length >= darray_capacity(array))
+    uint64_t length = darray_length(pArray);
+    uint64_t stride = darray_stride(pArray);
+    if (length >= darray_capacity(pArray))
 	{
-        array = _darray_resize(array);
+        pArray = _DarrayResize(pArray);
     }
 
-    u64 addr = (u64)array;
+    uint64_t addr = (uint64_t)pArray;
     addr += (length * stride);
-    memcpy((void*)addr, value_ptr, stride);
-    _darray_field_set(array, DARRAY_LENGTH, length + 1);
-    return array;
+    memcpy((void*)addr, pValue, stride);
+    _DarrayFieldSet(pArray, DARRAY_LENGTH, length + 1);
+    return pArray;
 }
 
-void _darray_pop(void* array, void* dest)
+void
+_DarrayPop(void* pArray, void* pDest)
 {
-    u64 length = darray_length(array);
-    u64 stride = darray_stride(array);
-    u64 addr = (u64)array;
+    uint64_t length = darray_length(pArray);
+    uint64_t stride = darray_stride(pArray);
+    uint64_t addr = (uint64_t)pArray;
     addr += ((length - 1) * stride);
-    memcpy(dest, (void*)addr, stride);
-    _darray_field_set(array, DARRAY_LENGTH, length - 1);
+    memcpy(pDest, (void*)addr, stride);
+    _DarrayFieldSet(pArray, DARRAY_LENGTH, length - 1);
 }
 
-void* _darray_pop_at(void* array, u64 index, void* dest)
+void*
+_DarrayPopAt(void* pArray, uint64_t index, void* pDest)
 {
-    u64 length = darray_length(array);
-    u64 stride = darray_stride(array);
+    uint64_t length = darray_length(pArray);
+    uint64_t stride = darray_stride(pArray);
     if (index >= length)
 	{
-        fprintf(stderr, "Index outside the bounds of this array! Length: %llu,"
-				"index: %llu", length, index);
-        return array;
+        YERROR("Index outside the bounds of this array! Length: %llu, index: %llu", length, index);
+        return pArray;
     }
-
-    u64 addr = (u64)array;
-    memcpy(dest, (void*)(addr + (index * stride)), stride);
+    uint64_t addr = (uint64_t)pArray;
+    memcpy(pDest, (void*)(addr + (index * stride)), stride);
 
     // If not on the last element, snip out the entry and copy the rest inward.
     if (index != length - 1)
 	{
-        memcpy( (void*)(addr + (index * stride)),
-            (void*)(addr + ((index + 1) * stride)),
+        memcpy((void*)(addr + (index * stride)), (void*)(addr + ((index + 1) * stride)),
             stride * (length - index));
     }
 
-    _darray_field_set(array, DARRAY_LENGTH, length - 1);
-    return array;
+    _DarrayFieldSet(pArray, DARRAY_LENGTH, length - 1);
+    return pArray;
 }
 
-void* _darray_insert_at(void* array, u64 index, void* value_ptr)
+void*
+_DarrayInsertAt(void* pArray, uint64_t index, void* pValue)
 {
-    u64 length = darray_length(array);
-    u64 stride = darray_stride(array);
+    uint64_t length = darray_length(pArray);
+    uint64_t stride = darray_stride(pArray);
     if (index >= length)
 	{
-        fprintf(stderr, "Index outside the bounds of this array! Length: %llu,"
-				"index: %llu", length, index);
-        return array;
+        YERROR("Index outside the bounds of this pArray! Length: %llu, index: %llu", length, index);
+        return pArray;
     }
-    if (length >= darray_capacity(array))
+    if (length >= darray_capacity(pArray))
 	{
-        array = _darray_resize(array);
+    	pArray = _DarrayResize(pArray);
     }
-
-    u64 addr = (u64)array;
+    uint64_t addr = (uint64_t)pArray;
     // If not on the last element, copy the rest outward.
     if (index != length - 1)
 	{
-        memcpy( (void*)(addr + ((index + 1) * stride)),
-            (void*)(addr + (index * stride)),
-            stride * (length - index));
+        memcpy( (void*)(addr + ((index + 1) * stride)), (void*)(addr + (index * stride)), stride * (length - index));
     }
     // Set the value at the index
-    memcpy((void*)(addr + (index * stride)), value_ptr, stride);
+    memcpy((void*)(addr + (index * stride)), pValue, stride);
 
-    _darray_field_set(array, DARRAY_LENGTH, length + 1);
-    return array;
+    _DarrayFieldSet(pArray, DARRAY_LENGTH, length + 1);
+    return pArray;
 }

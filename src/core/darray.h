@@ -5,10 +5,10 @@
 
 /*
 Memory layout
-u64 capacity = number elements that can be held
-u64 length = number of elements currently contained
-u64 stride = size of each element in bytes
-void* elements
+uint64_t capacity = number elements that can be held
+uint64_t length = number of elements currently contained
+uint64_t stride = size of each element in bytes
+void* pElements
 */
 
 enum
@@ -19,65 +19,108 @@ enum
     DARRAY_FIELD_LENGTH
 };
 
-void* _darray_create(u64 length, u64 stride);
-void _darray_destroy(void* array);
+void* _DarrayCreate(uint64_t length, uint64_t stride);
+void _DarrayDestroy(void* pArray);
 
-u64 _darray_field_get(void* array, u64 field);
-void _darray_field_set(void* array, u64 field, u64 value);
+uint64_t _DarrayFieldGet(void* pArray, uint64_t field);
+void _DarrayFieldSet(void* pArray, uint64_t field, uint64_t value);
 
-void* _darray_resize(void* array);
+void* _DarrayResize(void* pArray);
 
-void* _darray_push(void* array, const void* value_ptr);
-void _darray_pop(void* array, void* dest);
+void* _DarrayPush(void* pArray, const void* pValue);
+void _DarrayPop(void* pArray, void* pDest);
 
-void* _darray_pop_at(void* array, u64 index, void* dest);
-void* _darray_insert_at(void* array, u64 index, void* value_ptr);
+void* _DarrayPopAt(void* pArray, uint64_t index, void* pDest);
+void* _DarrayInsertAt(void* pArray, uint64_t index, void* pValue);
 
 #define DARRAY_DEFAULT_CAPACITY 1
 #define DARRAY_RESIZE_FACTOR 2
 
 #define darray_create(type) \
-    _darray_create(DARRAY_DEFAULT_CAPACITY, sizeof(type))
+    _DarrayCreate(DARRAY_DEFAULT_CAPACITY, sizeof(type))
 
 #define darray_reserve(type, capacity) \
-    _darray_create(capacity, sizeof(type))
+    _DarrayCreate(capacity, sizeof(type))
 
-#define darray_destroy(array) _darray_destroy(array);
+#define darray_destroy(array) _DarrayDestroy(array);
 
 #define darray_push(array, value)           \
     {                                       \
         typeof(value) temp = value;         \
-        array = _darray_push(array, &temp); \
+        array = _DarrayPush(array, &temp); \
     }
 // NOTE: could use __auto_type for temp above, but intellisense
 // for VSCode flags it as an unknown type. typeof() seems to
 // work just fine, though. Both are GNU extensions.
 
 #define darray_pop(array, value_ptr) \
-    _darray_pop(array, value_ptr)
+    _DarrayPop(array, value_ptr)
 
 #define darray_insert_at(array, index, value)           \
     {                                                   \
         typeof(value) temp = value;                     \
-        array = _darray_insert_at(array, index, &temp); \
+        array = _DarrayInsertAt(array, index, &temp); \
     }
 
 #define darray_pop_at(array, index, value_ptr) \
-    _darray_pop_at(array, index, value_ptr)
+    _DarrayPopAt(array, index, value_ptr)
 
 #define darray_clear(array) \
-    _darray_field_set(array, DARRAY_LENGTH, 0)
+    _DarrayFieldSet(array, DARRAY_LENGTH, 0)
 
 #define darray_capacity(array) \
-    _darray_field_get(array, DARRAY_CAPACITY)
+    _DarrayFieldGet(array, DARRAY_CAPACITY)
 
 #define darray_length(array) \
-    _darray_field_get(array, DARRAY_LENGTH)
+    _DarrayFieldGet(array, DARRAY_LENGTH)
 
 #define darray_stride(array) \
-    _darray_field_get(array, DARRAY_STRIDE)
+    _DarrayFieldGet(array, DARRAY_STRIDE)
 
 #define darray_length_set(array, value) \
-    _darray_field_set(array, DARRAY_LENGTH, value)
+    _DarrayFieldSet(array, DARRAY_LENGTH, value)
+
+///////////////////////////////////////////////////////////////////////
+
+#define DarrayCreate(var) \
+    _DarrayCreate(DARRAY_DEFAULT_CAPACITY, sizeof(typeof(var)))
+
+#define DarrayReserve(type, capacity) \
+    _DarrayCreate(capacity, sizeof(type))
+
+#define DarrayDestroy(array) _darray_destroy(array);
+
+#define DarrayPush(array, value)           \
+    {                                       \
+        typeof(value) temp = value;         \
+        array = _darray_push(array, &temp); \
+    }
+
+#define DarrayPop(array, value_ptr) \
+    _DarrayPop(array, value_ptr)
+
+#define darray_insert_at(array, index, value)           \
+    {                                                   \
+        typeof(value) temp = value;                     \
+        array = _DarrayInsertAt(array, index, &temp); \
+    }
+
+#define DarrayPopAt(array, index, value_ptr) \
+    _DarrayPopAt(array, index, value_ptr)
+
+#define DarrayClear(array) \
+    _DarrayFieldSet(array, DARRAY_LENGTH, 0)
+
+#define DarrayCapacity(array) \
+    _DarrayFieldGet(array, DARRAY_CAPACITY)
+
+#define DarrayLength(array) \
+    _DarrayFieldGet(array, DARRAY_LENGTH)
+
+#define DarrayStride(array) \
+    _DarrayFieldGet(array, DARRAY_STRIDE)
+
+#define DarrayLengthSet(array, value) \
+    _DarrayFieldSet(array, DARRAY_LENGTH, value)
 
 #endif // DARRAY_H

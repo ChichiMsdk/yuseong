@@ -134,7 +134,7 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
         if (!pOutSupportInfo->pFormats)
 		{
             pOutSupportInfo->pFormats =
-				yalloc(sizeof(VkSurfaceFormatKHR) * pOutSupportInfo->formatCount, MEMORY_TAG_RENDERER);
+				yAlloc(sizeof(VkSurfaceFormatKHR) * pOutSupportInfo->formatCount, MEMORY_TAG_RENDERER);
         }
         errcode =
 			vkGetPhysicalDeviceSurfaceFormatsKHR( physDevice, surface, &pOutSupportInfo->formatCount, pOutSupportInfo->pFormats);
@@ -148,7 +148,7 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
         if (!pOutSupportInfo->pPresentModes)
 		{
             pOutSupportInfo->pPresentModes = 
-				yalloc(sizeof(VkPresentModeKHR) * pOutSupportInfo->presentModeCount, MEMORY_TAG_RENDERER);
+				yAlloc(sizeof(VkPresentModeKHR) * pOutSupportInfo->presentModeCount, MEMORY_TAG_RENDERER);
         }
         errcode = vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &pOutSupportInfo->presentModeCount,
 				pOutSupportInfo->pPresentModes);
@@ -255,11 +255,11 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     errcode = vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount, 0);
     if (!pSwapchain->pImages)
 	{
-        pSwapchain->pImages = yalloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+        pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
     }
     if (!pSwapchain->pViews)
 	{
-        pSwapchain->pViews = yalloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+        pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
     }
     errcode = vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount,
 			pSwapchain->pImages);
