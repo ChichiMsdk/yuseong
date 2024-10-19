@@ -4,7 +4,7 @@ OUTPUT =$(NAME)$(EXTENSION)
 BUILD_DIR =build
 OBJ_DIR =build/obj
 TESTDIR =obj
-CC =clang 
+CC =clang
 CPP =clang++
 
 SRC_DIR =src
@@ -26,9 +26,9 @@ CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
 # CFLAGS +=-Wno-uninitialized
 
-CFLAGS += -DPLATFORM_WINDOWS
+CFLAGS +=-DPLATFORM_WINDOWS
 CFLAGS +=-g -Wvarargs -O0
-CFLAGS += -D_DEBUG -DDEBUG
+CFLAGS +=-D_DEBUG -DDEBUG
 # CFLAGS +=-DTRACY_ENABLE
 
 CFLAGS +=-fsanitize=address

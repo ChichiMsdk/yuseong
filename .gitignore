@@ -4,3 +4,9 @@ build/
 .cache/
 .clangd/
 .clang-format
+*.pdb
+*.exe
+*.lib
+*.exp
+*.dll
+*.o
