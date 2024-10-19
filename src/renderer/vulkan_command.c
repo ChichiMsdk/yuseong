@@ -9,7 +9,7 @@
  * Each thread needs to have its very own CommandPool AND
  * CommandBuffer (minimum) -> https://vkguide.dev/docs/new_chapter_1/vulkan_command_flow/ 
  */
-[[nodiscard]] VkResult
+YND VkResult
 vkCommandPoolCreate(VkContext *pContext)
 {
 	VkCommandPoolCreateInfo poolCreateInfo = {
@@ -22,7 +22,7 @@ vkCommandPoolCreate(VkContext *pContext)
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] VkResult 
+YND VkResult 
 vkCommandBufferCreate(VkContext *pCtx)
 {
     if (!pCtx->pGfxCommands) 
@@ -52,7 +52,7 @@ vkCommandBufferCreate(VkContext *pCtx)
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 vkCommandBufferAllocate(VkContext *pCtx, VkCommandBufferLevel cmdBufferLvl, VkCommandPool pool,
 		VulkanCommandBuffer *pOutCommandBuffers)
 {
@@ -71,7 +71,7 @@ vkCommandBufferAllocate(VkContext *pCtx, VkCommandBufferLevel cmdBufferLvl, VkCo
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 vkCommandPoolDestroy(VkContext *pCtx, VkCommandPool *pCmdPools, uint32_t poolCount)
 {
 	VkDevice device = pCtx->device.logicalDev;
@@ -81,7 +81,7 @@ vkCommandPoolDestroy(VkContext *pCtx, VkCommandPool *pCmdPools, uint32_t poolCou
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 vkCommandBufferFree(VkContext *pCtx, VulkanCommandBuffer *pCommandBuffers, VkCommandPool *pPool, uint32_t poolCount)
 {
 	VkDevice device = pCtx->device.logicalDev;

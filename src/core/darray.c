@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void*
+YND void*
 _DarrayCreate(uint64_t length, uint64_t stride)
 {
     uint64_t headerSize = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
@@ -27,7 +27,7 @@ _DarrayDestroy(void* pArray)
     yFree(header, total_size, MEMORY_TAG_DARRAY);
 }
 
-uint64_t
+YND uint64_t
 _DarrayFieldGet(void* pArray, uint64_t field)
 {
     uint64_t* header = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
@@ -41,7 +41,7 @@ _DarrayFieldSet(void* pArray, uint64_t field, uint64_t value)
     pHeader[field] = value;
 }
 
-void*
+YND void*
 _DarrayResize(void* pArray)
 {
     uint64_t length = darray_length(pArray);
@@ -56,7 +56,7 @@ _DarrayResize(void* pArray)
     return temp;
 }
 
-void*
+YND void*
 _DarrayPush(void* pArray, const void* pValue)
 {
     uint64_t length = darray_length(pArray);
@@ -84,7 +84,7 @@ _DarrayPop(void* pArray, void* pDest)
     _DarrayFieldSet(pArray, DARRAY_LENGTH, length - 1);
 }
 
-void*
+void
 _DarrayPopAt(void* pArray, uint64_t index, void* pDest)
 {
     uint64_t length = darray_length(pArray);
@@ -92,7 +92,7 @@ _DarrayPopAt(void* pArray, uint64_t index, void* pDest)
     if (index >= length)
 	{
         YERROR("Index outside the bounds of this array! Length: %llu, index: %llu", length, index);
-        return pArray;
+        return ;
     }
     uint64_t addr = (uint64_t)pArray;
     memcpy(pDest, (void*)(addr + (index * stride)), stride);
@@ -105,10 +105,10 @@ _DarrayPopAt(void* pArray, uint64_t index, void* pDest)
     }
 
     _DarrayFieldSet(pArray, DARRAY_LENGTH, length - 1);
-    return pArray;
+    return ;
 }
 
-void*
+YND void*
 _DarrayInsertAt(void* pArray, uint64_t index, void* pValue)
 {
     uint64_t length = darray_length(pArray);

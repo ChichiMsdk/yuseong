@@ -34,7 +34,7 @@ typedef struct internal_state
 static f64 gClockFrequency;
 static LARGE_INTEGER gStartTime;
 
-[[nodiscard]] b8 
+YND b8 
 OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
 {
 	pState->pInternalState = calloc(1, sizeof(InternalState));
@@ -242,7 +242,7 @@ OS_WriteError(const char *pMessage, u8 colour)
 	//    SetConsoleTextAttribute(console_handle, 0x0F); //resets the color
 }
 
-[[nodiscard]] f64
+YND f64
 OS_GetAbsoluteTime(void)
 {
     LARGE_INTEGER now_time;
@@ -257,7 +257,7 @@ OS_Sleep(uint64_t ms)
 }
 
 // Surface creation for Vulkan
-[[nodiscard]] VkResult
+YND VkResult
 OS_CreateVkSurface(OS_State *pState, VkContext *pContext)
 {
     // Simply cold-cast to the known type.

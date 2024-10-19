@@ -1,6 +1,7 @@
 #ifndef MYDEFINES_H
 #define MYDEFINES_H
 
+#include "mystd.h"
 #include <stdint.h>
 
 typedef unsigned char u8;
@@ -95,6 +96,6 @@ STATIC_ASSERT(sizeof(f64) == 8, "Expected f64 to be 8 bytes.");
 #endif
 #endif
 
-#define YCLAMP(value, min, max) (value <= min) ? min : (value >= max) ? max \
-										  							  : value;
+#define YCLAMP(value, min, max) (value <= min) ? min : (value >= max) ? max : value;
+
 #endif // MYDEFINES_H

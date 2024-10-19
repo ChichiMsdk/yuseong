@@ -150,7 +150,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
     return FALSE;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 VulkanDeviceSelect(VkContext *pCtx)
 {
 	uint32_t physicalDeviceCount = 0;
@@ -237,7 +237,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 VulkanCreateDevice(VkContext *pCtx, char *pGPUName)
 {
 	(void)pGPUName;

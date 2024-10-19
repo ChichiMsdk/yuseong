@@ -166,12 +166,12 @@ typedef struct VkContext
 #endif
 }VkContext;
 
-[[nodiscard]] VkResult RendererInit(
+YND VkResult RendererInit(
 		OS_State*							pState);
 
 void	RendererShutdown(
 		OS_State*							pState);
 
-[[nodiscard]] VkResult vkCommandPoolCreate(
+YND VkResult vkCommandPoolCreate(
 		VkContext*							pContext);
 #endif // YVULKAN_H

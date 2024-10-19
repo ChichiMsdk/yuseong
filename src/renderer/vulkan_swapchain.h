@@ -3,7 +3,7 @@
 
 #include "yvulkan.h"
 
-[[nodiscard]] VkResult vkSwapchainCreate(
+YND VkResult vkSwapchainCreate(
 		VkContext*							pContext,
 		uint32_t							width,
 		uint32_t							height,

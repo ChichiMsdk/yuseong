@@ -29,7 +29,7 @@ extern b8 gRunning;
 b8 OS_PumpMessages(
 		OS_State*							pState);
 
-[[nodiscard]] b8 OS_Init(
+YND b8 OS_Init(
 		OS_State*							pState,
 		const char*							pAppName,
 		i32									x,
@@ -55,9 +55,9 @@ void OS_Write(
 void OS_Sleep(
 		uint64_t							ms);
 
-[[nodiscard]] f64 OS_GetAbsoluteTime();
+YND f64 OS_GetAbsoluteTime(void);
 
-[[nodiscard]] VkResult OS_CreateVkSurface(
+YND VkResult OS_CreateVkSurface(
 		OS_State*							pState,
 		VkContext*							pContext);
 

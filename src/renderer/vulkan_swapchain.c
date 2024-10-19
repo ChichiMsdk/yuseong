@@ -156,7 +156,7 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
     }
 }
 
-[[nodiscard]] VkResult 
+YND VkResult 
 vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapchain* pSwapchain)
 {
 	VkResult errcode = 0;

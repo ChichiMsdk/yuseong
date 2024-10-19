@@ -63,7 +63,7 @@ yFree(void *pBlock, uint64_t size, MemoryTags tag)
 /**
   * Returns allocated buffer to print
   */
-[[nodiscard]] char *
+YND char *
 StrGetMemoryUsage(void)
 {
 	const uint64_t gib = 1024 * 1024 * 1024;

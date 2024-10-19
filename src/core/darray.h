@@ -10,7 +10,6 @@ uint64_t length = number of elements currently contained
 uint64_t stride = size of each element in bytes
 void* pElements
 */
-
 enum
 {
     DARRAY_CAPACITY,
@@ -19,19 +18,19 @@ enum
     DARRAY_FIELD_LENGTH
 };
 
-void* _DarrayCreate(uint64_t length, uint64_t stride);
+YND void* _DarrayCreate(uint64_t length, uint64_t stride);
 void _DarrayDestroy(void* pArray);
 
-uint64_t _DarrayFieldGet(void* pArray, uint64_t field);
+YND uint64_t _DarrayFieldGet(void* pArray, uint64_t field);
 void _DarrayFieldSet(void* pArray, uint64_t field, uint64_t value);
 
-void* _DarrayResize(void* pArray);
+YND void* _DarrayResize(void* pArray);
 
-void* _DarrayPush(void* pArray, const void* pValue);
+YND void* _DarrayPush(void* pArray, const void* pValue);
 void _DarrayPop(void* pArray, void* pDest);
 
-void* _DarrayPopAt(void* pArray, uint64_t index, void* pDest);
-void* _DarrayInsertAt(void* pArray, uint64_t index, void* pValue);
+void _DarrayPopAt(void* pArray, uint64_t index, void* pDest);
+YND void* _DarrayInsertAt(void* pArray, uint64_t index, void* pValue);
 
 #define DARRAY_DEFAULT_CAPACITY 1
 #define DARRAY_RESIZE_FACTOR 2

@@ -2,7 +2,7 @@
 
 #include "core/logger.h"
 
-[[nodiscard]] VkResult
+YND VkResult
 vkFenceCreate(VkContext *pCtx, b8 bSignaled, VulkanFence *pOutFence)
 {
     // Make sure to signal the fence if required.
@@ -26,7 +26,7 @@ vkFenceDestroy(VkContext *pCtx, VulkanFence *pFence)
     pFence->bSignaled = FALSE;
 }
 
-[[nodiscard]] VkResult 
+YND VkResult 
 vkFenceWait(VkContext *pCtx, VulkanFence *pFence, uint64_t timeoutNs) 
 {
 	VkResult res = VK_SUCCESS;
@@ -46,7 +46,7 @@ vkFenceWait(VkContext *pCtx, VulkanFence *pFence, uint64_t timeoutNs)
 	return res;
 }
 
-[[nodiscard]] VkResult 
+YND VkResult 
 vkFenceReset(VkContext *pCtx, VulkanFence *pFence) 
 {
     if (pFence->bSignaled) 

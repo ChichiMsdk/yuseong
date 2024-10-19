@@ -14,7 +14,7 @@
 #include <errno.h>
 
 void
-WlKeyboardKeymap(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, uint32_t format, int32_t fd,
+WlKeyboardKeymap(void *data, YMB struct wl_keyboard *wl_keyboard, uint32_t format, int32_t fd,
 		uint32_t size)
 {
        InternalState *pState = data;
@@ -38,8 +38,8 @@ WlKeyboardKeymap(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, ui
 }
 
 void
-WlKeyboardEnter(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, [[maybe_unused]]uint32_t serial, 
-		[[maybe_unused]]struct wl_surface *surface, struct wl_array *keys)
+WlKeyboardEnter(void *data, YMB struct wl_keyboard *wl_keyboard, YMB uint32_t serial, 
+		YMB struct wl_surface *surface, struct wl_array *keys)
 {
        InternalState *pState = data;
        fprintf(stderr, "keyboard enter; keys pressed are:\n");
@@ -56,8 +56,8 @@ WlKeyboardEnter(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, [[m
 }
 
 void
-WlKeyboardKey(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, [[maybe_unused]]uint32_t serial, 
-		[[maybe_unused]]uint32_t time, uint32_t key, uint32_t state)
+WlKeyboardKey(void *data, YMB struct wl_keyboard *wl_keyboard, YMB uint32_t serial, 
+		YMB uint32_t time, uint32_t key, uint32_t state)
 {
        InternalState *pState = data;
        char buf[128];
@@ -71,14 +71,14 @@ WlKeyboardKey(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, [[may
 }
 
 void
-WlKeyboardLeave([[maybe_unused]]void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, 
-		[[maybe_unused]]uint32_t serial, [[maybe_unused]]struct wl_surface *surface)
+WlKeyboardLeave(YMB void *data, YMB struct wl_keyboard *wl_keyboard, 
+		YMB uint32_t serial, YMB struct wl_surface *surface)
 {
        YDEBUG("keyboard leave\n");
 }
 
 void
-WlKeyboardModifiers(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, [[maybe_unused]]uint32_t serial, 
+WlKeyboardModifiers(void *data, YMB struct wl_keyboard *wl_keyboard, YMB uint32_t serial, 
 		uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
        InternalState *pState = data;
@@ -86,8 +86,8 @@ WlKeyboardModifiers(void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard,
 }
 
 void
-WlKeyboardRepeatInfo([[maybe_unused]]void *data, [[maybe_unused]]struct wl_keyboard *wl_keyboard, 
-		[[maybe_unused]]int32_t rate, [[maybe_unused]]int32_t delay)
+WlKeyboardRepeatInfo(YMB void *data, YMB struct wl_keyboard *wl_keyboard, 
+		YMB int32_t rate, YMB int32_t delay)
 {
        /* Left as an exercise for the reader */
 }

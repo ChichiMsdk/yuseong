@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-[[nodiscard]] VkResult VulkanCreateDevice(
+YND VkResult VulkanCreateDevice(
 		VkContext*							pVulkanContext,
 		char*								pGPUName);
 #endif  // VULKAN_DEVICE_H

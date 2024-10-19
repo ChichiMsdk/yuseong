@@ -53,7 +53,7 @@ static struct wl_seat_listener gWlSeatListener = {
 		.capabilities =						WlSeatCapabilities,
 		.name =								WlSeatName };
 
-[[maybe_unused]]static struct xdg_toplevel_listener gTopLevelListener = {
+YMB static struct xdg_toplevel_listener gTopLevelListener = {
 		.configure =						HandleConfigure, // resize here
 		.close =							HandleTopLevelClose };
 
@@ -61,7 +61,7 @@ struct wl_registry_listener gRegistryListener = {
 		.global =							RegistryListener,
 		.global_remove =					RegistryRemover };
 
-[[nodiscard]] b8 
+YND b8 
 OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
 {
 	// TODO: Check errors !!
@@ -150,7 +150,7 @@ FrameDraw(InternalState *pState)
 	return pBuffer;
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 OS_CreateVkSurface(OS_State *pOsState, VkContext *pVkCtx)
 {
 	InternalState *pState = (InternalState *)pOsState->pInternalState;
@@ -185,7 +185,7 @@ OS_Write(const char *pMessage, REDIR redir)
 }
 
 void
-ErrorMsgBox(char *pMsg, [[maybe_unused]] unsigned long dw)
+ErrorMsgBox(char *pMsg, YMB  unsigned long dw)
 {
 	YFATAL("%s", pMsg);
 }
@@ -197,7 +197,7 @@ ErrorExit(char *pMsg, unsigned long dw)
 	exit((int)dw);
 }
 
-[[nodiscard]] f64
+YND f64
 OS_GetAbsoluteTime(void)
 {
 	struct timespec tp;
@@ -212,8 +212,8 @@ OS_Sleep(uint64_t ms)
 }
 
 void 
-WlSeatCapabilities([[maybe_unused]]void* pData, [[maybe_unused]]struct wl_seat* pWlSeat,
-		[[maybe_unused]]uint32_t capabilities)
+WlSeatCapabilities(YMB void* pData, YMB struct wl_seat* pWlSeat,
+		YMB uint32_t capabilities)
 {
 	InternalState *pState = (InternalState *) pData;
 	b8 bHasPointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
@@ -242,14 +242,14 @@ WlSeatCapabilities([[maybe_unused]]void* pData, [[maybe_unused]]struct wl_seat* 
 }
 
 void 
-WlSeatName([[maybe_unused]]void* pData, [[maybe_unused]]struct wl_seat* pWlSeat, const char* pName)
+WlSeatName(YMB void* pData, YMB struct wl_seat* pWlSeat, const char* pName)
 {
 	YDEBUG("Seat name: %s", pName);
 }
 
 void 
 RegistryListener(void *pData, struct wl_registry *pRegistry, uint32_t id, const char *pInterface,
-		[[maybe_unused]] uint32_t version)
+		YMB  uint32_t version)
 {
 	InternalState *pState = (InternalState *)pData;
 	if (strcmp(pInterface, wl_compositor_interface.name) == 0)
@@ -269,14 +269,14 @@ RegistryListener(void *pData, struct wl_registry *pRegistry, uint32_t id, const 
 }
 
 void
-RegistryRemover(void *pData, [[maybe_unused]]struct wl_registry *pRegistry, [[maybe_unused]]uint32_t id)
+RegistryRemover(void *pData, YMB struct wl_registry *pRegistry, YMB uint32_t id)
 {
-	[[maybe_unused]]InternalState *pState = (InternalState *)pData;
+	YMB InternalState *pState = (InternalState *)pData;
 }
 
 void
-HandleConfigure([[maybe_unused]]void *pData, [[maybe_unused]]struct xdg_toplevel *pTopLevel,
-		int32_t width, int32_t height, [[maybe_unused]]struct wl_array *pStates)
+HandleConfigure(YMB void *pData, YMB struct xdg_toplevel *pTopLevel,
+		int32_t width, int32_t height, YMB struct wl_array *pStates)
 {
 	InternalState *pState = (InternalState *)pData;
 	if (width > 0 && height > 0)
@@ -289,7 +289,7 @@ HandleConfigure([[maybe_unused]]void *pData, [[maybe_unused]]struct xdg_toplevel
 }
 
 void
-WlBufferRelease([[maybe_unused]]void *pData, struct wl_buffer *pWlBuffer)
+WlBufferRelease(YMB void *pData, struct wl_buffer *pWlBuffer)
 {
     /* Sent by the compositor when it's no longer using this buffer */
     wl_buffer_destroy(pWlBuffer);
@@ -307,32 +307,32 @@ XdgSurfaceConfigure(void *pData, struct xdg_surface *pSurface, uint32_t serial)
 }
 
 void
-HandleWmBasePing([[maybe_unused]] void *pData, struct xdg_wm_base *pXdgWmBase, uint32_t serial)
+HandleWmBasePing(YMB  void *pData, struct xdg_wm_base *pXdgWmBase, uint32_t serial)
 {
 	xdg_wm_base_pong(pXdgWmBase, serial);
 }
 
 void
-HandleTopLevelClose([[maybe_unused]]void *pData, [[maybe_unused]]struct xdg_toplevel *pXdgTopLevel)
+HandleTopLevelClose(YMB void *pData, YMB struct xdg_toplevel *pXdgTopLevel)
 {
 	gRunning = FALSE;
 }
 
 void 
-PopupDoneListener([[maybe_unused]]void *pData, [[maybe_unused]]struct wl_shell_surface *pShellSurface)
+PopupDoneListener(YMB void *pData, YMB struct wl_shell_surface *pShellSurface)
 {
 }
 
 void 
-PingListener([[maybe_unused]]void *pData, [[maybe_unused]]struct wl_shell_surface *pShellSurface,
-		[[maybe_unused]] uint32_t serial)
+PingListener(YMB void *pData, YMB struct wl_shell_surface *pShellSurface,
+		YMB  uint32_t serial)
 {
 
 }
 
 void 
-ConfigureListener([[maybe_unused]] void *pData,[[maybe_unused]] struct wl_shell_surface *pShellSurface, 
-		[[maybe_unused]] uint32_t edges, [[maybe_unused]] int32_t w, [[maybe_unused]] int32_t h)
+ConfigureListener(YMB  void *pData,YMB  struct wl_shell_surface *pShellSurface, 
+		YMB  uint32_t edges, YMB  int32_t w, YMB  int32_t h)
 {
 
 }

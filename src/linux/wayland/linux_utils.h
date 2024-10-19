@@ -1,6 +1,8 @@
 #ifndef LINUX_UTILS_H
 #define LINUX_UTILS_H
 
+#ifdef PLATFORM_LINUX
+
 #include <unistd.h>
 #include <string.h>
 
@@ -56,15 +58,15 @@ void HandleTopLevelClose(
 
 void RegistryRemover(
 		void*								pData,
-		[[maybe_unused]]struct wl_registry*	pRegistry,
-		[[maybe_unused]]uint32_t			id);
+		YMB struct wl_registry*	pRegistry,
+		YMB uint32_t			id);
 
 void ErrorExit(
 		char*								pMsg,
 		unsigned long						errcode);
 
 void WlBufferRelease(
-		[[maybe_unused]]void*				pData,
+		YMB void*				pData,
 		struct wl_buffer*					pWlBuffer);
 
 void XdgSurfaceConfigure(
@@ -73,7 +75,7 @@ void XdgSurfaceConfigure(
 		uint32_t							serial);
 
 void HandleConfigure(
-		[[maybe_unused]]void*				pData,
+		YMB void*				pData,
 		struct xdg_toplevel*				pTopLevel,
 		int32_t								width,
 		int32_t								height,
@@ -98,5 +100,5 @@ void LogErrnoExit(
 			exit(1); \
 		} while (0)
 
-
+#endif //LINUX
 #endif  // LINUX_UTILS_H

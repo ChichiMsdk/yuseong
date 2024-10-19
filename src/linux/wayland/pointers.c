@@ -3,8 +3,8 @@
 #include "internals.h"
 
 void
-WlPointerEnter(void *pData, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t serial, 
-		[[maybe_unused]]struct wl_surface *surface, wl_fixed_t surfaceX, wl_fixed_t surfaceY)
+WlPointerEnter(void *pData, YMB struct wl_pointer *wl_pointer, uint32_t serial, 
+		YMB struct wl_surface *surface, wl_fixed_t surfaceX, wl_fixed_t surfaceY)
 {
        InternalState *pState = (InternalState *) pData;
        pState->pointerEvent.eventMask |= POINTER_EVENT_ENTER;
@@ -14,8 +14,8 @@ WlPointerEnter(void *pData, [[maybe_unused]]struct wl_pointer *wl_pointer, uint3
 }
 
 void
-WlPointerLeave(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t serial, 
-		[[maybe_unused]]struct wl_surface *surface)
+WlPointerLeave(void *data, YMB struct wl_pointer *wl_pointer, uint32_t serial, 
+		YMB struct wl_surface *surface)
 {
        InternalState *pState = data;
        pState->pointerEvent.serial = serial;
@@ -23,7 +23,7 @@ WlPointerLeave(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32
 }
 
 void
-WlPointerMotion(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t time, wl_fixed_t surfaceX, 
+WlPointerMotion(void *data, YMB struct wl_pointer *wl_pointer, uint32_t time, wl_fixed_t surfaceX, 
 		wl_fixed_t surfaceY)
 {
        InternalState *pState = data;
@@ -34,7 +34,7 @@ WlPointerMotion(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint3
 }
 
 void
-WlPointerButton(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, 
+WlPointerButton(void *data, YMB struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, 
 		uint32_t button, uint32_t state)
 {
        InternalState *pState = data;
@@ -46,7 +46,7 @@ WlPointerButton(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint3
 }
 
 void
-WlPointerAxis(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value)
+WlPointerAxis(void *data, YMB struct wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value)
 {
        InternalState *pState = data;
        pState->pointerEvent.eventMask |= POINTER_EVENT_AXIS;
@@ -56,7 +56,7 @@ WlPointerAxis(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_
 }
 
 void
-WlPointerAxisSource(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, uint32_t axisSource)
+WlPointerAxisSource(void *data, YMB struct wl_pointer *wl_pointer, uint32_t axisSource)
 {
        InternalState *pState = data;
        pState->pointerEvent.eventMask |= POINTER_EVENT_AXIS_SOURCE;
@@ -64,7 +64,7 @@ WlPointerAxisSource(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer, u
 }
 
 void
-WlPointerAxisStop(void *data,[[maybe_unused]] struct wl_pointer *wl_pointer, uint32_t time, uint32_t axis)
+WlPointerAxisStop(void *data,YMB  struct wl_pointer *wl_pointer, uint32_t time, uint32_t axis)
 {
        InternalState *pState = data;
        pState->pointerEvent.time = time;
@@ -73,7 +73,7 @@ WlPointerAxisStop(void *data,[[maybe_unused]] struct wl_pointer *wl_pointer, uin
 }
 
 void
-WlPointerAxisDiscrete(void *data,[[maybe_unused]] struct wl_pointer *wl_pointer, uint32_t axis, int32_t discrete)
+WlPointerAxisDiscrete(void *data,YMB  struct wl_pointer *wl_pointer, uint32_t axis, int32_t discrete)
 {
        InternalState *pState = data;
        pState->pointerEvent.eventMask |= POINTER_EVENT_AXIS_DISCRETE;
@@ -82,7 +82,7 @@ WlPointerAxisDiscrete(void *data,[[maybe_unused]] struct wl_pointer *wl_pointer,
 }
 
 void
-WlPointerFrame(void *data, [[maybe_unused]]struct wl_pointer *wl_pointer)
+WlPointerFrame(void *data, YMB struct wl_pointer *wl_pointer)
 {
        InternalState *pState = data;
        struct PointerEvent *event = &pState->pointerEvent;

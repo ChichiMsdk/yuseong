@@ -3,7 +3,7 @@
 
 #include "yvulkan.h"
 
-[[nodiscard]] VkResult vkFenceCreate(
+YND VkResult vkFenceCreate(
 		VkContext*							pCtx,
 		b8									bSignaled,
 		VulkanFence*						pOutFence);
@@ -12,12 +12,12 @@ void vkFenceDestroy(
 		VkContext*							pCtx,
 		VulkanFence*						pFence);
 
-[[nodiscard]] VkResult vkFenceWait(
+YND VkResult vkFenceWait(
 		VkContext*							pCtx,
 		VulkanFence*						pFence,
 		uint64_t timeoutNs);
 
-[[nodiscard]] VkResult vkFenceReset(
+YND VkResult vkFenceReset(
 		VkContext*							pCtx, 
 		VulkanFence*						pFence);
 

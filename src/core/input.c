@@ -192,7 +192,7 @@ InputWasButtonDown(Buttons button)
     return gState.mousePrevious.pButtons[button] == TRUE;
 }
 
-b8
+YND b8
 InputWasButtonUp(Buttons button) 
 {
     if (!gbInitialized) 
@@ -203,27 +203,27 @@ InputWasButtonUp(Buttons button)
 }
 
 void
-InputGetMousePosition(int32_t* x, int32_t* y) 
+InputGetMousePosition(int32_t* pX, int32_t* pY) 
 {
     if (!gbInitialized) 
 	{
-        *x = 0;
-        *y = 0;
+        *pX = 0;
+        *pY = 0;
         return;
     }
-    *x = gState.mouseCurrent.x;
-    *y = gState.mouseCurrent.y;
+    *pX = gState.mouseCurrent.x;
+    *pY = gState.mouseCurrent.y;
 }
 
 void
-InputGetPreviousMousePosition(int32_t* x, int32_t* y) 
+InputGetPreviousMousePosition(int32_t* pX, int32_t* pY) 
 {
     if (!gbInitialized) 
 	{
-        *x = 0;
-        *y = 0;
+        *pX = 0;
+        *pY = 0;
         return;
     }
-    *x = gState.mousePrevious.x;
-    *y = gState.mousePrevious.y;
+    *pX = gState.mousePrevious.x;
+    *pY = gState.mousePrevious.y;
 }

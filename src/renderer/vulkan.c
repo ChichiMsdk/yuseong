@@ -14,8 +14,8 @@
 
 static VkContext gVulkanContext;
 
-[[nodiscard]] VkResult VulkanCreateDevice(VkContext *pVulkanContext, char *pGPUName);
-[[nodiscard]] int32_t MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags);
+YND VkResult VulkanCreateDevice(VkContext *pVulkanContext, char *pGPUName);
+YND int32_t MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags);
 
 VKAPI_ATTR VkBool32 VKAPI_CALL 
 vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -71,7 +71,7 @@ RendererShutdown(OS_State *pState)
 	vkDestroyInstance(gVulkanContext.instance, gVulkanContext.pAllocator);
 }
 
-[[nodiscard]] VkResult
+YND VkResult
 RendererInit(OS_State *pState)
 {
 	char *pGPUName = "NVIDIA GeForce RTX 3080";
@@ -177,7 +177,7 @@ RendererInit(OS_State *pState)
 	return VK_SUCCESS;
 }
 
-[[nodiscard]] int32_t
+YND int32_t
 MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
