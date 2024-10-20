@@ -121,7 +121,7 @@ InputProcessMouseWheel(int8_t z_delta)
     EventFire(EVENT_CODE_MOUSE_WHEEL, 0, context);
 }
 
-b8
+YND b8
 InputIsKeyDown(Keys key) 
 {
     if (!gbInitialized) 
@@ -131,7 +131,7 @@ InputIsKeyDown(Keys key)
     return gState.keyboardCurrent.pKeys[key] == TRUE;
 }
 
-b8
+YND b8
 InputIsKeyUp(Keys key) 
 {
     if (!gbInitialized) 
@@ -141,7 +141,7 @@ InputIsKeyUp(Keys key)
     return gState.keyboardCurrent.pKeys[key] == FALSE;
 }
 
-b8
+YND b8
 InputWasKeyDown(Keys key) 
 {
     if (!gbInitialized) 
@@ -151,7 +151,7 @@ InputWasKeyDown(Keys key)
     return gState.keyboardPrevious.pKeys[key] == TRUE;
 }
 
-b8
+YND b8
 InputWasKeyUp(Keys key) 
 {
     if (!gbInitialized) 
@@ -162,7 +162,7 @@ InputWasKeyUp(Keys key)
 }
 
 // mouse input
-b8
+YND b8
 InputIsButtonDown(Buttons button) 
 {
     if (!gbInitialized) 
@@ -172,7 +172,7 @@ InputIsButtonDown(Buttons button)
     return gState.mouseCurrent.pButtons[button] == TRUE;
 }
 
-b8
+YND b8
 InputIsButtonUp(Buttons button) 
 {
     if (!gbInitialized) 
@@ -182,7 +182,7 @@ InputIsButtonUp(Buttons button)
     return gState.mouseCurrent.pButtons[button] == FALSE;
 }
 
-b8
+YND b8
 InputWasButtonDown(Buttons button) 
 {
     if (!gbInitialized) 

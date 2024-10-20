@@ -11,9 +11,10 @@ typedef struct OS_State
 }OS_State;
 
 #ifdef PLATFORM_WINDOWS
-#ifndef _WINDEF_
-	typedef unsigned long DWORD;
-#endif
+#	ifndef _WINDEF_
+		typedef unsigned long DWORD;
+#	endif
+
 	typedef DWORD REDIR;
 #	define VK_KHR_SURFACE_OS "VK_KHR_win32_surface"
 
@@ -21,10 +22,21 @@ typedef struct OS_State
 #	include <stdio.h>
 	typedef FILE* STDREDIR;
 	typedef int REDIR;
-#	define VK_KHR_SURFACE_OS "VK_KHR_waylad_surface"
-#endif
+
+#	ifdef COMP_WAYLAND
+#		define VK_KHR_SURFACE_OS "VK_KHR_waylad_surface"
+#	elif COMP_X11
+#		define VK_KHR_SURFACE_OS ""
+#	endif
+
+#endif // PLATFORM_WINDOWS
 
 extern b8 gRunning;
+
+void FramebufferGetDimensions(
+		OS_State*							pOsState,
+		uint32_t*							pWidth,
+		uint32_t*							pHeight);
 
 b8 OS_PumpMessages(
 		OS_State*							pState);

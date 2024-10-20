@@ -103,7 +103,7 @@ typedef struct VulkanRenderPass
 	f32 r, g, b, a;
 
 	f32 depth;
-	u32 stencil;
+	uint32_t stencil;
 
 	VkRenderPassState state;
 }VulkanRenderPass;
@@ -111,7 +111,7 @@ typedef struct VulkanRenderPass
 typedef struct VulkanFramebuffer
 {
 	VkFramebuffer handle;
-	u32 attachmentCount;
+	uint32_t attachmentCount;
 	VkImageView *pAttachments;
 	VulkanRenderPass *pRenderpass;
 }VulkanFramebuffer;
@@ -157,6 +157,8 @@ typedef struct VkContext
 	/* vulkan_device device; */
 	VulkanDevice device;
 	VulkanCommandBuffer *pGfxCommands;
+	uint32_t framebufferWidth;
+	uint32_t framebufferHeight;
 
 	VkSwapchain swapChain;
 	uint32_t currentFrame;

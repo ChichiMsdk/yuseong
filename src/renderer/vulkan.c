@@ -42,9 +42,8 @@ vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
 }
 
 void
-RendererShutdown(OS_State *pState)
+RendererShutdown(YMB OS_State *pState)
 {
-	(void)pState;
 	VkDevice device = gVulkanContext.device.logicalDev;
 	VulkanDevice myDevice = gVulkanContext.device;
 	VkContext *pCtx = &gVulkanContext;
@@ -72,15 +71,18 @@ RendererShutdown(OS_State *pState)
 }
 
 YND VkResult
-RendererInit(OS_State *pState)
+RendererInit(OS_State *pOsState)
 {
-	char *pGPUName = "NVIDIA GeForce RTX 3080";
-	uint32_t requiredValidationLayerCount = 0;
-	const char **ppRequiredValidationLayerNames = 0;
-	const char **ppRequired_extensions = darray_create(const char *);
+	char*			pGPUName = "NVIDIA GeForce RTX 3080";
+	const char**	ppRequiredValidationLayerNames = 0;
+	const char**	ppRequired_extensions = darray_create(const char *);
+	uint32_t		requiredValidationLayerCount = 0;
+    /* InternalState*	pState = (InternalState *)pOsState->pInternalState; */
+
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_EXTENSION_NAME);
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_OS);
 	gVulkanContext.MemoryFindIndex = MemoryFindIndex;
+	FramebufferGetDimensions(pOsState, &gVulkanContext.framebufferWidth, &gVulkanContext.framebufferHeight);
 
 #ifdef DEBUG
 		darray_push(ppRequired_extensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -137,7 +139,8 @@ RendererInit(OS_State *pState)
 		.ppEnabledExtensionNames = ppRequired_extensions
 	};
 	VK_CHECK(vkCreateInstance(&pCreateInfo, gVulkanContext.pAllocator, &gVulkanContext.instance));
-	VK_CHECK(OS_CreateVkSurface(pState, &gVulkanContext));
+	VK_CHECK(OS_CreateVkSurface(pOsState, &gVulkanContext));
+
 	YDEBUG("Vulkan surface created");
 
 #ifdef DEBUG
@@ -169,7 +172,8 @@ RendererInit(OS_State *pState)
 	darray_destroy(ppRequiredValidationLayerNames);
 	darray_destroy(ppRequired_extensions);
 
-	uint32_t width = 0, height = 0;
+	int32_t width = gVulkanContext.framebufferWidth;
+	int32_t height = gVulkanContext.framebufferHeight;
 	VK_CHECK(vkSwapchainCreate(&gVulkanContext, width, height, &gVulkanContext.swapChain));
 	VK_CHECK(vkCommandPoolCreate(&gVulkanContext));
 	VK_CHECK(vkCommandBufferCreate(&gVulkanContext));

@@ -145,27 +145,60 @@ typedef enum Keys
 }Keys;
 
 void InputInitialize(void);
+
 void InputShutdown(void);
-void InputUpdate(f64 deltaTime);
 
-// keyboard input
-b8 InputIsKeyDown(Keys key);
-b8 InputIsKeyUp(Keys key);
-b8 InputWasKeyDown(Keys key);
-b8 InputWasKeyUp(Keys key);
+void InputUpdate(
+		f64									deltaTime);
 
-void InputProcessKey(Keys key, b8 bPressed);
+/* Keyboard input */
+YND b8 InputIsKeyDown(
+		Keys								key);
 
-// mouse input
-b8 InputIsButtonDown(Buttons button);
-b8 InputIsButtonUp(Buttons button);
-b8 InputWasButtonDown(Buttons button);
-b8 InputWasButtonUp(Buttons button);
-void InputGetMousePosition(int32_t* pX, int32_t* pY);
-void InputGetPreviousMousePosition(int32_t* pX, int32_t* pY);
+YND b8 InputIsKeyUp(
+		Keys								key);
 
-void InputProcessButton(Buttons button, b8 bPressed);
-void InputProcessMouseMove(int16_t x, int16_t y);
-void InputProcessMouseWheel(int8_t zDelta);
+YND b8 InputWasKeyDown(
+		Keys								key);
+
+YND b8 InputWasKeyUp(
+		Keys								key);
+
+void InputProcessKey(
+		Keys								key,
+		b8									bPressed);
+
+/* Mouse input */
+
+YND b8 InputIsButtonDown(
+		Buttons								button);
+
+YND b8 InputIsButtonUp(
+		Buttons								button);
+
+YND b8 InputWasButtonDown(
+		Buttons								button);
+
+YND b8 InputWasButtonUp(
+		Buttons								button);
+
+void InputGetMousePosition(
+		int32_t*							pX,
+		int32_t*							pY);
+
+void InputGetPreviousMousePosition(
+		int32_t*							pX,
+		int32_t*							pY);
+
+void InputProcessButton(
+		Buttons								button,
+		b8									bPressed);
+
+void InputProcessMouseMove(
+		int16_t								x,
+		int16_t								y);
+
+void InputProcessMouseWheel(
+		int8_t								zDelta);
 
 #endif // INPUT_H

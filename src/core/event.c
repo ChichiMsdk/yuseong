@@ -122,8 +122,8 @@ EventFire(uint16_t code, void* pSender, EventContext context)
         return FALSE;
     }
 
-    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
-    for(uint64_t i = 0; i < registered_count; ++i) 
+    uint64_t registeredCount = darray_length(state.pRegistered[code].pEvents);
+    for(uint64_t i = 0; i < registeredCount; ++i) 
 	{
         RegisteredEvent e = state.pRegistered[code].pEvents[i];
         if(e.callback(code, pSender, e.pListener, context))

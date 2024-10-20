@@ -238,9 +238,8 @@ VulkanDeviceSelect(VkContext *pCtx)
 }
 
 YND VkResult
-VulkanCreateDevice(VkContext *pCtx, char *pGPUName)
+VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 {
-	(void)pGPUName;
 	VkResult errcode = 0;
 
 	VK_CHECK(VulkanDeviceSelect(pCtx));

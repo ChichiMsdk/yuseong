@@ -1,13 +1,14 @@
 #include "os.h"
+
 #ifdef YPLATFORM_WINDOWS
-#include "core/event.h"
-#include "core/input.h"
-#include "core/logger.h"
-#include "core/assert.h"
+#	include "core/event.h"
+#	include "core/input.h"
+#	include "core/logger.h"
+#	include "core/assert.h"
 
-#include <stdio.h>
+#	include <stdio.h>
 
-#include <sal.h>
+#	include <sal.h>
 
 #	define _CRT_SECURE_NO_WARNINGS
 #	define WIN32_LEAN_AND_MEAN
@@ -19,38 +20,40 @@
 #	include <vulkan/vulkan_win32.h>
 #	include <vulkan/vk_enum_string_helper.h>
 
-LRESULT CALLBACK Win32ProcessMessage(HWND hwnd, u32 msg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam);
 
 void ErrorExit(LPCTSTR lpszFunction, DWORD dw);
 void ErrorMsgBox(LPCTSTR lpszFunction, DWORD dw);
 
-typedef struct internal_state
+typedef struct InternalState
 {
 	HINSTANCE hInstance;
 	HWND hwnd;
 	VkSurfaceKHR surface;
+	uint32_t windowWidth;
+	uint32_t windowHeight;
 }InternalState;
 
 static f64 gClockFrequency;
 static LARGE_INTEGER gStartTime;
 
 YND b8 
-OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
+OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
 {
-	pState->pInternalState = calloc(1, sizeof(InternalState));
-	InternalState *state = (InternalState *)pState->pInternalState;
-	state->hInstance = GetModuleHandleA(0);
-	if (!state->hInstance) ErrorExit("state->hInstance", GetLastError());
+	pOsState->pInternalState = calloc(1, sizeof(InternalState));
+	InternalState *pState = (InternalState *)pOsState->pInternalState;
+	pState->hInstance = GetModuleHandleA(0);
+	if (!pState->hInstance) ErrorExit("state->hInstance", GetLastError());
 
     // Setup and register window class.
-	HICON icon = LoadIcon(state->hInstance, IDI_APPLICATION);
+	HICON icon = LoadIcon(pState->hInstance, IDI_APPLICATION);
 	WNDCLASSA wc = {0};
 	ZeroMemory(&wc, sizeof(WNDCLASSA));
 	wc.style = CS_DBLCLKS;  // Get double-clicks
 	wc.lpfnWndProc = Win32ProcessMessage;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = state->hInstance;
+	wc.hInstance = pState->hInstance;
 	wc.hIcon = icon;
 
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);  // NULL; // Manage the cursor manually
@@ -91,7 +94,7 @@ OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w,
     HWND handle = CreateWindowEx(
         windowExStyle, "chichi_window_class", pAppName,
         windowStyle, windowX, windowY, windowWidth, windowHeight,
-        0, 0, state->hInstance, 0);
+        0, 0, pState->hInstance, 0);
 
 	if (handle == 0)
 	{
@@ -99,15 +102,18 @@ OS_Init(OS_State *pState, const char *pAppName, int32_t x, int32_t y, int32_t w,
 		YFATAL("Window creation failed!");
 		return FALSE;
 	}
-	else state->hwnd = handle;
+	else pState->hwnd = handle;
+
+	pState->windowHeight = windowHeight;
+	pState->windowWidth = windowWidth;
 
     // Show the window
 	// TODO: if the window should not accept input, this should be false.
-    b32 should_activate = 1;  
-    int32_t show_window_command_flags = should_activate ? SW_SHOW : SW_SHOWNOACTIVATE;
+    b32 bShouldActivate = 1;  
+    int32_t showWindowCommandFlag = bShouldActivate ? SW_SHOW : SW_SHOWNOACTIVATE;
     // If initially minimized, use SW_MINIMIZE : SW_SHOWMINNOACTIVE;
     // If initially maximized, use SW_SHOWMAXIMIZED : SW_MAXIMIZE
-    ShowWindow(state->hwnd, show_window_command_flags);
+    ShowWindow(pState->hwnd, showWindowCommandFlag);
 
     // Clock setup
     LARGE_INTEGER frequency;
@@ -131,9 +137,8 @@ OS_Shutdown(OS_State *pState)
 }
 
 b8
-OS_PumpMessages(OS_State *pState) 
+OS_PumpMessages(YMB OS_State *pState) 
 {
-	(void)pState;
     MSG message;
     while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE)) 
 	{
@@ -193,15 +198,138 @@ OS_Write(const char *pMessage, DWORD redir)
 	SetConsoleMode(consoleHandle, dwMode);
 
 	OutputDebugString(pMessage); //DEBUG console output windows only
-	uint64_t length = strlen(pMessage);
+	size_t length = strlen(pMessage);
 	LPDWORD numberWritten = 0;
-	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), pMessage, (DWORD)length, numberWritten, 0);
+	WriteConsole(GetStdHandle(redir), pMessage, (DWORD)length, numberWritten, 0);
+}
+
+YND f64
+OS_GetAbsoluteTime(void)
+{
+    LARGE_INTEGER nowTime;
+    QueryPerformanceCounter(&nowTime);
+    return (f64)nowTime.QuadPart * gClockFrequency;
+}
+
+void
+OS_Sleep(uint64_t ms)
+{
+    Sleep(ms);
+}
+
+// Surface creation for Vulkan
+YND VkResult
+OS_CreateVkSurface(OS_State *pOsState, VkContext *pContext)
+{
+    InternalState *pState = (InternalState *)pOsState->pInternalState;
+
+    VkWin32SurfaceCreateInfoKHR createInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
+    createInfo.hinstance = pState->hInstance;
+    createInfo.hwnd = pState->hwnd;
+
+    VK_CHECK(vkCreateWin32SurfaceKHR(pContext->instance, &createInfo, pContext->pAllocator, &pState->surface));
+
+    pContext->surface = pState->surface;
+    return VK_SUCCESS;
+}
+
+void
+FramebufferGetDimensions(OS_State *pOsState, uint32_t* pWidth, uint32_t* pHeight)
+{
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
+	*pWidth = pState->windowWidth;
+	*pHeight = pState->windowHeight;
+}
+
+LRESULT CALLBACK
+Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) 
+	{
+        case WM_ERASEBKGND:
+            // Notify the OS that erasing will be handled by the application to prevent flicker.
+            return 1;
+        case WM_CLOSE:
+			EventContext data = {0};
+			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
+            return 0;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+        case WM_SIZE: {
+            // Get the updated size.
+            RECT r;
+            GetClientRect(hwnd, &r);
+            uint32_t width = r.right - r.left;
+            uint32_t height = r.bottom - r.top;
+           	// Fire the event. The application layer should pick this up, but not handle it
+            // as it shouldn be visible to other parts of the application.
+            EventContext context;
+            context.data.uint16_t[0] = (uint16_t)width;
+            context.data.uint16_t[1] = (uint16_t)height;
+            EventFire(EVENT_CODE_RESIZED, 0, context);
+        } break;
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+        case WM_KEYUP:
+        case WM_SYSKEYUP: {
+            // Key pressed/released
+            b8 bPressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
+            Keys key = (uint16_t)wParam;
+			InputProcessKey(key, bPressed);
+
+        } break;
+        case WM_MOUSEMOVE: {
+            // Mouse move
+            int32_t positionX = GET_X_LPARAM(lParam);
+            int32_t positionY = GET_Y_LPARAM(lParam);
+            InputProcessMouseMove(positionX, positionY);
+        } break;
+        case WM_MOUSEWHEEL: {
+            int32_t deltaZ = GET_WHEEL_DELTA_WPARAM(wParam);
+            if (deltaZ != 0) 
+			{
+                // Flatten the input to an OS-independent (-1, 1)
+                deltaZ = (deltaZ < 0) ? -1 : 1;
+				InputProcessMouseWheel(deltaZ);
+            }
+        } break;
+        case WM_LBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_LBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_RBUTTONUP: {
+            b8 bPressed = msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN;
+			Buttons mouseButton = BUTTON_MAX_BUTTONS;
+			switch(msg)
+			{
+				case WM_LBUTTONDOWN:
+				case WM_LBUTTONUP:
+					mouseButton = BUTTON_LEFT;
+					break;
+				case WM_MBUTTONDOWN:
+				case WM_MBUTTONUP:
+					mouseButton = BUTTON_MIDDLE;
+					break;
+				case WM_RBUTTONDOWN:
+				case WM_RBUTTONUP:
+					mouseButton = BUTTON_RIGHT;
+					break;
+			}
+			if (mouseButton != BUTTON_MAX_BUTTONS)
+			{
+				InputProcessButton(mouseButton, bPressed);
+			}
+        } break;
+    }
+
+    return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
 [[deprecated]] void
-OS_WriteOld(const char *pMessage, u8 colour) 
+OS_WriteOld(const char *pMessage, YMB uint8_t colour) 
 {
-	(void)colour;
 	// TODO: check error looks boring but important
 	HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE); 
 	DWORD dwMode = 0;
@@ -214,16 +342,15 @@ OS_WriteOld(const char *pMessage, u8 colour)
 	//    static u8 levels[6] = {BACKGROUND_RED, FOREGROUND_RED, FOREGROUND_GREEN | FOREGROUND_RED, FOREGROUND_GREEN,FOREGROUND_BLUE, FOREGROUND_INTENSITY};
 	//    SetConsoleTextAttribute(console_handle, levels[colour]); //check MSDN deprecated for powershell
 	OutputDebugStringA(pMessage); //DEBUG console output windows only
-	u64 length = strlen(pMessage);
+	uint64_t length = strlen(pMessage);
 	LPDWORD number_written = 0;
 	WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), pMessage, (DWORD)length, number_written, 0);
 	//    SetConsoleTextAttribute(console_handle, 0x0F); //resets the color
 }
 
 [[deprecated]] void
-OS_WriteError(const char *pMessage, u8 colour) 
+OS_WriteError(const char *pMessage, YMB uint8_t colour) 
 {
-	(void)colour;
 	//  TODO: check error looks boring but important
 	HANDLE console_handle = GetStdHandle(STD_ERROR_HANDLE);
 
@@ -236,127 +363,10 @@ OS_WriteError(const char *pMessage, u8 colour)
 	//    static u8 levels[6] = {BACKGROUND_RED, FOREGROUND_RED, FOREGROUND_GREEN | FOREGROUND_RED, FOREGROUND_GREEN,FOREGROUND_BLUE, FOREGROUND_INTENSITY};
 	//    SetConsoleTextAttribute(console_handle, levels[colour]);
 	OutputDebugStringA(pMessage);
-	u64 length = strlen(pMessage);
+	uint64_t length = strlen(pMessage);
 	LPDWORD number_written = 0;
 	WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), pMessage, (DWORD)length, number_written, 0);
 	//    SetConsoleTextAttribute(console_handle, 0x0F); //resets the color
-}
-
-YND f64
-OS_GetAbsoluteTime(void)
-{
-    LARGE_INTEGER now_time;
-    QueryPerformanceCounter(&now_time);
-    return (f64)now_time.QuadPart * gClockFrequency;
-}
-
-void
-OS_Sleep(uint64_t ms)
-{
-    Sleep(ms);
-}
-
-// Surface creation for Vulkan
-YND VkResult
-OS_CreateVkSurface(OS_State *pState, VkContext *pContext)
-{
-    // Simply cold-cast to the known type.
-    InternalState *state = (InternalState *)pState->pInternalState;
-
-    VkWin32SurfaceCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
-    create_info.hinstance = state->hInstance;
-    create_info.hwnd = state->hwnd;
-
-    VK_CHECK(vkCreateWin32SurfaceKHR(pContext->instance, &create_info, pContext->pAllocator, &state->surface));
-
-    pContext->surface = state->surface;
-    return VK_SUCCESS;
-}
-
-LRESULT CALLBACK
-Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
-{
-    switch (msg) 
-	{
-        case WM_ERASEBKGND:
-            // Notify the OS that erasing will be handled by the application to prevent flicker.
-            return 1;
-        case WM_CLOSE:
-			EventContext data = {};
-			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
-            return 0;
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            return 0;
-        case WM_SIZE: {
-            // Get the updated size.
-            RECT r;
-            GetClientRect(hwnd, &r);
-            u32 width = r.right - r.left;
-            u32 height = r.bottom - r.top;
-           	// Fire the event. The application layer should pick this up, but not handle it
-            // as it shouldn be visible to other parts of the application.
-            EventContext context;
-            context.data.uint16_t[0] = (u16)width;
-            context.data.uint16_t[1] = (u16)height;
-            EventFire(EVENT_CODE_RESIZED, 0, context);
-        } break;
-        case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
-        case WM_KEYUP:
-        case WM_SYSKEYUP: {
-            // Key pressed/released
-            b8 pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
-            Keys key = (u16)wParam;
-			InputProcessKey(key, pressed);
-
-        } break;
-        case WM_MOUSEMOVE: {
-            // Mouse move
-            int32_t x_position = GET_X_LPARAM(lParam);
-            int32_t y_position = GET_Y_LPARAM(lParam);
-            InputProcessMouseMove(x_position, y_position);
-        } break;
-        case WM_MOUSEWHEEL: {
-            int32_t z_delta = GET_WHEEL_DELTA_WPARAM(wParam);
-            if (z_delta != 0) 
-			{
-                // Flatten the input to an OS-independent (-1, 1)
-                z_delta = (z_delta < 0) ? -1 : 1;
-				InputProcessMouseWheel(z_delta);
-            }
-        } break;
-        case WM_LBUTTONDOWN:
-        case WM_MBUTTONDOWN:
-        case WM_RBUTTONDOWN:
-        case WM_LBUTTONUP:
-        case WM_MBUTTONUP:
-        case WM_RBUTTONUP: {
-            b8 pressed = msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN;
-			Buttons mouse_button = BUTTON_MAX_BUTTONS;
-			switch(msg)
-			{
-				case WM_LBUTTONDOWN:
-				case WM_LBUTTONUP:
-					mouse_button = BUTTON_LEFT;
-					break;
-				case WM_MBUTTONDOWN:
-				case WM_MBUTTONUP:
-					mouse_button = BUTTON_MIDDLE;
-					break;
-				case WM_RBUTTONDOWN:
-				case WM_RBUTTONUP:
-					mouse_button = BUTTON_RIGHT;
-					break;
-			}
-			if (mouse_button != BUTTON_MAX_BUTTONS)
-			{
-				InputProcessButton(mouse_button, pressed);
-			}
-        } break;
-    }
-
-    return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
 #endif // YPLATFORM_WINDOWS
