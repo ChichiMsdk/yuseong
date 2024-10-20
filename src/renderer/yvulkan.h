@@ -205,6 +205,7 @@ typedef struct VkContext
 	b8 bRecreatingSwapchain;
 
 	int32_t (*MemoryFindIndex)(uint32_t typeFilter, uint32_t propertyFlags);
+	uint64_t nbFrames;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT debugMessenger;

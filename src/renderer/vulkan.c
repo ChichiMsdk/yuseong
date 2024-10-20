@@ -317,7 +317,8 @@ yDraw(void)
 	VkImage img = gVkCtx.swapchain.pImages[gVkCtx.imageIndex];
 	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	f32 flash = fabs(sin(gVkCtx.currentFrame / 120.0f));
+	f32 flashSpeed = 960.0f;
+	f32 flash = fabs(sin(gVkCtx.nbFrames / flashSpeed));
 	VkClearColorValue clearValue = {.float32 = {0.0f, 0.0f, flash, 1.0f}};
 
 	VkImageSubresourceRange clearRange = {
