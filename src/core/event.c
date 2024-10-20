@@ -46,7 +46,7 @@ EventShutdown(void)
 }
 
 b8
-EventRegister(uint16_t code, void* pListener, PFN_OnEvent on_event)
+EventRegister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
 {
     if(bInitialized == FALSE)
 	{
@@ -70,14 +70,14 @@ EventRegister(uint16_t code, void* pListener, PFN_OnEvent on_event)
     // If at this point, no duplicate was found. Proceed with registration.
     RegisteredEvent event;
     event.pListener = pListener;
-    event.callback = on_event;
+    event.callback = onEvent;
     darray_push(state.pRegistered[code].pEvents, event);
 
     return TRUE;
 }
 
 b8 
-EventUnregister(uint16_t code, void* pListener, PFN_OnEvent on_event)
+EventUnregister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
 {
     if(bInitialized == FALSE)
 	{
@@ -91,11 +91,11 @@ EventUnregister(uint16_t code, void* pListener, PFN_OnEvent on_event)
         return FALSE;
     }
 
-    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
-    for(uint64_t i = 0; i < registered_count; ++i)
+    uint64_t registeredCount = darray_length(state.pRegistered[code].pEvents);
+    for(uint64_t i = 0; i < registeredCount; ++i)
 	{
         RegisteredEvent e = state.pRegistered[code].pEvents[i];
-        if(e.pListener == pListener && e.callback == on_event)
+        if(e.pListener == pListener && e.callback == onEvent)
 		{
             // Found one, remove it
             RegisteredEvent popped_event;

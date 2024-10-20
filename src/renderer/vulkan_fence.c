@@ -32,7 +32,7 @@ vkFenceWait(VkContext *pCtx, VulkanFence *pFence, uint64_t timeoutNs)
 	VkResult res = VK_SUCCESS;
 	if (!pFence->bSignaled) 
 	{
-		res = vkWaitForFences( pCtx->device.logicalDev, 1, &pFence->handle, TRUE, timeoutNs);
+		res = vkWaitForFences(pCtx->device.logicalDev, 1, &pFence->handle, TRUE, timeoutNs);
 		switch (res) 
 		{
 			case VK_SUCCESS: pFence->bSignaled = TRUE; return res;

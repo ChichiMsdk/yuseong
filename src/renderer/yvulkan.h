@@ -145,7 +145,6 @@ typedef enum VulkanCommandBufferState
 typedef struct VulkanCommandBuffer 
 {
 	VkCommandBuffer handle;
-
 	VkCommandBufferState state;
 } VulkanCommandBuffer;
 
@@ -154,7 +153,6 @@ typedef struct VkContext
 	VkInstance instance;
 	VkAllocationCallbacks *pAllocator;
 	VkSurfaceKHR surface;
-	/* vulkan_device device; */
 	VulkanDevice device;
 	VulkanCommandBuffer *pGfxCommands;
 	uint32_t framebufferWidth;
@@ -171,7 +169,7 @@ typedef struct VkContext
 YND VkResult RendererInit(
 		OS_State*							pState);
 
-void	RendererShutdown(
+void RendererShutdown(
 		OS_State*							pState);
 
 YND VkResult vkCommandPoolCreate(

@@ -37,7 +37,7 @@ static struct MemoryStats gStats;
 /**
   * Returns zero'ed allocated buffer
   */
-void *
+YND void *
 yAlloc(uint64_t size, MemoryTags tag)
 {
 	if (tag == MEMORY_TAG_UNKNOWN)

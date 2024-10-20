@@ -90,6 +90,10 @@ vkCommandBufferFree(VkContext *pCtx, VulkanCommandBuffer *pCommandBuffers, VkCom
 	for (uint32_t i = 0; i < poolCount; i++)
 		vkFreeCommandBuffers(device, *pPool, 1, &pCommandBuffers[i].handle);
 
+    /*
+	 * NOTE: This here feels redundant 
+	 * if NULL then assume COMMAND_BUFFER_STATE_NOT_ALLOCATED
+     */
 	pCommandBuffers->handle = VK_NULL_HANDLE;
 	pCommandBuffers->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 	return VK_SUCCESS;
