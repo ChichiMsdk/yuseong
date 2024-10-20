@@ -104,8 +104,8 @@ OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t 
 	}
 	else pState->hwnd = handle;
 
-	pState->windowHeight = windowHeight;
-	pState->windowWidth = windowWidth;
+	pState->windowHeight = clientHeight;
+	pState->windowWidth = clientWidth;
 
     // Show the window
 	// TODO: if the window should not accept input, this should be false.

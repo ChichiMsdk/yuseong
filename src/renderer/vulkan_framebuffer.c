@@ -2,7 +2,7 @@
 #include "core/ymemory.h"
 
 void
-vkFrameBufferCreate(VkContext* pCtx, VulkanRenderPass* pRenderpass, uint32_t width, uint32_t height, 
+vkFramebufferCreate(VkContext* pCtx, VulkanRenderPass* pRenderpass, uint32_t width, uint32_t height, 
 		uint32_t attachmentCount, VkImageView* pAttachments, VulkanFramebuffer* pOutFramebuffer) 
 {
     // Take a copy of the attachments, renderpass and attachment count
@@ -35,7 +35,8 @@ void
 vkFramebufferDestroy(VkContext* pCtx, VulkanFramebuffer* pFramebuffer) 
 {
     vkDestroyFramebuffer(pCtx->device.logicalDev, pFramebuffer->handle, pCtx->pAllocator);
-    if (pFramebuffer->pAttachments) {
+    if (pFramebuffer->pAttachments) 
+	{
         yFree(pFramebuffer->pAttachments, sizeof(VkImageView) * pFramebuffer->attachmentCount, MEMORY_TAG_RENDERER);
         pFramebuffer->pAttachments = 0;
     }

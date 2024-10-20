@@ -71,6 +71,19 @@ RendererShutdown(YMB OS_State *pState)
 	vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
 	vkDestroySurfaceKHR(gVkCtx.instance, gVkCtx.surface, gVkCtx.pAllocator);
 
+	for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
+	{
+		vkFramebufferDestroy(&gVkCtx, &gVkCtx.swapchain.pFramebuffers[i]);
+	}
+
+	vkRenderPassDestroy(&gVkCtx, &gVkCtx.mainRenderpass); 
+	for (uint8_t i = 0; i < gVkCtx.swapchain.maxFrameInFlight; i++)
+	{
+		vkDestroySemaphore(device, gVkCtx.pSemaphoresAvailableImage[i], gVkCtx.pAllocator);
+		vkDestroySemaphore(device, gVkCtx.pSemaphoresQueueComplete[i], gVkCtx.pAllocator);
+
+		vkFenceDestroy(&gVkCtx, &gVkCtx.pFencesInFlight[i]);
+	}
 	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
 	vkDestroyInstance(gVkCtx.instance, gVkCtx.pAllocator);
 }
@@ -86,7 +99,7 @@ FramebuffersRegenerate(VkSwapchain *pSwapchain, VulkanRenderPass *pRenderpass)
 		 */
 		uint32_t attachmentCount = 2;
 		VkImageView pAttachments[] = { pSwapchain->pViews[i], pSwapchain->depthAttachment.view };
-		vkFrameBufferCreate(
+		vkFramebufferCreate(
 				&gVkCtx,
 				pRenderpass,
 				gVkCtx.framebufferWidth,
@@ -236,7 +249,7 @@ RendererInit(OS_State *pOsState)
 		.w = gVkCtx.framebufferWidth,
 		.h = gVkCtx.framebufferHeight,
 	};
-	f32 depth = 0; f32 stencil = 0;
+	f32 depth = 0.0f; f32 stencil = 0.0f;
 
 	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
 	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);

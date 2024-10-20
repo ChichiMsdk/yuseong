@@ -3,7 +3,7 @@
 
 #include "yvulkan.h"
 
-void vkFrameBufferCreate(
+void vkFramebufferCreate(
 		VkContext*							pCtx, 
 		VulkanRenderPass*					pRenderpass,
 		uint32_t							width,
