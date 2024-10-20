@@ -1,11 +1,15 @@
+#include "os.h"
+
 #include "yvulkan.h"
+#include "vulkan_renderpass.h"
+#include "vulkan_framebuffer.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_command.h"
+
 #include "core/darray.h"
 #include "core/logger.h"
 #include "core/assert.h"
 #include "core/ymemory.h"
-#include "os.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +72,28 @@ RendererShutdown(YMB OS_State *pState)
 
 	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
 	vkDestroyInstance(gVkCtx.instance, gVkCtx.pAllocator);
+}
+
+void
+FramebuffersRegenerate(VkSwapchain *pSwapchain, VulkanRenderPass *pRenderpass)
+{
+	for (uint32_t i = 0; i < pSwapchain->imageCount; i++)
+	{
+		/*
+		 * TODO: make this dynamic and based on the currently configured attachments 
+		 * if using manual Renderpasses
+		 */
+		uint32_t attachmentCount = 2;
+		VkImageView pAttachments[] = { pSwapchain->pViews[i], pSwapchain->depthAttachment.view };
+		vkFrameBufferCreate(
+				&gVkCtx,
+				pRenderpass,
+				gVkCtx.framebufferWidth,
+				gVkCtx.framebufferHeight,
+				attachmentCount,
+				pAttachments,
+				&gVkCtx.swapChain.pFramebuffers[i]);
+	}
 }
 
 YND VkResult
@@ -177,7 +203,22 @@ RendererInit(OS_State *pOsState)
 	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
 	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
 
+	ColorFloat color = {
+		.r = 30.0f,
+		.g = 30.0f,
+		.b = 200.0f,
+		.a = 1.0f,
+	};
+	RectFloat rect = {
+		.x = 0.0f, .y = 0.0f,
+		.w = gVkCtx.framebufferWidth,
+		.h = gVkCtx.framebufferHeight,
+	};
+	f32 depth = 0; f32 stencil = 0;
+
+	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
 	gVkCtx.swapChain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapChain.imageCount);
+	FramebuffersRegenerate(&gVkCtx.swapChain, &gVkCtx.mainRenderpass);
 
 	return VK_SUCCESS;
 }

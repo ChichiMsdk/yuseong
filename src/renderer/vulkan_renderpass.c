@@ -7,9 +7,8 @@
  * NOTE: In vulkan 1.3 dynamic rendering allows not to deal with this boilerplate
  * needs more information and benchmarks to see if there are any differences
  */
-
 void 
-vkRenderPassCreate(VkContext* pCtx, VulkanRenderPass* pOutRenderPass, struct fColor color, struct fRect rect, 
+vkRenderPassCreate(VkContext* pCtx, VulkanRenderPass* pOutRenderPass, struct ColorFloat color, struct RectFloat rect, 
 		f32 depth, uint32_t stencil) 
 {
     pOutRenderPass->x = rect.x; pOutRenderPass->y = rect.y;

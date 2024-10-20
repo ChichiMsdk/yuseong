@@ -34,6 +34,12 @@ static const char *MemoryTagStrings[MEMORY_TAG_MAX_TAGS] = {
 
 static struct MemoryStats gStats;
 
+void*
+yZeroMemory(void *pBlock, uint64_t size)
+{
+	return memset(pBlock, 0, size);
+}
+
 /**
   * Returns zero'ed allocated buffer
   */

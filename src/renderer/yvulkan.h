@@ -20,6 +20,17 @@ typedef struct OS_State OS_State;
 		} \
 	} while (0)
 
+typedef struct ColorFloat
+{
+	f32 r; f32 g; f32 b; f32 a;
+}ColorFloat;
+
+typedef struct RectFloat
+{
+	f32 x; f32 y;
+	f32 w; f32 h;
+}RectFloat;
+
 typedef struct VkPhysicalDeviceRequirements
 {
 	b8 bGraphics;
@@ -157,6 +168,7 @@ typedef struct VkContext
 	VulkanCommandBuffer *pGfxCommands;
 	uint32_t framebufferWidth;
 	uint32_t framebufferHeight;
+	VulkanRenderPass mainRenderpass;
 
 	VkSwapchain swapChain;
 	uint32_t currentFrame;
