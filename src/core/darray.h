@@ -92,7 +92,7 @@ YND void* _DarrayInsertAt(void* pArray, uint64_t index, void* pValue);
 #define DarrayPush(array, value)           \
     {                                       \
         typeof(value) temp = value;         \
-        array = _darray_push(array, &temp); \
+        array = _DarrayPush(array, &temp); \
     }
 
 #define DarrayPop(array, value_ptr) \

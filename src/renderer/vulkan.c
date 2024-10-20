@@ -122,20 +122,23 @@ RendererInit(OS_State *pOsState)
 {
 	char*			pGPUName = "NVIDIA GeForce RTX 3080";
 	const char**	ppRequiredValidationLayerNames = 0;
-	const char**	ppRequired_extensions = darray_create(const char *);
+	const char**	ppRequiredExtensions = darray_create(const char *);
 	uint32_t		requiredValidationLayerCount = 0;
+	uint32_t		requiredExtensionCount = 0;
 
-	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_EXTENSION_NAME);
-	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_OS);
+	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_EXTENSION_NAME);
+	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
+	/* DarrayPush(ppRequiredExtensions, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
+
 	gVkCtx.MemoryFindIndex = MemoryFindIndex;
 	FramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
 
 #ifdef DEBUG
-		darray_push(ppRequired_extensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		darray_push(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		YDEBUG("Required extensions:");
-		uint32_t length = darray_length(ppRequired_extensions);
+		uint32_t length = darray_length(ppRequiredExtensions);
 		for (uint32_t i = 0; i < length; ++i)
-			YDEBUG(ppRequired_extensions[i]);
+			YDEBUG(ppRequiredExtensions[i]);
 
 		// The list of validation layers required.
 		YINFO("Validation layers enabled. Enumerating...");
@@ -162,8 +165,31 @@ RendererInit(OS_State *pOsState)
 			}
 			if (!bFound) { YFATAL("Required validation layer is missing: %s", ppRequiredValidationLayerNames[i]); exit(1); }
 		}
-		YINFO("All required layers are present.");
+		YINFO("All required validation layers are present.");
 #endif // DEBUG
+
+	requiredExtensionCount = darray_length(ppRequiredExtensions);
+    /*
+	 * uint32_t availableExtensionCount = 0;
+	 * VK_CHECK(vkEnumerateInstanceExtensionProperties(NULL, &availableExtensionCount, NULL));
+	 * VkExtensionProperties* pAvailableExtensions = darray_reserve(VkExtensionProperties, availableExtensionCount);
+	 * 
+	 * VK_CHECK(vkEnumerateInstanceExtensionProperties(NULL, &availableExtensionCount, pAvailableExtensions));
+	 * //  Verify all required extensions are available.
+	 * for (uint32_t i = 0; i < requiredExtensionCount; ++i)
+	 * {
+	 * 	YINFO("Searching for extension: %s...", ppRequiredExtensions[i]);
+	 * 	b8 bFound = FALSE;
+	 * 	for (uint32_t j = 0; j < availableExtensionCount; ++j)
+	 * 	{
+	 * 		YINFO("Extension: %s", pAvailableExtensions[j].extensionName);
+	 * 		if (!strcmp(ppRequiredExtensions[i], pAvailableExtensions[j].extensionName))
+	 * 		{ bFound = TRUE; YINFO("Found."); break; }
+	 * 	}
+	 * 	if (!bFound) { YFATAL("Required extension is missing: %s", ppRequiredExtensions[i]); exit(1); }
+	 * }
+	 * YINFO("All required extensions are present.");
+     */
 
 	VkApplicationInfo pAppInfo = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -181,10 +207,11 @@ RendererInit(OS_State *pOsState)
 		.pApplicationInfo = &pAppInfo,
 		.enabledLayerCount = requiredValidationLayerCount,
 		.ppEnabledLayerNames = ppRequiredValidationLayerNames,
-		.enabledExtensionCount = darray_length(ppRequired_extensions),
-		.ppEnabledExtensionNames = ppRequired_extensions
+		/* .enabledExtensionCount = darray_length(ppRequired_extensions), */
+		.enabledExtensionCount = requiredExtensionCount,
+		.ppEnabledExtensionNames = ppRequiredExtensions
 	};
-	VK_CHECK(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
+	VK_ASSERT(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
 	VK_CHECK(OS_CreateVkSurface(pOsState, &gVkCtx));
 
 	YDEBUG("Vulkan surface created");
@@ -255,7 +282,7 @@ RendererInit(OS_State *pOsState)
         gVkCtx.ppImagesInFlight[i] = 0;
     }
 	DarrayDestroy(ppRequiredValidationLayerNames);
-	DarrayDestroy(ppRequired_extensions);
+	DarrayDestroy(ppRequiredExtensions);
 	YINFO("Vulkan renderer initaliized.");
 	return VK_SUCCESS;
 }
@@ -304,7 +331,7 @@ yDraw(void)
 	vkCmdClearColorImage(pCmd->handle, img, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 
 	/* NOTE: make the swapchain image into presentable mode */
-	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	/* NOTE: VK_IMAGE_LAYOUT_GENERAL is the image layout you want to use if you want to write a image from a
 	 * compute shader. If you want a read-only image or a image to be used with rasterization commands, 
@@ -353,6 +380,13 @@ yDraw(void)
 				gVkCtx.pFencesInFlight[gVkCtx.currentFrame].handle));
 
 	pCmd->state = COMMAND_BUFFER_STATE_SUBMITTED;
+	VK_CHECK(vkSwapchainPresent(
+				&gVkCtx,
+				&gVkCtx.swapchain,
+				gVkCtx.device.graphicsQueue,
+				gVkCtx.device.presentQueue,
+				gVkCtx.pSemaphoresQueueComplete[gVkCtx.currentFrame],
+				gVkCtx.imageIndex));
 
 	return VK_SUCCESS;
 }

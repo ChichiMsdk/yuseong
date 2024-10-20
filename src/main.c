@@ -10,6 +10,8 @@
 #include "renderer/yvulkan.h"
 #include <vulkan/vk_enum_string_helper.h>
 
+YND VkResult yDraw(void);
+
 b8 gRunning = TRUE;
 
 b8 _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
@@ -40,6 +42,7 @@ main(void)
 	{
 		OS_PumpMessages(&state);
 		InputUpdate(1);
+		VK_ASSERT(yDraw());
 	}
 
 	RendererShutdown(&state);

@@ -220,7 +220,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     swapchainCreateInfo.imageColorSpace = pSwapchain->imageFormat.colorSpace;
     swapchainCreateInfo.imageExtent = swapchainExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
-	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	// Setup the queue family indices
 	if (pContext->device.graphicsQueueIndex != pContext->device.presentQueueIndex)

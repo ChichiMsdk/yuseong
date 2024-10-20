@@ -122,6 +122,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 					{
                         if (!strcmp(pRequirements->ppDeviceExtensionNames[i], pAvailableExtensions[j].extensionName))
 						{
+							YINFO("Extension: %s", pAvailableExtensions[j]);
                             found = TRUE;
                             break;
                         }
@@ -181,6 +182,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 			.ppDeviceExtensionNames = darray_create(const char *)
 		};
 		darray_push(requirements.ppDeviceExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		darray_push(requirements.ppDeviceExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
 		VkPhysicalDeviceQueueFamilyInfo queueInfo = {0};
 		b8 bResult = PhysicalDeviceMeetsRequirements(pVkDevicess[i], pCtx->surface, &properties, &features,
@@ -279,22 +281,40 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		f32 queue_priority = 1.0f;
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
+	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+		.synchronization2 = VK_TRUE,
+		.pNext = NULL,
+	};
+
 	/* TODO: shoud be config driven */
 	VkPhysicalDeviceFeatures enabledFeatures = {
 		.samplerAnisotropy = VK_TRUE,
 	};
-	const char *pExtensionNames = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+	YMB VkPhysicalDeviceFeatures2 enabledFeatures2 = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+		.features = enabledFeatures,
+		.pNext = &physicalDeviceSynch2Features,
+	};
+
+	const char **ppExtensionNames = DarrayCreate(const char *);
+	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+	YMB uint32_t extensionCount = DarrayLength(ppExtensionNames);
+
 	VkDeviceCreateInfo deviceCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		.queueCreateInfoCount = queueCreateInfoCount,
 		.pQueueCreateInfos = pQueueCreateInfos,
-		.pEnabledFeatures = &enabledFeatures,
-		.enabledExtensionCount = 1,
-		.ppEnabledExtensionNames = &pExtensionNames,
+		/* .pEnabledFeatures = &enabledFeatures, */
+		.enabledExtensionCount = extensionCount,
+		.ppEnabledExtensionNames = ppExtensionNames,
+		/* .pNext = VK_NULL_HANDLE, */
+		.pNext = &enabledFeatures2,
 	};
-	errcode = vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo,
-			pCtx->pAllocator, &pCtx->device.logicalDev);
-	if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); return errcode; }
+
+	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, &pCtx->device.logicalDev));
 	YINFO("Logical device created.");
 	vkGetDeviceQueue(pCtx->device.logicalDev, 
 			pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
@@ -305,6 +325,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	vkGetDeviceQueue(pCtx->device.logicalDev, 
 			pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
 
+	/* DarrayDestroy(ppExtensionNames); */
 	YINFO("Queues obtained.");
 	return errcode;
 }
