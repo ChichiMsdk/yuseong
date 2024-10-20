@@ -161,7 +161,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 {
 	VkResult errcode = 0;
     VkExtent2D swapchainExtent = {width, height};
-    pSwapchain->bMaxFrameInFlight = 2;
+    pSwapchain->maxFrameInFlight = 2;
 
     // Choose a swap surface format.
     b8 bFound = FALSE;

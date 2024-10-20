@@ -5,6 +5,7 @@
 #include "vulkan_framebuffer.h"
 #include "vulkan_swapchain.h"
 #include "vulkan_command.h"
+#include "vulkan_fence.h"
 
 #include "core/darray.h"
 #include "core/logger.h"
@@ -60,14 +61,14 @@ RendererShutdown(YMB OS_State *pState)
 		func(gVkCtx.instance, gVkCtx.debugMessenger, gVkCtx.pAllocator);
 #endif // DEBUG
 
-	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapChain.imageCount));
+	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
 
-	vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapChain.depthAttachment);
-	for (uint32_t i = 0; i < gVkCtx.swapChain.imageCount; i++)
-		vkDestroyImageView(device, gVkCtx.swapChain.pViews[i], gVkCtx.pAllocator);
+	vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
+	for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
+		vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
 
-	vkDestroySwapchainKHR(device, gVkCtx.swapChain.handle, gVkCtx.pAllocator);
+	vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
 	vkDestroySurfaceKHR(gVkCtx.instance, gVkCtx.surface, gVkCtx.pAllocator);
 
 	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
@@ -92,8 +93,32 @@ FramebuffersRegenerate(VkSwapchain *pSwapchain, VulkanRenderPass *pRenderpass)
 				gVkCtx.framebufferHeight,
 				attachmentCount,
 				pAttachments,
-				&gVkCtx.swapChain.pFramebuffers[i]);
+				&gVkCtx.swapchain.pFramebuffers[i]);
 	}
+}
+
+static inline void
+SyncInit(void)
+{
+    /*
+	 * NOTE: one fence to control when the gpu has finished rendering the frame,
+	 * and 2 semaphores to synchronize rendering with swapchain
+	 * we want the fence to start signalled so we can wait on it on the first frame
+	 * This will prevent the application from waiting indefinitely for the first frame to render since it
+	 * cannot be rendered until a frame is "rendered" before it.
+     */
+
+	VkDevice device = gVkCtx.device.logicalDev;
+	for (uint8_t i = 0; i < gVkCtx.swapchain.maxFrameInFlight; i++)
+	{
+		VkSemaphoreCreateInfo semaphoreCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+		vkCreateSemaphore(device, &semaphoreCreateInfo, gVkCtx.pAllocator, &gVkCtx.pSemaphoresAvailableImage[i]);
+		vkCreateSemaphore(device, &semaphoreCreateInfo, gVkCtx.pAllocator, &gVkCtx.pSemaphoresQueueComplete[i]);
+
+		/* NOTE: Assuming that the app CANNOT run without fences therefore we abort() in case of failure */
+		VK_ASSERT(vkFenceCreate(&gVkCtx, TRUE, &gVkCtx.pFencesInFlight[i]));
+	}
+
 }
 
 YND VkResult
@@ -194,12 +219,9 @@ RendererInit(OS_State *pOsState)
 
 	VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName));
 
-	darray_destroy(ppRequiredValidationLayerNames);
-	darray_destroy(ppRequired_extensions);
-
 	int32_t width = gVkCtx.framebufferWidth;
 	int32_t height = gVkCtx.framebufferHeight;
-	VK_CHECK(vkSwapchainCreate(&gVkCtx, width, height, &gVkCtx.swapChain));
+	VK_CHECK(vkSwapchainCreate(&gVkCtx, width, height, &gVkCtx.swapchain));
 	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
 	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
 
@@ -217,9 +239,30 @@ RendererInit(OS_State *pOsState)
 	f32 depth = 0; f32 stencil = 0;
 
 	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
-	gVkCtx.swapChain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapChain.imageCount);
-	FramebuffersRegenerate(&gVkCtx.swapChain, &gVkCtx.mainRenderpass);
+	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
+	FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
 
+	gVkCtx.pSemaphoresAvailableImage = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
+	gVkCtx.pSemaphoresQueueComplete = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
+	gVkCtx.pFencesInFlight = DarrayReserve(VulkanFence, gVkCtx.swapchain.maxFrameInFlight);
+
+	/* NOTE: Init semaphore and fences */
+	SyncInit();
+
+	/*
+	 * NOTE: In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
+	 * because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
+	 * by this list.
+	 */
+    gVkCtx.ppImagesInFlight = DarrayReserve(VulkanFence, gVkCtx.swapchain.imageCount);
+    for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; ++i) 
+	{
+        gVkCtx.ppImagesInFlight[i] = 0;
+    }
+
+	DarrayDestroy(ppRequiredValidationLayerNames);
+	DarrayDestroy(ppRequired_extensions);
+	YINFO("Vulkan renderer initaliized.");
 	return VK_SUCCESS;
 }
 
@@ -243,11 +286,9 @@ MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags)
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL 
-vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, YMB void *pUserData)
 {
-	(void) messageTypes;
-	(void) pUserData;
 	switch (messageSeverity)
 	{
 		default:

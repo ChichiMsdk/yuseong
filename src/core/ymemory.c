@@ -51,6 +51,7 @@ yAlloc(uint64_t size, MemoryTags tag)
 	gStats.totalAllocated += size;
 	gStats.pTaggedAllocations[tag] += size;
 	void *pBlock = malloc(size);
+	KASSERT_MSG(pBlock, "OUT OF MEMORY");
 	memset(pBlock, 0, size);
 	return pBlock;
 }

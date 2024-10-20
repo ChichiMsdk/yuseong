@@ -87,7 +87,7 @@ YND void* _DarrayInsertAt(void* pArray, uint64_t index, void* pValue);
 #define DarrayReserve(type, capacity) \
     _DarrayCreate(capacity, sizeof(type))
 
-#define DarrayDestroy(array) _darray_destroy(array);
+#define DarrayDestroy(array) _DarrayDestroy(array);
 
 #define DarrayPush(array, value)           \
     {                                       \

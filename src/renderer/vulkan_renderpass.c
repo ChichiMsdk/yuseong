@@ -33,7 +33,7 @@ vkRenderPassCreate(VkContext* pCtx, VulkanRenderPass* pOutRenderPass, struct Col
 
     // Color attachment
     VkAttachmentDescription colorAttachment = {
-		.format = pCtx->swapChain.imageFormat.format, // TODO: configurable
+		.format = pCtx->swapchain.imageFormat.format, // TODO: configurable
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,

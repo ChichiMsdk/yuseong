@@ -130,7 +130,7 @@ typedef struct VulkanFramebuffer
 typedef struct VkSwapchain
 {
 	VkSurfaceFormatKHR imageFormat;
-	u8 bMaxFrameInFlight;
+	u8 maxFrameInFlight;
 	VkSwapchainKHR handle;
 	uint32_t imageCount;
 	VkImage* pImages;
@@ -165,17 +165,42 @@ typedef struct VkContext
 	VkAllocationCallbacks *pAllocator;
 	VkSurfaceKHR surface;
 	VulkanDevice device;
+
 	VulkanCommandBuffer *pGfxCommands;
 	uint32_t framebufferWidth;
 	uint32_t framebufferHeight;
+	/*
+	 * NOTE: Current framebuffer size gen. If it does not match framebufferSizeLastGeneration
+	 * new one should be generated.
+	 */
+    uint64_t framebufferSizeGeneration;
+	/*
+	 * NOTE: Framebuffer gen when it was last created.
+	 * Set to framebufferSizeGeneration when updated.
+	 */
+    uint64_t framebufferSizeLastGeneration;
 	VulkanRenderPass mainRenderpass;
 
-	VkSwapchain swapChain;
+	// NOTE: Darrays
+	VkSemaphore *pSemaphoresAvailableImage;
+	VkSemaphore *pSemaphoresQueueComplete;
+
+	VulkanFence *pFencesInFlight;
+
+    /* NOTE: Holds pointers to fences which exist and are owned elsewhere. */
+	VulkanFence **ppImagesInFlight;
+
+	VkSwapchain swapchain;
 	uint32_t currentFrame;
+	uint32_t imageIndex;
+	b8 bRecreatingSwapchain;
+
 	int32_t (*MemoryFindIndex)(uint32_t typeFilter, uint32_t propertyFlags);
+
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT debugMessenger;
 #endif
+
 }VkContext;
 
 YND VkResult RendererInit(
