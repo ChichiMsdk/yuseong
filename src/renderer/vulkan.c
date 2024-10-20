@@ -12,7 +12,7 @@
 #include <string.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-static VkContext gVulkanContext;
+static VkContext gVkCtx;
 
 YND VkResult VulkanCreateDevice(VkContext *pVulkanContext, char *pGPUName);
 YND int32_t MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags);
@@ -44,30 +44,30 @@ vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
 void
 RendererShutdown(YMB OS_State *pState)
 {
-	VkDevice device = gVulkanContext.device.logicalDev;
-	VulkanDevice myDevice = gVulkanContext.device;
-	VkContext *pCtx = &gVulkanContext;
+	VkDevice device = gVkCtx.device.logicalDev;
+	VulkanDevice myDevice = gVkCtx.device;
+	VkContext *pCtx = &gVkCtx;
 
 #ifdef DEBUG
 		PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)
-			vkGetInstanceProcAddr(gVulkanContext.instance, "vkDestroyDebugUtilsMessengerEXT");
+			vkGetInstanceProcAddr(gVkCtx.instance, "vkDestroyDebugUtilsMessengerEXT");
 
 		KASSERT_MSG(func, "Failed to create debug destroy messenger!");
-		func(gVulkanContext.instance, gVulkanContext.debugMessenger, gVulkanContext.pAllocator);
+		func(gVkCtx.instance, gVkCtx.debugMessenger, gVkCtx.pAllocator);
 #endif // DEBUG
 
 	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapChain.imageCount));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
 
-	vkDestroyVulkanImage(&gVulkanContext, &gVulkanContext.swapChain.depthAttachment);
-	for (uint32_t i = 0; i < gVulkanContext.swapChain.imageCount; i++)
-		vkDestroyImageView(device, gVulkanContext.swapChain.pViews[i], gVulkanContext.pAllocator);
+	vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapChain.depthAttachment);
+	for (uint32_t i = 0; i < gVkCtx.swapChain.imageCount; i++)
+		vkDestroyImageView(device, gVkCtx.swapChain.pViews[i], gVkCtx.pAllocator);
 
-	vkDestroySwapchainKHR(device, gVulkanContext.swapChain.handle, gVulkanContext.pAllocator);
-	vkDestroySurfaceKHR(gVulkanContext.instance, gVulkanContext.surface, gVulkanContext.pAllocator);
+	vkDestroySwapchainKHR(device, gVkCtx.swapChain.handle, gVkCtx.pAllocator);
+	vkDestroySurfaceKHR(gVkCtx.instance, gVkCtx.surface, gVkCtx.pAllocator);
 
-	vkDestroyDevice(gVulkanContext.device.logicalDev, gVulkanContext.pAllocator);
-	vkDestroyInstance(gVulkanContext.instance, gVulkanContext.pAllocator);
+	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
+	vkDestroyInstance(gVkCtx.instance, gVkCtx.pAllocator);
 }
 
 YND VkResult
@@ -80,8 +80,8 @@ RendererInit(OS_State *pOsState)
 
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_EXTENSION_NAME);
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_OS);
-	gVulkanContext.MemoryFindIndex = MemoryFindIndex;
-	FramebufferGetDimensions(pOsState, &gVulkanContext.framebufferWidth, &gVulkanContext.framebufferHeight);
+	gVkCtx.MemoryFindIndex = MemoryFindIndex;
+	FramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
 
 #ifdef DEBUG
 		darray_push(ppRequired_extensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -137,8 +137,8 @@ RendererInit(OS_State *pOsState)
 		.enabledExtensionCount = darray_length(ppRequired_extensions),
 		.ppEnabledExtensionNames = ppRequired_extensions
 	};
-	VK_CHECK(vkCreateInstance(&pCreateInfo, gVulkanContext.pAllocator, &gVulkanContext.instance));
-	VK_CHECK(OS_CreateVkSurface(pOsState, &gVulkanContext));
+	VK_CHECK(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
+	VK_CHECK(OS_CreateVkSurface(pOsState, &gVkCtx));
 
 	YDEBUG("Vulkan surface created");
 
@@ -160,22 +160,24 @@ RendererInit(OS_State *pOsState)
 		debugCreateInfo.pfnUserCallback = vkDebugCallback;
 
 		PFN_vkCreateDebugUtilsMessengerEXT func =
-			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(gVulkanContext.instance, "vkCreateDebugUtilsMessengerEXT");
+			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(gVkCtx.instance, "vkCreateDebugUtilsMessengerEXT");
 		KASSERT_MSG(func, "Failed to create debug messenger!");
-		VK_CHECK(func(gVulkanContext.instance, &debugCreateInfo, gVulkanContext.pAllocator, &gVulkanContext.debugMessenger));
+		VK_CHECK(func(gVkCtx.instance, &debugCreateInfo, gVkCtx.pAllocator, &gVkCtx.debugMessenger));
 		YDEBUG("Vulkan debugger created.");
 #endif // DEBUG
 
-	VK_CHECK(VulkanCreateDevice(&gVulkanContext, pGPUName));
+	VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName));
 
 	darray_destroy(ppRequiredValidationLayerNames);
 	darray_destroy(ppRequired_extensions);
 
-	int32_t width = gVulkanContext.framebufferWidth;
-	int32_t height = gVulkanContext.framebufferHeight;
-	VK_CHECK(vkSwapchainCreate(&gVulkanContext, width, height, &gVulkanContext.swapChain));
-	VK_CHECK(vkCommandPoolCreate(&gVulkanContext));
-	VK_CHECK(vkCommandBufferCreate(&gVulkanContext));
+	int32_t width = gVkCtx.framebufferWidth;
+	int32_t height = gVkCtx.framebufferHeight;
+	VK_CHECK(vkSwapchainCreate(&gVkCtx, width, height, &gVkCtx.swapChain));
+	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
+	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
+
+	gVkCtx.swapChain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapChain.imageCount);
 
 	return VK_SUCCESS;
 }
@@ -184,7 +186,7 @@ YND int32_t
 MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(gVulkanContext.device.physicalDev, &memoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(gVkCtx.device.physicalDev, &memoryProperties);
 
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{
