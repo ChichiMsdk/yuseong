@@ -106,7 +106,7 @@ OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t 
 void 
 OS_Shutdown(OS_State *pOsState)
 {
-	InternalState *pState = (InternalState *)pOsState;
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	wl_display_disconnect(pState->pDisplay);
 }
 

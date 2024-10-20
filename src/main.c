@@ -16,42 +16,16 @@ b8 _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext cont
 b8 _OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 
-#define TESTING
-
-#ifdef TESTING
-int
-main(void)
-{
-	struct test {
-		int a;
-		int b;
-		int c;
-		int d;
-		int e;
-	};
-
-	struct test test = {0};
-	int a = 0;
-	char b = 0;
-	long c = 0;
-	void *d = 0;
-	YINFO("size int %d\n", sizeof(typeof(a)));
-	YINFO("size char %d\n", sizeof(typeof(b)));
-	YINFO("size long %d\n", sizeof(typeof(c)));
-	YINFO("size void* %d\n", sizeof(typeof(d)));
-	YINFO("size struct %d\n", sizeof(typeof(test)));
-}
-
-#endif
+/* #include "test.h" */
+#include <windows.h>
 
 #ifndef TESTING
-
 #ifdef PLATFORM_WINDOWS
 int
 main(void)
 {
 	OS_State state = {0};
-	if(!OS_Init(&state, "yuseong", 100, 100, 500, 500))
+	if (!OS_Init(&state, "yuseong", 100, 100, 500, 500))
 		exit(1);
 
 	EventInit();
@@ -87,7 +61,6 @@ main(void)
 }
 
 #endif  //PLATFORM_WINDOWS
-
 #endif // TESTING
 
 b8
