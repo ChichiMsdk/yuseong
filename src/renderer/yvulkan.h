@@ -10,6 +10,15 @@ typedef struct OS_State OS_State;
 
 #define VK_ASSERT(expr) KASSERT_MSG(expr == VK_SUCCESS, string_VkResult(expr));
 
+#define VK_RESULT(expr) \
+	do { \
+		VkResult errcode = (expr); \
+		if (errcode != VK_SUCCESS) \
+		{ \
+			return errcode; \
+		} \
+	} while (0);
+
 #define VK_CHECK(expr) \
 	do { \
 		VkResult errcode = (expr); \
@@ -18,7 +27,7 @@ typedef struct OS_State OS_State;
 			YERROR("%s", string_VkResult(errcode)); \
 			return errcode; \
 		} \
-	} while (0)
+	} while (0);
 
 typedef struct ColorFloat
 {

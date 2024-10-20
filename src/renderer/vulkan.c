@@ -27,26 +27,6 @@ vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugU
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
 
 void
-vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
-{
-	if (pImage->view)
-	{
-		vkDestroyImageView(pContext->device.logicalDev, pImage->view, pContext->pAllocator);
-		pImage->view = 0;
-	}
-	if (pImage->memory)
-	{
-		vkFreeMemory(pContext->device.logicalDev, pImage->memory, pContext->pAllocator);
-		pImage->memory = 0;
-	}
-	if (pImage->handle)
-	{
-		vkDestroyImage(pContext->device.logicalDev, pImage->handle, pContext->pAllocator);
-		pImage->handle = 0;
-	}
-}
-
-void
 RendererShutdown(YMB OS_State *pState)
 {
 	VkDevice device = gVkCtx.device.logicalDev;
@@ -63,12 +43,13 @@ RendererShutdown(YMB OS_State *pState)
 
 	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
-
-	vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
-	for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
-		vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
-
-	vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
+	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
+    /*
+	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
+	 * for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
+	 * 	vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
+	 * vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
+     */
 	vkDestroySurfaceKHR(gVkCtx.instance, gVkCtx.surface, gVkCtx.pAllocator);
 
 	for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
@@ -249,7 +230,7 @@ RendererInit(OS_State *pOsState)
 		.w = gVkCtx.framebufferWidth,
 		.h = gVkCtx.framebufferHeight,
 	};
-	f32 depth = 0.0f; f32 stencil = 0.0f;
+	f32 depth = 1.0f; f32 stencil = 0.0f;
 
 	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
 	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
@@ -261,7 +242,6 @@ RendererInit(OS_State *pOsState)
 
 	/* NOTE: Init semaphore and fences */
 	SyncInit();
-
 	/*
 	 * NOTE: In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
 	 * because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
@@ -272,10 +252,30 @@ RendererInit(OS_State *pOsState)
 	{
         gVkCtx.ppImagesInFlight[i] = 0;
     }
-
 	DarrayDestroy(ppRequiredValidationLayerNames);
 	DarrayDestroy(ppRequired_extensions);
 	YINFO("Vulkan renderer initaliized.");
+	return VK_SUCCESS;
+}
+
+YND VkResult
+yDraw(void)
+{
+	YMB VkDevice device = gVkCtx.device.logicalDev;
+	uint64_t timeoutNS = 1000000000; // 1 sec - 1 billion nanoseconds
+	VK_CHECK(vkFenceWait(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame], timeoutNS));
+	/*
+	 * NOTE: Fences have to be reset between uses, you can’t use the same
+	 * fence on multiple GPU commands without resetting it in the middle.
+	 */
+	VK_CHECK(vkFenceReset(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame]));
+	VK_CHECK(vkSwapchainAcquireNextImageIndex(
+				&gVkCtx,
+				&gVkCtx.swapchain,
+				timeoutNS,
+				gVkCtx.pSemaphoresAvailableImage[gVkCtx.currentFrame],
+				VK_NULL_HANDLE, 
+				&gVkCtx.imageIndex));
 	return VK_SUCCESS;
 }
 

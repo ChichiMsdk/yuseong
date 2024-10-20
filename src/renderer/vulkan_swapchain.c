@@ -304,3 +304,68 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     YINFO("Swapchain created successfully.");
 	return errcode;
 }
+
+void
+vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
+{
+	if (pImage->view)
+	{
+		vkDestroyImageView(pContext->device.logicalDev, pImage->view, pContext->pAllocator);
+		pImage->view = 0;
+	}
+	if (pImage->memory)
+	{
+		vkFreeMemory(pContext->device.logicalDev, pImage->memory, pContext->pAllocator);
+		pImage->memory = 0;
+	}
+	if (pImage->handle)
+	{
+		vkDestroyImage(pContext->device.logicalDev, pImage->handle, pContext->pAllocator);
+		pImage->handle = 0;
+	}
+}
+
+YND VkResult
+vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
+{
+	VkDevice device = pCtx->device.logicalDev;
+	VK_CHECK(vkDeviceWaitIdle(device));
+	vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
+	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
+		vkDestroyImageView(device, pCtx->swapchain.pViews[i], pCtx->pAllocator);
+	vkDestroySwapchainKHR(device, pCtx->swapchain.handle, pCtx->pAllocator);
+	return VK_SUCCESS;
+}
+
+YND VkResult
+vkSwapchainRecreate(VkContext *pCtx, uint32_t width, uint32_t height, VkSwapchain *pSwapchain)
+{
+	VK_RESULT(vkSwapchainDestroy(pCtx, pSwapchain));
+	VK_RESULT(vkSwapchainCreate(pCtx, width, height, pSwapchain));
+	return VK_SUCCESS;
+}
+
+YND VkResult 
+vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint64_t timeoutNS,
+		VkSemaphore semaphoreImageAvailable, VkFence fence, uint32_t* pOutImageIndex)
+{
+    VkResult result = vkAcquireNextImageKHR(
+        pCtx->device.logicalDev,
+        pSwapchain->handle,
+        timeoutNS,
+        semaphoreImageAvailable,
+        fence,
+        pOutImageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		// Trigger pSwapchain recreation, then boot out of the render loop.
+		VK_RESULT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		YFATAL("Failed to acquire pSwapchain image!");
+		return FALSE;
+	}
+    return result;
+}
