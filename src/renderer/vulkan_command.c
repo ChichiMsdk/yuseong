@@ -98,3 +98,37 @@ vkCommandBufferFree(VkContext *pCtx, VulkanCommandBuffer *pCommandBuffers, VkCom
 	pCommandBuffers->state = COMMAND_BUFFER_STATE_NOT_ALLOCATED;
 	return VK_SUCCESS;
 }
+
+void
+vkCommandBufferBegin(VulkanCommandBuffer* pCmd, b8 bSingleUse, b8 bRenderPassContinue, b8 bSimultaneousUse)
+{
+    VkCommandBufferBeginInfo beginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = 0,
+	};
+    if (bSingleUse) 
+        beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (bRenderPassContinue) 
+        beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+    if (bSimultaneousUse) 
+        beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    VK_ASSERT(vkBeginCommandBuffer(pCmd->handle, &beginInfo));
+    pCmd->state = COMMAND_BUFFER_STATE_RECORDING;
+}
+
+YND VkResult 
+vkCommandBufferEnd(VulkanCommandBuffer* pCmd)
+{
+	VK_CHECK(vkEndCommandBuffer(pCmd->handle));
+	pCmd->state = COMMAND_BUFFER_STATE_RECORDING_ENDED;
+	return VK_SUCCESS;
+}
+
+YND VkResult 
+vkCommandBufferReset(VulkanCommandBuffer* pCmd, VkCommandBufferResetFlags flags)
+{
+	VK_CHECK(vkResetCommandBuffer(pCmd->handle, flags));
+	pCmd->state = COMMAND_BUFFER_STATE_READY;
+	return VK_SUCCESS;
+}

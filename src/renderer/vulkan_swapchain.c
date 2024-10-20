@@ -4,6 +4,8 @@
 
 #include <vulkan/vk_enum_string_helper.h>
 
+/* TODO: Resize  !!!!!!!!!!! */
+
 void 
 vkImageViewCreate(VkContext* pContext, VkFormat format, VulkanImage* pImage, VkImageAspectFlags aspectFlags)
 {
@@ -368,4 +370,33 @@ vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint6
 		return FALSE;
 	}
     return result;
+}
+
+YND VkResult
+vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueue, VkQueue presentQueue,
+		VkSemaphore semaphoreRenderComplete, uint32_t presentImageIndex)
+{
+	// Return the image to the swapchain for presentation.
+	VkPresentInfoKHR presentInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &semaphoreRenderComplete,
+		.swapchainCount = 1,
+		.pSwapchains = &pSwapchain->handle,
+		.pImageIndices = &presentImageIndex,
+		.pResults = 0,
+	};
+
+	VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		// Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
+		VK_ASSERT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
+	}
+	else if (result != VK_SUCCESS)
+		YFATAL("Failed to present swap chain image!");
+
+	/* Increment (and loop) the index. */
+	pCtx->currentFrame = (pCtx->currentFrame + 1) % pSwapchain->maxFrameInFlight;
+	return result;
 }

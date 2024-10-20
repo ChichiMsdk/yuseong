@@ -1,6 +1,7 @@
 #include "os.h"
 
 #include "yvulkan.h"
+#include "vulkan_image.h"
 #include "vulkan_renderpass.h"
 #include "vulkan_framebuffer.h"
 #include "vulkan_swapchain.h"
@@ -12,6 +13,7 @@
 #include "core/assert.h"
 #include "core/ymemory.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -276,6 +278,82 @@ yDraw(void)
 				gVkCtx.pSemaphoresAvailableImage[gVkCtx.currentFrame],
 				VK_NULL_HANDLE, 
 				&gVkCtx.imageIndex));
+
+	/* NOTE: Getting the current frame's cmd buffer */
+	VulkanCommandBuffer *pCmd = &gVkCtx.pGfxCommands[gVkCtx.imageIndex];
+	VkCommandBufferResetFlags flags = 0;
+	VK_CHECK(vkCommandBufferReset(pCmd, flags));
+
+	/* NOTE: Start command recording */
+	vkCommandBufferBegin(pCmd, TRUE, FALSE, FALSE);
+	/* NOTE: make the swapchain image into writeable mode before rendering */
+	VkImage img = gVkCtx.swapchain.pImages[gVkCtx.imageIndex];
+	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	f32 flash = fabs(sin(gVkCtx.currentFrame / 120.0f));
+	VkClearColorValue clearValue = {.float32 = {0.0f, 0.0f, flash, 1.0f}};
+
+	VkImageSubresourceRange clearRange = {
+		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.baseMipLevel = 0,
+		.levelCount = VK_REMAINING_MIP_LEVELS,
+		.baseArrayLayer = 0,
+		.layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+
+	vkCmdClearColorImage(pCmd->handle, img, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+
+	/* NOTE: make the swapchain image into presentable mode */
+	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	/* NOTE: VK_IMAGE_LAYOUT_GENERAL is the image layout you want to use if you want to write a image from a
+	 * compute shader. If you want a read-only image or a image to be used with rasterization commands, 
+	 * there are better options. 
+	 */
+	VK_CHECK(vkCommandBufferEnd(pCmd));
+
+	VkSemaphoreSubmitInfo semaphoreWaitSubmitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+		.semaphore = gVkCtx.pSemaphoresAvailableImage[gVkCtx.currentFrame],
+		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.value = 1,
+	};
+
+	VkSemaphoreSubmitInfo semaphoreSignalSubmitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+		.semaphore = gVkCtx.pSemaphoresQueueComplete[gVkCtx.currentFrame],
+		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.value = 1,
+	};
+
+	VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+		.commandBuffer = pCmd->handle,
+	};
+
+	VkSubmitInfo2 submitInfo2 = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+		.commandBufferInfoCount = 1,
+		.pCommandBufferInfos = &cmdBufferSubmitInfo,
+		.pWaitSemaphoreInfos = &semaphoreWaitSubmitInfo,
+		.waitSemaphoreInfoCount = 1,
+		.pSignalSemaphoreInfos = &semaphoreSignalSubmitInfo,
+		.signalSemaphoreInfoCount = 1,
+
+	};
+
+	/*
+	 * NOTE: submit command buffer to the queue and execute it.
+	 * 	_renderFence will now block until the graphic commands finish execution
+	 */
+	VK_CHECK(vkQueueSubmit2(
+				gVkCtx.device.graphicsQueue,
+				1,
+				&submitInfo2,
+				gVkCtx.pFencesInFlight[gVkCtx.currentFrame].handle));
+
+	pCmd->state = COMMAND_BUFFER_STATE_SUBMITTED;
+
 	return VK_SUCCESS;
 }
 

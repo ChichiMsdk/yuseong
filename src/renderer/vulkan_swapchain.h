@@ -26,4 +26,12 @@ YND VkResult vkSwapchainAcquireNextImageIndex(
 		VkFence								fence,
 		uint32_t*							pOutImageIndex);
 
+YND VkResult vkSwapchainPresent(
+		VkContext*							pCtx,
+		VkSwapchain*						pSwapchain,
+		YMB VkQueue							gfxQueue,
+		VkQueue								presentQueue,
+		VkSemaphore							semaphoreRenderComplete,
+		uint32_t							presentImageIndex);
+
 #endif // VULKAN_SWAPCHAIN_H

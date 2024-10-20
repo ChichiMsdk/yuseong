@@ -26,4 +26,18 @@ YND VkResult vkCommandBufferFree(
 
 YND VkResult vkCommandBufferCreate(
 		VkContext*							pCtx);
+
+void vkCommandBufferBegin(
+		VulkanCommandBuffer*				pCmd,
+		b8									bSingleUse,
+		b8									bRenderPassContinue,
+		b8									bSimultaneousUse);
+
+YND VkResult vkCommandBufferEnd(
+		VulkanCommandBuffer*				pCmd);
+
+YND VkResult vkCommandBufferReset(
+		VulkanCommandBuffer*				pCmd,
+		VkCommandBufferResetFlags			flags);
+
 #endif  // VULKAN_COMMAND_H
