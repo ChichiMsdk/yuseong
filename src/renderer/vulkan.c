@@ -77,7 +77,6 @@ RendererInit(OS_State *pOsState)
 	const char**	ppRequiredValidationLayerNames = 0;
 	const char**	ppRequired_extensions = darray_create(const char *);
 	uint32_t		requiredValidationLayerCount = 0;
-    /* InternalState*	pState = (InternalState *)pOsState->pInternalState; */
 
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_EXTENSION_NAME);
 	darray_push(ppRequired_extensions, &VK_KHR_SURFACE_OS);

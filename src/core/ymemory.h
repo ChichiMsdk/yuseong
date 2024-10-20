@@ -26,12 +26,29 @@ typedef enum MemoryTags
 	MEMORY_TAG_MAX_TAGS,
 }MemoryTags;
 
-void *yAlloc(uint64_t size, MemoryTags tag);
-void yFree(void *pBlock, uint64_t size, MemoryTags tag);
-char *StrGetMemoryUsage(void);
+YND void* yAlloc(
+		uint64_t							size,
+		MemoryTags							tag);
 
-void *yZeroMemory(void *pBlock, uint64_t size);
-void *yCopyMemory(void *pDest, const void *pSrc, uint64_t size);
-void *ySetMemory(void *pDest, int32_t value, uint64_t size);
+void yFree(
+		void*								pBlock,
+		uint64_t							size,
+		MemoryTags							tag);
+
+YND char* StrGetMemoryUsage(void);
+
+void *yZeroMemory(
+		void*								pBlock,
+		uint64_t							size);
+
+void* yCopyMemory(
+		void*								pDest,
+		const void*							pSrc,
+		uint64_t							size);
+
+void* ySetMemory(
+		void*								pDest,
+		int32_t								value,
+		uint64_t							size);
 
 #endif // YMEMORY_H

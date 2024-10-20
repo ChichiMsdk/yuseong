@@ -97,8 +97,8 @@ vkDeviceDetectDepthFormat(VulkanDevice *pDevice)
 		VK_FORMAT_D32_SFLOAT_S8_UINT,
 		VK_FORMAT_D24_UNORM_S8_UINT};
 
-	u32 flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	for (u64 i = 0; i < candidateCount; i++)
+	uint32_t flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	for (uint64_t i = 0; i < candidateCount; i++)
 	{
 		VkFormatProperties properties;
 		vkGetPhysicalDeviceFormatProperties(pDevice->physicalDev, pCandidates[i], &properties);
@@ -165,7 +165,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
     // Choose a swap surface format.
     b8 bFound = FALSE;
-    for (u32 i = 0; i < pContext->device.swapchainSupport.formatCount; ++i)
+    for (uint32_t i = 0; i < pContext->device.swapchainSupport.formatCount; ++i)
 	{
         VkSurfaceFormatKHR format = pContext->device.swapchainSupport.pFormats[i];
         // Preferred formats
@@ -181,7 +181,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
         pSwapchain->imageFormat = pContext->device.swapchainSupport.pFormats[0];
     /* VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR; */
     VkPresentModeKHR present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-    for (u32 i = 0; i < pContext->device.swapchainSupport.presentModeCount; ++i)
+    for (uint32_t i = 0; i < pContext->device.swapchainSupport.presentModeCount; ++i)
 	{
         VkPresentModeKHR mode = pContext->device.swapchainSupport.pPresentModes[i];
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -223,7 +223,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 	// Setup the queue family indices
 	if (pContext->device.graphicsQueueIndex != pContext->device.presentQueueIndex)
 	{
-		u32 queueFamilyIndices[] = {
+		uint32_t queueFamilyIndices[] = {
 			(uint32_t)pContext->device.graphicsQueueIndex,
 			(uint32_t)pContext->device.presentQueueIndex};
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -266,7 +266,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 	if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); return errcode;}
 
     // Views
-    for (u32 i = 0; i < pSwapchain->imageCount; ++i)
+    for (uint32_t i = 0; i < pSwapchain->imageCount; ++i)
 	{
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = pSwapchain->pImages[i];
