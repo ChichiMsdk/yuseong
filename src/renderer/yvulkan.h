@@ -6,6 +6,12 @@
 # 	include "core/assert.h"
 #	include <vulkan/vk_enum_string_helper.h>
 
+#ifdef PLATFORM_LINUX
+#	ifdef YGLFW3
+#	include <GLFW/glfw3.h>
+#	endif
+#endif
+
 typedef struct OS_State OS_State;
 
 #define VK_ASSERT(expr) KASSERT_MSG(expr == VK_SUCCESS, string_VkResult(expr));

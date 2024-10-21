@@ -19,7 +19,6 @@ b8 _OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext contex
 b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 
 /* #include "test.h" */
-#include <windows.h>
 
 #ifndef TESTING
 #ifdef PLATFORM_WINDOWS
@@ -46,19 +45,24 @@ main(void)
 	}
 
 	RendererShutdown(&state);
+	OS_Shutdown(&state);
 	return 0;
 }
 #elif PLATFORM_LINUX
+
 int
 main(void)
 {
 	OS_State state = {0};
 	if(!OS_Init(&state, "yuseong", 100, 100, 500, 500))
 		exit(1);
+	VK_ASSERT(RendererInit(&state));
 	while(gRunning)
 	{
 		OS_PumpMessages(&state);
+		VK_ASSERT(yDraw());
 	}
+	RendererShutdown(&state);
 	OS_Shutdown(&state);
 	return 0;
 }

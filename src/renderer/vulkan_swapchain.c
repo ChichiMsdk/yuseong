@@ -224,11 +224,11 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	// Setup the queue family indices
+	uint32_t queueFamilyIndices[] = {
+		(uint32_t)pContext->device.graphicsQueueIndex,
+		(uint32_t)pContext->device.presentQueueIndex};
 	if (pContext->device.graphicsQueueIndex != pContext->device.presentQueueIndex)
 	{
-		uint32_t queueFamilyIndices[] = {
-			(uint32_t)pContext->device.graphicsQueueIndex,
-			(uint32_t)pContext->device.presentQueueIndex};
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		swapchainCreateInfo.queueFamilyIndexCount = 2;
 		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -365,12 +365,13 @@ vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint6
 		// Trigger pSwapchain recreation, then boot out of the render loop.
 		VK_RESULT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
 	}
+	/* WARN: Is this fatal ?! */
 	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		YFATAL("Failed to acquire pSwapchain image!");
-		return FALSE;
+		return result;
 	}
-    return result;
+    return VK_SUCCESS;
 }
 
 YND VkResult
@@ -395,10 +396,13 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 		VK_ASSERT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
 	}
 	else if (result != VK_SUCCESS)
+	{
 		YFATAL("Failed to present swap chain image!");
+		return result;
+	}
 
 	/* Increment (and loop) the index. */
 	pCtx->currentFrame = (pCtx->currentFrame + 1) % pSwapchain->maxFrameInFlight;
 	pCtx->nbFrames++;
-	return result;
+	return VK_SUCCESS;
 }

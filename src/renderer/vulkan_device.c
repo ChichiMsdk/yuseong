@@ -102,27 +102,25 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
         // Device extensions.
         if (pRequirements->ppDeviceExtensionNames)
 		{
-            u32 availableExtensionCount = 0;
+            uint32_t availableExtensionCount = 0;
             VkExtensionProperties* pAvailableExtensions = 0;
-            errcode = vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, 0);
-			if (errcode != VK_SUCCESS) {YFATAL("%s", string_VkResult(errcode)); exit(errcode); }
-            if (availableExtensionCount != 0)
+            VK_CHECK(vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, VK_NULL_HANDLE));
+
+            if (availableExtensionCount > 0)
 			{
                 pAvailableExtensions =
 					yAlloc(sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
-                errcode =
-					vkEnumerateDeviceExtensionProperties( device, 0, &availableExtensionCount, pAvailableExtensions);
-				if (errcode != VK_SUCCESS) {YFATAL("%s", string_VkResult(errcode)); exit(errcode); }
+                VK_CHECK(vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, pAvailableExtensions));
 
-                u32 required_extension_count = darray_length(pRequirements->ppDeviceExtensionNames);
-                for (u32 i = 0; i < required_extension_count; ++i)
+                uint32_t required_extension_count = darray_length(pRequirements->ppDeviceExtensionNames);
+                for (uint32_t i = 0; i < required_extension_count; ++i)
 				{
                     b8 found = FALSE;
-                    for (u32 j = 0; j < availableExtensionCount; ++j)
+                    for (uint32_t j = 0; j < availableExtensionCount; ++j)
 					{
                         if (!strcmp(pRequirements->ppDeviceExtensionNames[i], pAvailableExtensions[j].extensionName))
 						{
-							YINFO("Extension: %s", pAvailableExtensions[j]);
+							YINFO("Extension[%d]: %s", j, pAvailableExtensions[j].extensionName);
                             found = TRUE;
                             break;
                         }
@@ -249,10 +247,8 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	YINFO("Creating logical device...");
 	uint32_t queueCreateInfoCount = 1;
 	uint8_t index = 0;
-	b8 bPresentSharesGraphicsQueue =
-		pCtx->device.graphicsQueueIndex == pCtx->device.presentQueueIndex;
-	b8 bTransferSharesGraphicsQueue =
-		pCtx->device.graphicsQueueIndex == pCtx->device.transferQueueIndex;
+	b8 bPresentSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.presentQueueIndex;
+	b8 bTransferSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.transferQueueIndex;
 
 	if (!bPresentSharesGraphicsQueue) queueCreateInfoCount++;
 	if (!bTransferSharesGraphicsQueue) queueCreateInfoCount++;
@@ -264,6 +260,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	if (!bTransferSharesGraphicsQueue) pIndices[index++] = pCtx->device.transferQueueIndex;
 
 	VkDeviceQueueCreateInfo pQueueCreateInfos[queueCreateInfoCount];
+	f32 queue_priority = 1.0f;
 	for (uint32_t i = 0; i < queueCreateInfoCount; ++i)
 	{
 		pQueueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -278,7 +275,6 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		 */
 		pQueueCreateInfos[i].flags = 0;
 		pQueueCreateInfos[i].pNext = 0;
-		f32 queue_priority = 1.0f;
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
 	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
@@ -313,7 +309,6 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		/* .pNext = VK_NULL_HANDLE, */
 		.pNext = &enabledFeatures2,
 	};
-
 	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, &pCtx->device.logicalDev));
 	YINFO("Logical device created.");
 	vkGetDeviceQueue(pCtx->device.logicalDev, 

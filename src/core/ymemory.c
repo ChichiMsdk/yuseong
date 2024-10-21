@@ -110,7 +110,7 @@ StrGetMemoryUsage(void)
 #ifdef PLATFORM_WINDOWS
 	char* pOutString = _strdup(pBuffer);
 #elif PLATFORM_LINUX
-	char* pOutString = strdup(buffer);
+	char* pOutString = strdup(pBuffer);
 #endif
 	return pOutString;
 }

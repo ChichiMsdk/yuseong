@@ -15,7 +15,7 @@ SRC_4_DIR =src/renderer/vulkan
 
 INCLUDE_DIRS =-Isrc -Isrc/core
 
-LIBS =-lvulkan -lwayland-client -lxkbcommon
+LIBS =-lglfw -lvulkan -lwayland-client -lxkbcommon -lm -lGL -lpthread
 LIB_PATH =
 
 CFLAGS =-Wall -Wextra -Werror
@@ -26,6 +26,7 @@ CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
 CFLAGS += -DPLATFORM_LINUX
 CFLAGS +=-g -Wvarargs -O0
 CFLAGS +=-D_DEBUG -DDEBUG
+CFLAGS +=-DYGLFW3
 # CFLAGS +=-DTRACY_ENABLE
 CFLAGS +=-fsanitize=address
 # CFLAGS +=-fsanitize=thread

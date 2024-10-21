@@ -186,7 +186,7 @@ RendererInit(OS_State *pOsState)
 	 * 		if (!strcmp(ppRequiredExtensions[i], pAvailableExtensions[j].extensionName))
 	 * 		{ bFound = TRUE; YINFO("Found."); break; }
 	 * 	}
-	 * 	if (!bFound) { YFATAL("Required extension is missing: %s", ppRequiredExtensions[i]); exit(1); }
+	 * 	if (!bFound) { YFATAL("Required extension is missing: %s", ppRequiredExtensions[i]); exit(2); }
 	 * }
 	 * YINFO("All required extensions are present.");
      */
@@ -240,7 +240,10 @@ RendererInit(OS_State *pOsState)
 		YDEBUG("Vulkan debugger created.");
 #endif // DEBUG
 
-	VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName));
+	/* VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName)); */
+	VkResult errcode = VulkanCreateDevice(&gVkCtx, pGPUName);
+	if (errcode != VK_SUCCESS)
+		return errcode;
 
 	int32_t width = gVkCtx.framebufferWidth;
 	int32_t height = gVkCtx.framebufferHeight;
