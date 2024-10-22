@@ -3,6 +3,10 @@
 #ifdef PLATFORM_LINUX
 #ifdef YGLFW3
 
+extern b8 gRunning;
+
+#include "glfw_callback.h"
+
 #include "core/logger.h"
 #include <vulkan/vulkan.h>
 
@@ -12,35 +16,15 @@
 #include <unistd.h>
 #include <string.h>
 
-#define GLFW_CHECK(expr)\
-	do { \
-		const char *pDes;\
-		int errcode = (expr); \
-		if (errcode != GLFW_NO_ERROR) \
-		{ \
-			glfwGetError(&pDes);\
-			YERROR("Error[%d] %s:%d: %s", errcode, __FILE__, __LINE__,  pDes); \
-			return errcode; \
-		} \
-	} while (0);
-
-void ErrorCallback(int error, const char* pDescription);
-
 typedef struct InternalState
 {
-	VkSurfaceKHR surface;
+	VkSurfaceKHR	surface;
 
-	GLFWwindow* pWindow;
-	uint32_t windowWidth;
-	uint32_t windowHeight;
+	GLFWwindow*		pWindow;
+	uint32_t		windowWidth;
+	uint32_t		windowHeight;
 }InternalState;
 
-static void
-_KeyCallback(GLFWwindow* pWindow, int key, YMB int scancode, int action, YMB int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(pWindow, GLFW_TRUE);
-}
 
 YND b8 
 OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, int32_t w, int32_t h)
@@ -70,6 +54,7 @@ OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, 
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	/* GLFWmonitor *pMonitor = glfwGetPrimaryMonitor(); */
 	GLFWmonitor *pMonitor = NULL;
 	pState->pWindow = glfwCreateWindow(w, h, pAppName, pMonitor, NULL);
@@ -83,6 +68,7 @@ OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, 
 	pState->windowWidth = w;
 	pState->windowHeight = w;
     glfwSetKeyCallback(pState->pWindow, _KeyCallback);
+	glfwSetMouseButtonCallback(pState->pWindow, _MouseCallback);
 	return TRUE;
 }
 
@@ -92,6 +78,14 @@ OS_CreateVkSurface(OS_State *pOsState, VkContext *pContext)
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	VK_CHECK(glfwCreateWindowSurface(pContext->instance, pState->pWindow, pContext->pAllocator, &pContext->surface));
 	return VK_SUCCESS;
+}
+
+void
+FramebufferUpdateInternalDimensions(OS_State* pOsState, uint32_t width, uint32_t height)
+{
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
+	pState->windowWidth = width;
+	pState->windowHeight = height;
 }
 
 void
@@ -125,14 +119,14 @@ OS_PumpMessages(YMB OS_State* pOsState)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	if (glfwWindowShouldClose(pState->pWindow))
-		exit(1);
+		gRunning = FALSE;
 	glfwPollEvents();
 	static uint64_t startTime;
 	uint64_t currentTime = OS_GetAbsoluteTime();
 	if (currentTime - startTime >= 100000000)
 	{
 		startTime = OS_GetAbsoluteTime();
-		YINFO("time: %llu",  startTime);
+		/* YINFO("time: %llu",  startTime); */
 	}
 	return TRUE;
 }
@@ -156,6 +150,19 @@ ErrorCallback(int error, const char* pDescription)
 {
 	YFATAL("Error[%d]: %s", error, pDescription);
 	exit(1);
+}
+
+static void
+_KeyCallback(GLFWwindow* pWindow, int key, YMB int scancode, int action, YMB int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(pWindow, GLFW_TRUE);
+}
+
+static void
+_MouseCallback(YMB GLFWwindow* pWindow, YMB int button, YMB int action, YMB int mods)
+{
+
 }
 
 #endif // YGLFW3

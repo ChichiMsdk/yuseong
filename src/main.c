@@ -50,6 +50,8 @@ main(void)
 }
 #elif PLATFORM_LINUX
 
+const char* __asan_default_options() { return "detect_leaks=0"; }
+
 int
 main(void)
 {
@@ -71,7 +73,7 @@ main(void)
 #endif // TESTING
 
 b8
-_OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context)
+_OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context)
 {
 	(void)pSender;
 	(void)pListenerInst;
@@ -89,10 +91,8 @@ _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context
 }
 
 b8
-_OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext context) 
+_OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context) 
 {
-	(void)pSender;
-	(void)pListenerInst;
 	if (code == EVENT_CODE_KEY_PRESSED) 
 	{
 		uint16_t keyCode = context.data.uint16_t[0];

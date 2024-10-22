@@ -359,7 +359,13 @@ vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint6
         semaphoreImageAvailable,
         fence,
         pOutImageIndex);
-
+/*
+ * NOTE: on AMD you can resize window and like you say “just wait” it never throw VK_ERROR_OUT_OF_DATE_KHR, 
+ * but on Nvidia its always VK_ERROR_OUT_OF_DATE_KHR no matter what
+ * (and crash if you dont process this destroying/freeing/recreating your allocated data). 
+ * (VK_SUBOPTIMAL_KHR happens only on X11/XCB or/and xWayland)
+ * https://community.khronos.org/t/vk-suboptimal-khr-is-it-safe-to-use-it-as-window-resize-detection/107848/5
+ */
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		// Trigger pSwapchain recreation, then boot out of the render loop.

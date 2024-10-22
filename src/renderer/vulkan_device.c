@@ -15,7 +15,6 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 		VkPhysicalDeviceQueueFamilyInfo* pOutQueueInfo,
 		VkSwapchainSupportInfo* pOutSwapchainSupport)
 {
-	VkResult errcode = 0;
     // Evaluate device properties to determine if it meets the needs of our applcation.
     pOutQueueInfo->graphicsFamilyIndex = -1;
     pOutQueueInfo->presentFamilyIndex = -1;
@@ -30,46 +29,44 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
             return FALSE;
         }
     }
-    u32 queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, 0);
-    VkQueueFamilyProperties queue_families[queue_family_count];
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, 0);
+    VkQueueFamilyProperties queueFamilies[queueFamilyCount];
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
     // Look at each queue and see what queues it supports
-    u8 min_transfer_score = 255;
-    for (u32 i = 0; i < queue_family_count; ++i)
+    uint8_t minTransferScore = 255;
+    for (uint32_t i = 0; i < queueFamilyCount; ++i)
 	{
-        u8 current_transfer_score = 0;
+        uint8_t currentTransferScore = 0;
         // Graphics queue?
-        if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
             pOutQueueInfo->graphicsFamilyIndex = i;
-            ++current_transfer_score;
+            ++currentTransferScore;
         }
         // Compute queue?
-        if (queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+        if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
 		{
             pOutQueueInfo->computeFamilyIndex = i;
-            ++current_transfer_score;
+            ++currentTransferScore;
         }
         // Transfer queue?
-        if (queue_families[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
+        if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
 		{
             // Take the index if it is the current lowest. This increases the
             // liklihood that it is a dedicated transfer queue.
-            if (current_transfer_score <= min_transfer_score)
+            if (currentTransferScore <= minTransferScore)
 			{
-                min_transfer_score = current_transfer_score;
+                minTransferScore = currentTransferScore;
                 pOutQueueInfo->transferFamilyIndex = i;
             }
         }
         // Present queue?
-        VkBool32 supports_present = VK_FALSE;
-        errcode = vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &supports_present);
-		if (errcode != VK_SUCCESS) {YFATAL("%s", string_VkResult(errcode)); exit(errcode); }
-        if (supports_present)
+        VkBool32 supportsPresent = VK_FALSE;
+        VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &supportsPresent));
+        if (supportsPresent)
             pOutQueueInfo->presentFamilyIndex = i;
     }
-
     if (
         (!pRequirements->bGraphics || (pRequirements->bGraphics && (i32)pOutQueueInfo->graphicsFamilyIndex != -1)) &&
         (!pRequirements->bPresent || (pRequirements->bPresent && (i32)pOutQueueInfo->presentFamilyIndex != -1)) &&
@@ -88,14 +85,12 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 		{
             if (pOutSwapchainSupport->pFormats)
 			{
-				yFree(pOutSwapchainSupport->pFormats,
-						sizeof(VkSurfaceFormatKHR) * pOutSwapchainSupport->formatCount, MEMORY_TAG_RENDERER);
+				yFree(pOutSwapchainSupport->pFormats, pOutSwapchainSupport->formatCount, MEMORY_TAG_RENDERER);
 			}
             if (pOutSwapchainSupport->pPresentModes)
-                {
-					yFree(pOutSwapchainSupport->pPresentModes,
-							sizeof(VkPresentModeKHR) * pOutSwapchainSupport->presentModeCount, MEMORY_TAG_RENDERER);
-				}
+			{
+				yFree(pOutSwapchainSupport->pPresentModes, pOutSwapchainSupport->presentModeCount, MEMORY_TAG_RENDERER);
+			}
             YINFO("Required swapchain support not present, skipping device.");
             return FALSE;
         }
@@ -110,31 +105,31 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 			{
                 pAvailableExtensions =
 					yAlloc(sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
-                VK_CHECK(vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, pAvailableExtensions));
+                VK_CHECK(
+						vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, pAvailableExtensions));
 
-                uint32_t required_extension_count = darray_length(pRequirements->ppDeviceExtensionNames);
-                for (uint32_t i = 0; i < required_extension_count; ++i)
+                uint32_t requiredExtensionCount = darray_length(pRequirements->ppDeviceExtensionNames);
+                for (uint32_t i = 0; i < requiredExtensionCount; ++i)
 				{
-                    b8 found = FALSE;
+                    b8 bFound = FALSE;
                     for (uint32_t j = 0; j < availableExtensionCount; ++j)
 					{
                         if (!strcmp(pRequirements->ppDeviceExtensionNames[i], pAvailableExtensions[j].extensionName))
 						{
 							YINFO("Extension[%d]: %s", j, pAvailableExtensions[j].extensionName);
-                            found = TRUE;
+                            bFound = TRUE;
                             break;
                         }
                     }
-                    if (!found)
+                    if (!bFound)
 					{
                         YINFO("Required extension not found: '%s', skipping device.",
 								pRequirements->ppDeviceExtensionNames[i]);
-                        yFree(pAvailableExtensions,
-								sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
+                        yFree(pAvailableExtensions, availableExtensionCount, MEMORY_TAG_RENDERER);
                         return FALSE;
                     }
                 }
-				yFree(pAvailableExtensions, sizeof(VkExtensionProperties) * availableExtensionCount, MEMORY_TAG_RENDERER);
+				yFree(pAvailableExtensions, availableExtensionCount, MEMORY_TAG_RENDERER);
             }
         }
         // Sampler anisotropy
@@ -156,20 +151,19 @@ VulkanDeviceSelect(VkContext *pCtx)
 	VK_CHECK(vkEnumeratePhysicalDevices(pCtx->instance, &physicalDeviceCount, VK_NULL_HANDLE));
 
 	/* VkPhysicalDevice *pVkDevicess = malloc(sizeof(VkPhysicalDevice) * physicalDeviceCount); */
-	VkPhysicalDevice pVkDevicess[physicalDeviceCount];
-	VK_CHECK(vkEnumeratePhysicalDevices(pCtx->instance, &physicalDeviceCount, pVkDevicess));
+	VkPhysicalDevice pVkDevices[physicalDeviceCount];
+	VK_CHECK(vkEnumeratePhysicalDevices(pCtx->instance, &physicalDeviceCount, pVkDevices));
 
-	/* VulkanDevice *pVkDevices = malloc(sizeof(VulkanDevice) * physicalDeviceCount); */
 	for (uint32_t i = 0; i < physicalDeviceCount; i++)
 	{
 		VkPhysicalDeviceProperties properties;
-		vkGetPhysicalDeviceProperties(pVkDevicess[i], &properties);
+		vkGetPhysicalDeviceProperties(pVkDevices[i], &properties);
 
 		VkPhysicalDeviceFeatures features;
-		vkGetPhysicalDeviceFeatures(pVkDevicess[i], &features);
+		vkGetPhysicalDeviceFeatures(pVkDevices[i], &features);
 
 		VkPhysicalDeviceMemoryProperties memory;
-		vkGetPhysicalDeviceMemoryProperties(pVkDevicess[i], &memory);
+		vkGetPhysicalDeviceMemoryProperties(pVkDevices[i], &memory);
 
 		VkPhysicalDeviceRequirements requirements = {
 			.bGraphics = TRUE,
@@ -177,13 +171,13 @@ VulkanDeviceSelect(VkContext *pCtx)
 			.bTransfer = TRUE,
 			.bSamplerAnisotropy = TRUE,
 			.bDiscreteGpu = TRUE,
-			.ppDeviceExtensionNames = darray_create(const char *)
+			.ppDeviceExtensionNames = DarrayCreate(const char *)
 		};
-		darray_push(requirements.ppDeviceExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-		darray_push(requirements.ppDeviceExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+		DarrayPush(requirements.ppDeviceExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		DarrayPush(requirements.ppDeviceExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
 		VkPhysicalDeviceQueueFamilyInfo queueInfo = {0};
-		b8 bResult = PhysicalDeviceMeetsRequirements(pVkDevicess[i], pCtx->surface, &properties, &features,
+		b8 bResult = PhysicalDeviceMeetsRequirements(pVkDevices[i], pCtx->surface, &properties, &features,
 				&requirements, &queueInfo, &pCtx->device.swapchainSupport);
 
 		if (bResult)
@@ -216,7 +210,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 				{ YINFO("Shared System memory: %.2f GiB", memorySizeGib); }
 			}
 
-			pCtx->device.physicalDev = pVkDevicess[i];
+			pCtx->device.physicalDev = pVkDevices[i];
 			pCtx->device.graphicsQueueIndex = queueInfo.graphicsFamilyIndex;
 			pCtx->device.presentQueueIndex = queueInfo.presentFamilyIndex;
 			pCtx->device.transferQueueIndex = queueInfo.transferFamilyIndex;
@@ -226,8 +220,10 @@ VulkanDeviceSelect(VkContext *pCtx)
 			pCtx->device.properties = properties;
 			pCtx->device.features = features;
 			pCtx->device.memory = memory;
+			DarrayDestroy(requirements.ppDeviceExtensionNames);
 			break;
 		}
+		DarrayDestroy(requirements.ppDeviceExtensionNames);
 	}
 	if (!pCtx->device.physicalDev)
 	{ 
@@ -241,7 +237,6 @@ YND VkResult
 VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 {
 	VkResult errcode = 0;
-
 	VK_CHECK(VulkanDeviceSelect(pCtx));
 
 	YINFO("Creating logical device...");
@@ -259,13 +254,49 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	if (!bPresentSharesGraphicsQueue) pIndices[index++] = pCtx->device.presentQueueIndex;
 	if (!bTransferSharesGraphicsQueue) pIndices[index++] = pCtx->device.transferQueueIndex;
 
-	VkDeviceQueueCreateInfo pQueueCreateInfos[queueCreateInfoCount];
+	struct temp {int32_t count; uint32_t index;};
+	struct temp tempIndices[queueCreateInfoCount];
+	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
+	{
+		tempIndices[i].index = -1;
+		tempIndices[i].count = 0;
+	}
+
+	uint32_t realQueueCreateInfoCount = 0;
+	uint32_t i = 0;
+	uint32_t j = 0;
+
+	while (i < queueCreateInfoCount)
+	{
+		if (tempIndices[realQueueCreateInfoCount].index != pIndices[i])
+		{
+			tempIndices[realQueueCreateInfoCount].index = pIndices[i];
+			while ( j < queueCreateInfoCount && tempIndices[realQueueCreateInfoCount].index == pIndices[j])
+			{
+					tempIndices[realQueueCreateInfoCount].count++;
+					j++;
+			}
+			if (j > 0)
+				i += j - 1;
+			realQueueCreateInfoCount++;
+		}
+		i++;
+	}
+
+    /*
+	 * for (uint32_t i = 0; i < realQueueCreateInfoCount; i++)
+	 * 	YDEBUG("Family index %lu - count: %d", tempIndices[i].index, tempIndices[i].count);
+	 * YDEBUG("Total count: %lu", realQueueCreateInfoCount);
+     */
+
+	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
 	f32 queue_priority = 1.0f;
-	for (uint32_t i = 0; i < queueCreateInfoCount; ++i)
+	for (uint32_t i = 0; i < realQueueCreateInfoCount; ++i)
 	{
 		pQueueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		pQueueCreateInfos[i].queueFamilyIndex = pIndices[i];
-		pQueueCreateInfos[i].queueCount = 1;
+		/* pQueueCreateInfos[i].queueFamilyIndex = pIndices[i]; */
+		pQueueCreateInfos[i].queueFamilyIndex = tempIndices[i].index;
+		pQueueCreateInfos[i].queueCount = tempIndices[i].count;
 		/*
 		 * TODO enable this for future enhancements.
 		 * 	if (indices[i] == context->device.graphics_queue_index)
@@ -320,7 +351,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	vkGetDeviceQueue(pCtx->device.logicalDev, 
 			pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
 
-	/* DarrayDestroy(ppExtensionNames); */
+	DarrayDestroy(ppExtensionNames);
 	YINFO("Queues obtained.");
 	return errcode;
 }

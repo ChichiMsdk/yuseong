@@ -35,6 +35,11 @@ typedef struct OS_State
 
 extern b8 gRunning;
 
+void FramebufferUpdateInternalDimensions(
+		OS_State*							pOsState,
+		uint32_t							width,
+		uint32_t							height);
+
 void FramebufferGetDimensions(
 		OS_State*							pOsState,
 		uint32_t*							pWidth,

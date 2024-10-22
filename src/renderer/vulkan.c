@@ -128,7 +128,6 @@ RendererInit(OS_State *pOsState)
 
 	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_EXTENSION_NAME);
 	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
-	/* DarrayPush(ppRequiredExtensions, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
 
 	gVkCtx.MemoryFindIndex = MemoryFindIndex;
 	FramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
@@ -136,21 +135,21 @@ RendererInit(OS_State *pOsState)
 #ifdef DEBUG
 		darray_push(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		YDEBUG("Required extensions:");
-		uint32_t length = darray_length(ppRequiredExtensions);
+		uint32_t length = DarrayLength(ppRequiredExtensions);
 		for (uint32_t i = 0; i < length; ++i)
 			YDEBUG(ppRequiredExtensions[i]);
 
 		// The list of validation layers required.
 		YINFO("Validation layers enabled. Enumerating...");
-		ppRequiredValidationLayerNames = darray_create(const char*);
+		ppRequiredValidationLayerNames = DarrayCreate(const char*);
 		darray_push(ppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
-		requiredValidationLayerCount = darray_length(ppRequiredValidationLayerNames);
+		requiredValidationLayerCount = DarrayLength(ppRequiredValidationLayerNames);
 		
 		// Obtain list of available validation layers.
 		uint32_t availableLayerCount = 0;
 		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
 
-		VkLayerProperties* pAvailableLayers = darray_reserve(VkLayerProperties, availableLayerCount);
+		VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
 		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
 
 		//  Verify all required layers are available.
@@ -165,32 +164,10 @@ RendererInit(OS_State *pOsState)
 			}
 			if (!bFound) { YFATAL("Required validation layer is missing: %s", ppRequiredValidationLayerNames[i]); exit(1); }
 		}
+		DarrayDestroy(pAvailableLayers);
 		YINFO("All required validation layers are present.");
 #endif // DEBUG
-
 	requiredExtensionCount = darray_length(ppRequiredExtensions);
-    /*
-	 * uint32_t availableExtensionCount = 0;
-	 * VK_CHECK(vkEnumerateInstanceExtensionProperties(NULL, &availableExtensionCount, NULL));
-	 * VkExtensionProperties* pAvailableExtensions = darray_reserve(VkExtensionProperties, availableExtensionCount);
-	 * 
-	 * VK_CHECK(vkEnumerateInstanceExtensionProperties(NULL, &availableExtensionCount, pAvailableExtensions));
-	 * //  Verify all required extensions are available.
-	 * for (uint32_t i = 0; i < requiredExtensionCount; ++i)
-	 * {
-	 * 	YINFO("Searching for extension: %s...", ppRequiredExtensions[i]);
-	 * 	b8 bFound = FALSE;
-	 * 	for (uint32_t j = 0; j < availableExtensionCount; ++j)
-	 * 	{
-	 * 		YINFO("Extension: %s", pAvailableExtensions[j].extensionName);
-	 * 		if (!strcmp(ppRequiredExtensions[i], pAvailableExtensions[j].extensionName))
-	 * 		{ bFound = TRUE; YINFO("Found."); break; }
-	 * 	}
-	 * 	if (!bFound) { YFATAL("Required extension is missing: %s", ppRequiredExtensions[i]); exit(2); }
-	 * }
-	 * YINFO("All required extensions are present.");
-     */
-
 	VkApplicationInfo pAppInfo = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "yuseong",
@@ -199,7 +176,6 @@ RendererInit(OS_State *pOsState)
 		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
 		.apiVersion = VK_API_VERSION_1_3
 	};
-
 	VkInstanceCreateInfo pCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
