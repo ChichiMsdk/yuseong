@@ -48,7 +48,7 @@ LogOutput(LogLevel level, const char *pMessage, ...)
 {
 	const char *pLevelStrings[6] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE};
 	b8 bError = level < LOG_LEVEL_WARN;
-	const int32_t msgLength = 3200000;
+	const int32_t msgLength = 3200;
 
 	/* NOTE: care here */
 	char pOutMessage[msgLength];

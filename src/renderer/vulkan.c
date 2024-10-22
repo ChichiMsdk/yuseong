@@ -240,11 +240,9 @@ RendererInit(OS_State *pOsState)
 	};
 	YMB f32 depth = 1.0f; YMB f32 stencil = 0.0f;
 
-    /*
-	 * vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
-	 * gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
-	 * FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
-     */
+	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
+	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
+	FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
 
 	gVkCtx.pSemaphoresAvailableImage = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
 	gVkCtx.pSemaphoresQueueComplete = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);

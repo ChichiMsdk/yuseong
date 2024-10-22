@@ -74,7 +74,7 @@ void OS_Write(
 void OS_Sleep(
 		uint64_t							ms);
 
-YND uint64_t OS_GetAbsoluteTime(void);
+YND f64 OS_GetAbsoluteTime(void);
 
 YND VkResult OS_CreateVkSurface(
 		OS_State*							pState,

@@ -255,6 +255,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	if (!bTransferSharesGraphicsQueue) pIndices[index++] = pCtx->device.transferQueueIndex;
 
 	struct temp {int32_t count; uint32_t index;};
+	YDEBUG("queueCreateInfoCount = %d", queueCreateInfoCount);
 	struct temp tempIndices[queueCreateInfoCount];
 	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
 	{
@@ -283,11 +284,10 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		i++;
 	}
 
-    /*
-	 * for (uint32_t i = 0; i < realQueueCreateInfoCount; i++)
-	 * 	YDEBUG("Family index %lu - count: %d", tempIndices[i].index, tempIndices[i].count);
-	 * YDEBUG("Total count: %lu", realQueueCreateInfoCount);
-     */
+	for (uint32_t i = 0; i < realQueueCreateInfoCount; i++)
+		YDEBUG("Family index %lu - count: %d", tempIndices[i].index, tempIndices[i].count);
+	YDEBUG("Total count: %lu", realQueueCreateInfoCount);
+	exit(1);
 
 	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
 	f32 queue_priority = 1.0f;

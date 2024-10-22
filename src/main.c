@@ -20,6 +20,8 @@ b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext co
 
 /* #include "test.h" */
 
+const char* __asan_default_options() { return "detect_leaks=0"; }
+
 #ifndef TESTING
 #ifdef PLATFORM_WINDOWS
 int
@@ -50,7 +52,6 @@ main(void)
 }
 #elif PLATFORM_LINUX
 
-const char* __asan_default_options() { return "detect_leaks=0"; }
 
 int
 main(void)
