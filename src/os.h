@@ -24,14 +24,21 @@ typedef struct OS_State
 	typedef int REDIR;
 
 #	ifdef COMP_WAYLAND
-#		define VK_KHR_SURFACE_OS "VK_KHR_waylad_surface"
+#		define VK_KHR_SURFACE_OS "VK_KHR_wayland_surface"
 #	elif COMP_X11
-#		define VK_KHR_SURFACE_OS ""
+#		define VK_KHR_SURFACE_OS "VK_KHR_xlib_surface"
+#	elif YGLFW3
+#		define VK_KHR_SURFACE_OS "VK_KHR_xcb_surface"
 #	endif
 
 #endif // PLATFORM_WINDOWS
 
 extern b8 gRunning;
+
+void FramebufferUpdateInternalDimensions(
+		OS_State*							pOsState,
+		uint32_t							width,
+		uint32_t							height);
 
 void FramebufferGetDimensions(
 		OS_State*							pOsState,
@@ -67,7 +74,7 @@ void OS_Write(
 void OS_Sleep(
 		uint64_t							ms);
 
-YND f64 OS_GetAbsoluteTime(void);
+YND uint64_t OS_GetAbsoluteTime(void);
 
 YND VkResult OS_CreateVkSurface(
 		OS_State*							pState,

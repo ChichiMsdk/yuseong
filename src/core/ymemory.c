@@ -44,7 +44,7 @@ yZeroMemory(void *pBlock, uint64_t size)
   * Returns zero'ed allocated buffer
   */
 YND void *
-yAlloc(uint64_t size, MemoryTags tag)
+_yAlloc(uint64_t size, MemoryTags tag)
 {
 	if (tag == MEMORY_TAG_UNKNOWN)
 		YDEBUG("yAlloc called using MEMORY_TAG_UNKNOWN, re-class this allocation.");
@@ -57,7 +57,7 @@ yAlloc(uint64_t size, MemoryTags tag)
 }
 
 void 
-yFree(void *pBlock, uint64_t size, MemoryTags tag)
+_yFree(void *pBlock, uint64_t size, MemoryTags tag)
 {
 	if (tag == MEMORY_TAG_UNKNOWN)
 		YDEBUG("yFree called using MEMORY_TAG_UNKNOWN, re-class this allocation.");
@@ -110,7 +110,7 @@ StrGetMemoryUsage(void)
 #ifdef PLATFORM_WINDOWS
 	char* pOutString = _strdup(pBuffer);
 #elif PLATFORM_LINUX
-	char* pOutString = strdup(buffer);
+	char* pOutString = strdup(pBuffer);
 #endif
 	return pOutString;
 }

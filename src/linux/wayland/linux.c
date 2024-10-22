@@ -1,6 +1,7 @@
 #include "os.h"
 
 #ifdef YPLATFORM_LINUX
+#ifndef YGLFW3
 
 #	include "internals.h"
 
@@ -337,6 +338,13 @@ ConfigureListener(YMB  void *pData,YMB  struct wl_shell_surface *pShellSurface,
 
 }
 
+void
+FramebufferGetDimensions(YMB OS_State *pOsState, YMB uint32_t* pWidth, YMB uint32_t* pHeight)
+{
+
+}
+
+#endif // YGLFW3
 #endif // YPLATFORM_LINUX
 	/*
 	 * void
