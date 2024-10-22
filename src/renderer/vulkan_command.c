@@ -27,7 +27,7 @@ vkCommandBufferCreate(VkContext *pCtx)
 {
     if (!pCtx->pGfxCommands) 
 	{
-        pCtx->pGfxCommands = darray_reserve(VulkanCommandBuffer, pCtx->swapchain.imageCount);
+        pCtx->pGfxCommands = DarrayReserve(VulkanCommandBuffer, pCtx->swapchain.imageCount);
         for (uint32_t i = 0; i < pCtx->swapchain.imageCount; ++i) {
             memset(&pCtx->pGfxCommands[i], 0, sizeof(VulkanCommandBuffer));
         }

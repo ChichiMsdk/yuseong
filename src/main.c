@@ -20,7 +20,7 @@ b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext co
 
 /* #include "test.h" */
 
-const char* __asan_default_options() { return "detect_leaks=0"; }
+/* const char* __asan_default_options() { return "detect_leaks=0"; } */
 
 #ifndef TESTING
 #ifdef PLATFORM_WINDOWS
@@ -38,6 +38,7 @@ main(void)
 	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
 
 	VK_ASSERT(RendererInit(&state));
+	YINFO("%s", StrGetMemoryUsage());
 
 	while (gRunning)
 	{
@@ -45,14 +46,14 @@ main(void)
 		InputUpdate(1);
 		VK_ASSERT(yDraw());
 	}
-
 	RendererShutdown(&state);
+	InputShutdown();
 	OS_Shutdown(&state);
+	YDEBUG("%s", StrGetMemoryUsage());
 	return 0;
 }
 #elif PLATFORM_LINUX
-
-
+/* const char* __asan_default_options() { return "detect_leaks=0"; } */
 int
 main(void)
 {
@@ -74,11 +75,8 @@ main(void)
 #endif // TESTING
 
 b8
-_OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context)
+_OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventContext context)
 {
-	(void)pSender;
-	(void)pListenerInst;
-	(void)context;
 	switch (code) 
 	{
 		case EVENT_CODE_APPLICATION_QUIT: 
@@ -100,7 +98,7 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 		if (keyCode == KEY_ESCAPE) 
 		{
 			// NOTE: Technically firing an event to itself, but there may be other listeners.
-			EventContext data = {};
+			EventContext data = {0};
 			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
 
 			// Block anything else from processing this.
@@ -110,7 +108,7 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 	}
 	else if (code == EVENT_CODE_KEY_RELEASED) 
 	{
-		uint16_t keyCode = context.data.uint16_t[0];
+		YMB uint16_t keyCode = context.data.uint16_t[0];
 		YINFO("'%c' key released in window.\n", keyCode);
 	}
 	return FALSE;

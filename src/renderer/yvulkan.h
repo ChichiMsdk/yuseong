@@ -181,6 +181,7 @@ typedef struct VkContext
 	VkSurfaceKHR surface;
 	VulkanDevice device;
 
+	/* NOTE: Darray */
 	VulkanCommandBuffer *pGfxCommands;
 	uint32_t framebufferWidth;
 	uint32_t framebufferHeight;
@@ -199,7 +200,6 @@ typedef struct VkContext
 	// NOTE: Darrays
 	VkSemaphore *pSemaphoresAvailableImage;
 	VkSemaphore *pSemaphoresQueueComplete;
-
 	VulkanFence *pFencesInFlight;
 
     /* NOTE: Holds pointers to fences which exist and are owned elsewhere. */

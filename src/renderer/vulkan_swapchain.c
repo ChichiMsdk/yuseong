@@ -139,7 +139,7 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
 				yAlloc(sizeof(VkSurfaceFormatKHR) * pOutSupportInfo->formatCount, MEMORY_TAG_RENDERER);
         }
         errcode =
-			vkGetPhysicalDeviceSurfaceFormatsKHR( physDevice, surface, &pOutSupportInfo->formatCount, pOutSupportInfo->pFormats);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &pOutSupportInfo->formatCount, pOutSupportInfo->pFormats);
 		if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); }
     }
 
@@ -337,6 +337,8 @@ vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
 	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
 		vkDestroyImageView(device, pCtx->swapchain.pViews[i], pCtx->pAllocator);
 	vkDestroySwapchainKHR(device, pCtx->swapchain.handle, pCtx->pAllocator);
+	yFree(pCtx->swapchain.pImages, pCtx->swapchain.imageCount, MEMORY_TAG_RENDERER);
+	yFree(pCtx->swapchain.pViews, pCtx->swapchain.imageCount, MEMORY_TAG_RENDERER);
 	return VK_SUCCESS;
 }
 

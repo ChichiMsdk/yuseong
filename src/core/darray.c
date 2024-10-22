@@ -21,17 +21,17 @@ _DarrayCreate(uint64_t length, uint64_t stride)
 void
 _DarrayDestroy(void* pArray)
 {
-    uint64_t* header = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
-    uint64_t header_size = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
-    uint64_t total_size = header_size + header[DARRAY_CAPACITY] * header[DARRAY_STRIDE];
-    yFree(header, total_size, MEMORY_TAG_DARRAY);
+    uint64_t* pHeader = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
+    uint64_t headerSize = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
+    uint64_t totalSize = headerSize + pHeader[DARRAY_CAPACITY] * pHeader[DARRAY_STRIDE];
+    _yFree(pHeader, totalSize, MEMORY_TAG_DARRAY);
 }
 
 YND uint64_t
 _DarrayFieldGet(void* pArray, uint64_t field)
 {
-    uint64_t* header = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
-    return header[field];
+    uint64_t* pHeader = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
+    return pHeader[field];
 }
 
 void
@@ -44,16 +44,17 @@ _DarrayFieldSet(void* pArray, uint64_t field, uint64_t value)
 YND void*
 _DarrayResize(void* pArray)
 {
+	/*
+	 * WARN: Leak ?
+	 */
     uint64_t length = darray_length(pArray);
     uint64_t stride = darray_stride(pArray);
-    void* temp = _DarrayCreate(
-        (DARRAY_RESIZE_FACTOR * darray_capacity(pArray)),
-        stride);
-    memcpy(temp, pArray, length * stride);
+    void* pTemp = _DarrayCreate((DARRAY_RESIZE_FACTOR * darray_capacity(pArray)), stride);
+    memcpy(pTemp, pArray, length * stride);
 
-    _DarrayFieldSet(temp, DARRAY_LENGTH, length);
+    _DarrayFieldSet(pTemp, DARRAY_LENGTH, length);
     _DarrayDestroy(pArray);
-    return temp;
+    return pTemp;
 }
 
 YND void*

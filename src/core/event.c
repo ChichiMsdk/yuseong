@@ -1,6 +1,8 @@
 #include "darray.h"
 #include "event.h"
 
+#include "core/logger.h"
+
 typedef struct RegisteredEvent 
 {
 	void* pListener;
@@ -39,7 +41,7 @@ EventShutdown(void)
 	{
         if(state.pRegistered[i].pEvents != 0)
 		{
-            darray_destroy(state.pRegistered[i].pEvents);
+            DarrayDestroy(state.pRegistered[i].pEvents);
             state.pRegistered[i].pEvents = 0;
         }
     }
@@ -55,10 +57,10 @@ EventRegister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
 
     if(state.pRegistered[code].pEvents == 0)
 	{
-        state.pRegistered[code].pEvents = darray_create(RegisteredEvent);
+        state.pRegistered[code].pEvents = DarrayCreate(RegisteredEvent);
     }
 
-    uint64_t registered_count = darray_length(state.pRegistered[code].pEvents);
+    uint64_t registered_count = DarrayLength(state.pRegistered[code].pEvents);
     for(uint64_t i = 0; i < registered_count; ++i)
 	{
         if(state.pRegistered[code].pEvents[i].pListener == pListener)
@@ -71,8 +73,7 @@ EventRegister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
     RegisteredEvent event;
     event.pListener = pListener;
     event.callback = onEvent;
-    darray_push(state.pRegistered[code].pEvents, event);
-
+    DarrayPush(state.pRegistered[code].pEvents, event);
     return TRUE;
 }
 
@@ -91,7 +92,7 @@ EventUnregister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
         return FALSE;
     }
 
-    uint64_t registeredCount = darray_length(state.pRegistered[code].pEvents);
+    uint64_t registeredCount = DarrayLength(state.pRegistered[code].pEvents);
     for(uint64_t i = 0; i < registeredCount; ++i)
 	{
         RegisteredEvent e = state.pRegistered[code].pEvents[i];
@@ -99,11 +100,10 @@ EventUnregister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
 		{
             // Found one, remove it
             RegisteredEvent popped_event;
-            darray_pop_at(state.pRegistered[code].pEvents, i, &popped_event);
+            DarrayPopAt(state.pRegistered[code].pEvents, i, &popped_event);
             return TRUE;
         }
     }
-
     // Not found.
     return FALSE;
 }

@@ -83,14 +83,11 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
         vkDeviceQuerySwapchainSupport(device, surface, pOutSwapchainSupport);
         if (pOutSwapchainSupport->formatCount < 1 || pOutSwapchainSupport->presentModeCount < 1)
 		{
+			/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
             if (pOutSwapchainSupport->pFormats)
-			{
 				yFree(pOutSwapchainSupport->pFormats, pOutSwapchainSupport->formatCount, MEMORY_TAG_RENDERER);
-			}
             if (pOutSwapchainSupport->pPresentModes)
-			{
 				yFree(pOutSwapchainSupport->pPresentModes, pOutSwapchainSupport->presentModeCount, MEMORY_TAG_RENDERER);
-			}
             YINFO("Required swapchain support not present, skipping device.");
             return FALSE;
         }
@@ -108,7 +105,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
                 VK_CHECK(
 						vkEnumerateDeviceExtensionProperties(device, 0, &availableExtensionCount, pAvailableExtensions));
 
-                uint32_t requiredExtensionCount = darray_length(pRequirements->ppDeviceExtensionNames);
+                uint32_t requiredExtensionCount = DarrayLength(pRequirements->ppDeviceExtensionNames);
                 for (uint32_t i = 0; i < requiredExtensionCount; ++i)
 				{
                     b8 bFound = FALSE;
@@ -126,7 +123,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
                         YINFO("Required extension not found: '%s', skipping device.",
 								pRequirements->ppDeviceExtensionNames[i]);
                         yFree(pAvailableExtensions, availableExtensionCount, MEMORY_TAG_RENDERER);
-                        return FALSE;
+						return FALSE;
                     }
                 }
 				yFree(pAvailableExtensions, availableExtensionCount, MEMORY_TAG_RENDERER);
@@ -171,8 +168,8 @@ VulkanDeviceSelect(VkContext *pCtx)
 			.bTransfer = TRUE,
 			.bSamplerAnisotropy = TRUE,
 			.bDiscreteGpu = TRUE,
-			.ppDeviceExtensionNames = DarrayCreate(const char *)
 		};
+		requirements.ppDeviceExtensionNames = DarrayCreate(const char *);
 		DarrayPush(requirements.ppDeviceExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 		DarrayPush(requirements.ppDeviceExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
@@ -203,7 +200,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 			// Memory information
 			for (u32 j = 0; j < memory.memoryHeapCount; ++j)
 			{
-				f32 memorySizeGib = (((f32)memory.memoryHeaps[j].size) / 1024.0f / 1024.0f / 1024.0f);
+				YMB f32 memorySizeGib = (((f32)memory.memoryHeaps[j].size) / 1024.0f / 1024.0f / 1024.0f);
 				if (memory.memoryHeaps[j].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
 				{ YINFO("Local GPU memory: %.2f GiB", memorySizeGib); }
 				else
@@ -255,7 +252,6 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 	if (!bTransferSharesGraphicsQueue) pIndices[index++] = pCtx->device.transferQueueIndex;
 
 	struct temp {int32_t count; uint32_t index;};
-	YDEBUG("queueCreateInfoCount = %d", queueCreateInfoCount);
 	struct temp tempIndices[queueCreateInfoCount];
 	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
 	{
@@ -277,17 +273,13 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 					tempIndices[realQueueCreateInfoCount].count++;
 					j++;
 			}
-			if (j > 0)
-				i += j - 1;
-			realQueueCreateInfoCount++;
+			i++;
+			if (tempIndices[realQueueCreateInfoCount].count > 0)
+				realQueueCreateInfoCount++;
+			continue;
 		}
 		i++;
 	}
-
-	for (uint32_t i = 0; i < realQueueCreateInfoCount; i++)
-		YDEBUG("Family index %lu - count: %d", tempIndices[i].index, tempIndices[i].count);
-	YDEBUG("Total count: %lu", realQueueCreateInfoCount);
-	exit(1);
 
 	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
 	f32 queue_priority = 1.0f;

@@ -1,6 +1,8 @@
 #include "vulkan_framebuffer.h"
 #include "core/ymemory.h"
 
+#include "core/logger.h"
+
 void
 vkFramebufferCreate(VkContext* pCtx, VulkanRenderPass* pRenderpass, uint32_t width, uint32_t height, 
 		uint32_t attachmentCount, VkImageView* pAttachments, VulkanFramebuffer* pOutFramebuffer) 
@@ -37,7 +39,7 @@ vkFramebufferDestroy(VkContext* pCtx, VulkanFramebuffer* pFramebuffer)
     vkDestroyFramebuffer(pCtx->device.logicalDev, pFramebuffer->handle, pCtx->pAllocator);
     if (pFramebuffer->pAttachments) 
 	{
-        yFree(pFramebuffer->pAttachments, sizeof(VkImageView) * pFramebuffer->attachmentCount, MEMORY_TAG_RENDERER);
+        yFree(pFramebuffer->pAttachments, pFramebuffer->attachmentCount, MEMORY_TAG_RENDERER);
         pFramebuffer->pAttachments = 0;
     }
     pFramebuffer->handle = 0;

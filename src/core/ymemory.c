@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "TracyC.h"
+
 struct MemoryStats
 {
 	uint64_t totalAllocated;
@@ -53,6 +55,7 @@ _yAlloc(uint64_t size, MemoryTags tag)
 	void *pBlock = malloc(size);
 	KASSERT_MSG(pBlock, "OUT OF MEMORY");
 	memset(pBlock, 0, size);
+	TracyCAlloc(pBlock, size);
 	return pBlock;
 }
 
@@ -65,6 +68,7 @@ _yFree(void *pBlock, uint64_t size, MemoryTags tag)
 	gStats.pTaggedAllocations[tag] -= size;
 	// TODO: Memory alignment
 	free(pBlock);
+	TracyCFree(pBlock);
 }
 
 /**
@@ -81,6 +85,8 @@ StrGetMemoryUsage(void)
 	uint64_t offset = strlen(pBuffer);
 	for (uint32_t i = 0; i < MEMORY_TAG_MAX_TAGS; ++i)
 	{
+		if (gStats.pTaggedAllocations[i] <= 0)
+			continue;
 		char pUnit[4] = "XiB";
 		float fAmount = 1.0f;
 		if (gStats.pTaggedAllocations[i] >= gib) 

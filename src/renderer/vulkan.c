@@ -19,6 +19,8 @@
 #include <string.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "TracyC.h"
+
 static VkContext gVkCtx;
 
 YND VkResult VulkanCreateDevice(VkContext *pVulkanContext, char *pGPUName);
@@ -45,6 +47,7 @@ RendererShutdown(YMB OS_State *pState)
 
 	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
+
 	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
     /*
 	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
@@ -59,14 +62,34 @@ RendererShutdown(YMB OS_State *pState)
 		vkFramebufferDestroy(&gVkCtx, &gVkCtx.swapchain.pFramebuffers[i]);
 	}
 
+	DarrayDestroy(gVkCtx.swapchain.pFramebuffers);
+
 	vkRenderPassDestroy(&gVkCtx, &gVkCtx.mainRenderpass); 
 	for (uint8_t i = 0; i < gVkCtx.swapchain.maxFrameInFlight; i++)
 	{
 		vkDestroySemaphore(device, gVkCtx.pSemaphoresAvailableImage[i], gVkCtx.pAllocator);
 		vkDestroySemaphore(device, gVkCtx.pSemaphoresQueueComplete[i], gVkCtx.pAllocator);
-
 		vkFenceDestroy(&gVkCtx, &gVkCtx.pFencesInFlight[i]);
 	}
+
+	DarrayDestroy(gVkCtx.pSemaphoresQueueComplete);
+	DarrayDestroy(gVkCtx.pSemaphoresAvailableImage);
+	DarrayDestroy(gVkCtx.pFencesInFlight);
+	DarrayDestroy(gVkCtx.ppImagesInFlight);
+	DarrayDestroy(gVkCtx.pGfxCommands);
+
+	/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
+	if (gVkCtx.device.swapchainSupport.pFormats)
+	{
+		yFree(gVkCtx.device.swapchainSupport.pFormats, gVkCtx.device.swapchainSupport.formatCount, 
+				MEMORY_TAG_RENDERER);
+	}
+	if (gVkCtx.device.swapchainSupport.pPresentModes)
+	{
+		yFree(gVkCtx.device.swapchainSupport.pPresentModes, gVkCtx.device.swapchainSupport.presentModeCount, 
+				MEMORY_TAG_RENDERER);
+	}
+
 	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
 	vkDestroyInstance(gVkCtx.instance, gVkCtx.pAllocator);
 }
@@ -114,7 +137,6 @@ SyncInit(void)
 		/* NOTE: Assuming that the app CANNOT run without fences therefore we abort() in case of failure */
 		VK_ASSERT(vkFenceCreate(&gVkCtx, TRUE, &gVkCtx.pFencesInFlight[i]));
 	}
-
 }
 
 YND VkResult
@@ -122,7 +144,7 @@ RendererInit(OS_State *pOsState)
 {
 	char*			pGPUName = "NVIDIA GeForce RTX 3080";
 	const char**	ppRequiredValidationLayerNames = 0;
-	const char**	ppRequiredExtensions = darray_create(const char *);
+	const char**	ppRequiredExtensions = DarrayCreate(const char *);
 	uint32_t		requiredValidationLayerCount = 0;
 	uint32_t		requiredExtensionCount = 0;
 
@@ -133,7 +155,7 @@ RendererInit(OS_State *pOsState)
 	FramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
 
 #ifdef DEBUG
-		darray_push(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		DarrayPush(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		YDEBUG("Required extensions:");
 		uint32_t length = DarrayLength(ppRequiredExtensions);
 		for (uint32_t i = 0; i < length; ++i)
@@ -142,7 +164,7 @@ RendererInit(OS_State *pOsState)
 		// The list of validation layers required.
 		YINFO("Validation layers enabled. Enumerating...");
 		ppRequiredValidationLayerNames = DarrayCreate(const char*);
-		darray_push(ppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
+		DarrayPush(ppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
 		requiredValidationLayerCount = DarrayLength(ppRequiredValidationLayerNames);
 		
 		// Obtain list of available validation layers.
@@ -167,7 +189,7 @@ RendererInit(OS_State *pOsState)
 		DarrayDestroy(pAvailableLayers);
 		YINFO("All required validation layers are present.");
 #endif // DEBUG
-	requiredExtensionCount = darray_length(ppRequiredExtensions);
+	requiredExtensionCount = DarrayLength(ppRequiredExtensions);
 	VkApplicationInfo pAppInfo = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "yuseong",
@@ -360,6 +382,7 @@ yDraw(void)
 				gVkCtx.pFencesInFlight[gVkCtx.currentFrame].handle));
 
 	pCmd->state = COMMAND_BUFFER_STATE_SUBMITTED;
+	TracyCFrameMark
 	VK_CHECK(vkSwapchainPresent(
 				&gVkCtx,
 				&gVkCtx.swapchain,

@@ -26,15 +26,19 @@ typedef enum MemoryTags
 	MEMORY_TAG_MAX_TAGS,
 }MemoryTags;
 
+#define yFree2(pBlock, size, tag) \
+	_yFree(pBlock, size, tag)
+
 #define yFree(pBlock, size, tag) \
-	_yFree(pBlock, sizeof(typeof(pBlock)) * size, tag)
+	_yFree(pBlock, sizeof(*(pBlock)) * size, tag)
 
 #define yAlloc(size, tag) \
-	_yAlloc(size, tag)
+	_yAlloc(size, tag);
 
-#define yFree(pBlock, size, tag) \
-	_yFree(pBlock, sizeof(typeof(pBlock)) * size, tag)
-
+/*
+ * #define yAlloc(size, tag) \
+ * 	_yAlloc(size, tag)
+ */
 
 YND void* _yAlloc(
 		uint64_t							size,
