@@ -248,22 +248,24 @@ RendererInit(OS_State *pOsState)
 	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
 	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
 
-	ColorFloat color = {
+	YMB ColorFloat color = {
 		.r = 30.0f,
 		.g = 30.0f,
 		.b = 200.0f,
 		.a = 1.0f,
 	};
-	RectFloat rect = {
+	YMB RectFloat rect = {
 		.x = 0.0f, .y = 0.0f,
 		.w = gVkCtx.framebufferWidth,
 		.h = gVkCtx.framebufferHeight,
 	};
-	f32 depth = 1.0f; f32 stencil = 0.0f;
+	YMB f32 depth = 1.0f; YMB f32 stencil = 0.0f;
 
-	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
-	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
-	FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
+    /*
+	 * vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
+	 * gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
+	 * FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
+     */
 
 	gVkCtx.pSemaphoresAvailableImage = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
 	gVkCtx.pSemaphoresQueueComplete = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
