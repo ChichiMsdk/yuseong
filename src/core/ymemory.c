@@ -1,6 +1,8 @@
+#include "os.h"
+
+#include "ystring.h"
 #include "ymemory.h"
 #include "logger.h"
-#include "os.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -77,6 +79,8 @@ _yFree(void *pBlock, uint64_t size, MemoryTags tag)
 YND char *
 StrGetMemoryUsage(void)
 {
+	if (gStats.totalAllocated <= 0)
+		return StrDup("No memory allocated.");
 	const uint64_t gib = 1024 * 1024 * 1024;
 	const uint64_t mib = 1024 * 1024;
 	const uint64_t kib = 1024;
@@ -85,8 +89,6 @@ StrGetMemoryUsage(void)
 	uint64_t offset = strlen(pBuffer);
 	for (uint32_t i = 0; i < MEMORY_TAG_MAX_TAGS; ++i)
 	{
-		if (gStats.pTaggedAllocations[i] <= 0)
-			continue;
 		char pUnit[4] = "XiB";
 		float fAmount = 1.0f;
 		if (gStats.pTaggedAllocations[i] >= gib) 
@@ -113,10 +115,13 @@ StrGetMemoryUsage(void)
 		int32_t length = snprintf(pBuffer + offset, 8000, "  %s: %.2f%s\n", MemoryTagStrings[i], fAmount, pUnit);
 		offset += length;
 	}
-#ifdef PLATFORM_WINDOWS
-	char* pOutString = _strdup(pBuffer);
-#elif PLATFORM_LINUX
-	char* pOutString = strdup(pBuffer);
-#endif
+	char* pOutString = StrDup(pBuffer);
+/*
+ * #ifdef PLATFORM_WINDOWS
+ * 	char* pOutString = _strdup(pBuffer);
+ * #elif PLATFORM_LINUX
+ * 	char* pOutString = strdup(pBuffer);
+ * #endif
+ */
 	return pOutString;
 }

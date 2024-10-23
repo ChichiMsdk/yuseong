@@ -258,10 +258,14 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		tempIndices[i].index = -1;
 		tempIndices[i].count = 0;
 	}
-
+	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
+	{
+		/* YDEBUG("IndexInfos: %d:%d", pQueueCreateInfos[i].queueFamilyIndex, pQueueCreateInfos[i].queueCount); */
+		YDEBUG("%d", pIndices[i]);
+	}
 	uint32_t realQueueCreateInfoCount = 0;
-	uint32_t i = 0;
-	uint32_t j = 0;
+	YMB uint32_t i = 0;
+	YMB uint32_t j = 0;
 
 	while (i < queueCreateInfoCount)
 	{
@@ -283,12 +287,15 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 
 	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
 	f32 queue_priority = 1.0f;
+	/* for (uint32_t i = 0; i < queueCreateInfoCount; ++i) */
 	for (uint32_t i = 0; i < realQueueCreateInfoCount; ++i)
 	{
 		pQueueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		/* pQueueCreateInfos[i].queueFamilyIndex = pIndices[i]; */
 		pQueueCreateInfos[i].queueFamilyIndex = tempIndices[i].index;
-		pQueueCreateInfos[i].queueCount = tempIndices[i].count;
+		pQueueCreateInfos[i].queueCount = 1;
+
+		/* pQueueCreateInfos[i].queueCount = tempIndices[i].count; */
 		/*
 		 * TODO enable this for future enhancements.
 		 * 	if (indices[i] == context->device.graphics_queue_index)
@@ -300,6 +307,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		pQueueCreateInfos[i].pNext = 0;
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
+
 	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
 		.synchronization2 = VK_TRUE,
@@ -319,12 +327,11 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 
 	const char **ppExtensionNames = DarrayCreate(const char *);
 	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+	/* DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
 	YMB uint32_t extensionCount = DarrayLength(ppExtensionNames);
-
 	VkDeviceCreateInfo deviceCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		.queueCreateInfoCount = queueCreateInfoCount,
+		.queueCreateInfoCount = realQueueCreateInfoCount,
 		.pQueueCreateInfos = pQueueCreateInfos,
 		/* .pEnabledFeatures = &enabledFeatures, */
 		.enabledExtensionCount = extensionCount,

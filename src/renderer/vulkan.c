@@ -291,6 +291,7 @@ RendererInit(OS_State *pOsState)
 YND VkResult
 yDraw(void)
 {
+	TracyCZoneN(drawCtx, "yDraw", 1);
 	YMB VkDevice device = gVkCtx.device.logicalDev;
 	uint64_t timeoutNS = 1000000000; // 1 sec - 1 billion nanoseconds
 	VK_CHECK(vkFenceWait(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame], timeoutNS));
@@ -390,7 +391,7 @@ yDraw(void)
 				gVkCtx.device.presentQueue,
 				gVkCtx.pSemaphoresQueueComplete[gVkCtx.currentFrame],
 				gVkCtx.imageIndex));
-
+	TracyCZoneEnd(drawCtx);
 	return VK_SUCCESS;
 }
 

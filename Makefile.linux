@@ -8,41 +8,43 @@ CC =clang-19
 CPP =clang++
 
 SRC_DIR =src
-SRC_1_DIR =src/platform
-SRC_2_DIR =src/core
-SRC_3_DIR =src/renderer
-SRC_4_DIR =src/renderer/vulkan
 
-INCLUDE_DIRS =-Isrc -Isrc/core
+INCLUDE_DIRS =-Isrc -Isrc/core -I$(HOME)/tracy/public -I$(HOME)/tracy/public/tracy
 
-LIBS =-lglfw -lvulkan -lwayland-client -lxkbcommon -lm -lGL -lpthread
+LIBS =-lglfw -lvulkan -lwayland-client -lxkbcommon -lm
 LIB_PATH =
 
 CFLAGS =-Wall -Wextra -Werror
 # CFLAGS +=-std=c23
+
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
 # CFLAGS +=-Wno-uninitialized
+
 CFLAGS += -DPLATFORM_LINUX
-CFLAGS +=-g -Wvarargs -O0
+CFLAGS +=-ggdb3 -Wvarargs -O0
 CFLAGS +=-D_DEBUG -DDEBUG
 CFLAGS +=-DYGLFW3
-# CFLAGS +=-DTRACY_ENABLE
+
 CFLAGS +=-fsanitize=address
 # CFLAGS +=-fsanitize=thread
-
-# CPPFLAGS =-Wno-format
-# CPPFLAGS +=-DTRACY_ENABLE
 
 FILES =$(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
+# CPPFLAGS =-Wno-format
+# CPPFLAGS +=-stdlib=libc++
+# CFLAGS +=-DTRACY_ENABLE
+# CPPFLAGS +=-DTRACY_ENABLE
+# INCLUDE_DIRS +=-I/usr/include/x86_64-unknown-linux-gnu/c++/v1
+# LIB_PATH +=-L/usr/lib/x86_64-unknown-linux-gnu
+# LIBS +=-lc++
 # CPP_FILES =$(shell find $(SRC_DIR) -type f -name '*.cpp')
 # CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 
 sorry: re
 
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT)
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) compile_commands.json
 
 $(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)

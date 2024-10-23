@@ -2,6 +2,7 @@
 #define YMEMORY_H
 
 #	include "mydefines.h"
+#	include "logger.h"
 
 typedef enum MemoryTags
 {
@@ -25,6 +26,13 @@ typedef enum MemoryTags
 
 	MEMORY_TAG_MAX_TAGS,
 }MemoryTags;
+
+#define SystemMemoryUsagePrint() \
+	do { \
+		char *pMemReport = StrGetMemoryUsage(); \
+		YDEBUG("%s", pMemReport); \
+		free(pMemReport); \
+	} while (0)
 
 #define yFree2(pBlock, size, tag) \
 	_yFree(pBlock, size, tag)

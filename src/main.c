@@ -53,7 +53,7 @@ main(void)
 	return 0;
 }
 #elif PLATFORM_LINUX
-/* const char* __asan_default_options() { return "detect_leaks=0"; } */
+const char* __asan_default_options() { return "detect_leaks=0"; }
 int
 main(void)
 {
@@ -68,6 +68,8 @@ main(void)
 	}
 	RendererShutdown(&state);
 	OS_Shutdown(&state);
+	InputShutdown();
+	SystemMemoryUsagePrint();
 	return 0;
 }
 

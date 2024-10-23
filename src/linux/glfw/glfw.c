@@ -35,9 +35,6 @@ OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, 
 	pOsState->pInternalState = calloc(1, sizeof(InternalState));
 	InternalState *pState = (InternalState *)pOsState->pInternalState;
 	glfwSetErrorCallback(ErrorCallback);
-    /*
-	 * GLFW_CHECK(glfwInit());
-     */
 	if (!glfwInit())
 	{
 		const char *pDesc; 
@@ -131,7 +128,7 @@ OS_PumpMessages(YMB OS_State* pOsState)
 	return TRUE;
 }
 
-YND uint64_t 
+YND f64 
 OS_GetAbsoluteTime(void)
 {
 	struct timespec tp;
