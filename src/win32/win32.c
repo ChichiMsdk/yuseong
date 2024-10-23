@@ -263,7 +263,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
             uint32_t width = r.right - r.left;
             uint32_t height = r.bottom - r.top;
            	// Fire the event. The application layer should pick this up, but not handle it
-            // as it shouldn be visible to other parts of the application.
+            // as it shouldn't be visible to other parts of the application.
             EventContext context;
             context.data.uint16_t[0] = (uint16_t)width;
             context.data.uint16_t[1] = (uint16_t)height;
@@ -301,7 +301,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
         case WM_MBUTTONUP:
         case WM_RBUTTONUP: {
             b8 bPressed = msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN;
-			Buttons mouseButton = BUTTON_MAX_BUTTONS;
+			MouseButtons mouseButton = BUTTON_MAX_BUTTONS;
 			switch(msg)
 			{
 				case WM_LBUTTONDOWN:

@@ -7,28 +7,27 @@
 #include "core/ymemory.h"
 #include "core/logger.h"
 
-#include "renderer/yvulkan.h"
+#include "renderer/vulkan/yvulkan.h"
 #include <vulkan/vk_enum_string_helper.h>
-
-YND VkResult yDraw(void);
 
 b8 gRunning = TRUE;
 
+YND VkResult yDraw(void);
 b8 _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 
+const char* __asan_default_options() { return "detect_leaks=0"; }
 /* #include "test.h" */
-
-/* const char* __asan_default_options() { return "detect_leaks=0"; } */
-
 #ifndef TESTING
-#ifdef PLATFORM_WINDOWS
 int
 main(void)
 {
 	OS_State state = {0};
-	if (!OS_Init(&state, "yuseong", 100, 100, 500, 500))
+	int32_t x = 100; int32_t y = 100;
+	int32_t w = 500; int32_t h = 500;
+	const char *pAppName = "yuseong";
+	if (!OS_Init(&state, pAppName, x, y, w, h))
 		exit(1);
 
 	EventInit();
@@ -38,7 +37,6 @@ main(void)
 	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
 
 	VK_ASSERT(RendererInit(&state));
-	YINFO("%s", StrGetMemoryUsage());
 
 	while (gRunning)
 	{
@@ -49,37 +47,9 @@ main(void)
 	RendererShutdown(&state);
 	InputShutdown();
 	OS_Shutdown(&state);
-	YDEBUG("%s", StrGetMemoryUsage());
-	return 0;
-}
-#elif PLATFORM_LINUX
-const char* __asan_default_options() { return "detect_leaks=0"; }
-int
-main(void)
-{
-	OS_State state = {0};
-	if(!OS_Init(&state, "yuseong", 100, 100, 500, 500))
-		exit(1);
-	VK_ASSERT(RendererInit(&state));
-
-	EventRegister(EVENT_CODE_APPLICATION_QUIT, 0, _OnEvent);
-	EventRegister(EVENT_CODE_KEY_PRESSED, 0, _OnKey);
-	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
-
-	while(gRunning)
-	{
-		OS_PumpMessages(&state);
-		InputUpdate(1);
-		VK_ASSERT(yDraw());
-	}
-	RendererShutdown(&state);
-	OS_Shutdown(&state);
-	InputShutdown();
 	SystemMemoryUsagePrint();
 	return 0;
 }
-
-#endif  //PLATFORM_WINDOWS
 #endif // TESTING
 
 b8

@@ -99,9 +99,7 @@ InputProcessMouseMove(int16_t x, int16_t y)
     // Only process if actually different
     if (gState.mouseCurrent.x != x || gState.mouseCurrent.y != y) 
 	{
-        // NOTE: Enable this if debugging.
-		
-  		//KDEBUG("Mouse pos: %i, %i!", x, y);
+  		/* YDEBUG("Mouse pos: %i, %i!", x, y); */
 
         // Update internal state.
         gState.mouseCurrent.x = x;
@@ -168,7 +166,7 @@ InputWasKeyUp(Keys key)
 
 // mouse input
 YND b8
-InputIsButtonDown(MouseButtons button) 
+InputIsMouseButtonDown(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -178,7 +176,7 @@ InputIsButtonDown(MouseButtons button)
 }
 
 YND b8
-InputIsButtonUp(MouseButtons button) 
+InputIsMouseButtonUp(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -188,7 +186,7 @@ InputIsButtonUp(MouseButtons button)
 }
 
 YND b8
-InputWasButtonDown(MouseButtons button) 
+InputWasMouseButtonDown(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -198,7 +196,7 @@ InputWasButtonDown(MouseButtons button)
 }
 
 YND b8
-InputWasButtonUp(MouseButtons button) 
+InputWasMouseButtonUp(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{

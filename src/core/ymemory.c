@@ -116,12 +116,5 @@ StrGetMemoryUsage(void)
 		offset += length;
 	}
 	char* pOutString = StrDup(pBuffer);
-/*
- * #ifdef PLATFORM_WINDOWS
- * 	char* pOutString = _strdup(pBuffer);
- * #elif PLATFORM_LINUX
- * 	char* pOutString = strdup(pBuffer);
- * #endif
- */
 	return pOutString;
 }

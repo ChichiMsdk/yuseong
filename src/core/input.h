@@ -4,9 +4,9 @@
 #	include "mydefines.h"
 #	define DEFINE_KEY(name, code) KEY_##name = code
 
-
 #ifdef PLATFORM_WINDOWS
-typedef enum Buttons 
+
+typedef enum MouseButtons 
 {
 	BUTTON_LEFT,
 	BUTTON_RIGHT,
@@ -322,18 +322,17 @@ void InputProcessKey(
 		b8									bPressed);
 
 /* Mouse input */
+YND b8 InputIsMouseButtonDown(
+		MouseButtons						button);
 
-YND b8 InputIsButtonDown(
-		MouseButtons								button);
+YND b8 InputIsMouseButtonUp(
+		MouseButtons						button);
 
-YND b8 InputIsButtonUp(
-		MouseButtons								button);
+YND b8 InputWasMouseButtonDown(
+		MouseButtons						button);
 
-YND b8 InputWasButtonDown(
-		MouseButtons								button);
-
-YND b8 InputWasButtonUp(
-		MouseButtons								button);
+YND b8 InputWasMouseButtonUp(
+		MouseButtons						button);
 
 void InputGetMousePosition(
 		int32_t*							pX,
@@ -344,7 +343,7 @@ void InputGetPreviousMousePosition(
 		int32_t*							pY);
 
 void InputProcessMouseButton(
-		MouseButtons								button,
+		MouseButtons						button,
 		b8									bPressed);
 
 void InputProcessMouseMove(

@@ -2,7 +2,7 @@
 #define OS_H
 
 #include "mydefines.h"
-#include "renderer/yvulkan.h"
+#include "renderer/vulkan/yvulkan.h"
 #include <stdint.h>
 
 typedef struct OS_State
@@ -51,10 +51,10 @@ b8 OS_PumpMessages(
 YND b8 OS_Init(
 		OS_State*							pState,
 		const char*							pAppName,
-		i32									x,
-		i32									y,
-		i32									w,
-		i32									h);
+		int32_t								x,
+		int32_t								y,
+		int32_t								w,
+		int32_t								h);
 
 void OS_Shutdown(
 		OS_State*							pState);
