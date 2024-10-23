@@ -61,9 +61,15 @@ main(void)
 	if(!OS_Init(&state, "yuseong", 100, 100, 500, 500))
 		exit(1);
 	VK_ASSERT(RendererInit(&state));
+
+	EventRegister(EVENT_CODE_APPLICATION_QUIT, 0, _OnEvent);
+	EventRegister(EVENT_CODE_KEY_PRESSED, 0, _OnKey);
+	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
+
 	while(gRunning)
 	{
 		OS_PumpMessages(&state);
+		InputUpdate(1);
 		VK_ASSERT(yDraw());
 	}
 	RendererShutdown(&state);
@@ -79,6 +85,7 @@ main(void)
 b8
 _OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventContext context)
 {
+	YTRACE("IM CALLED!!");
 	switch (code) 
 	{
 		case EVENT_CODE_APPLICATION_QUIT: 
@@ -94,7 +101,10 @@ _OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventCon
 b8
 _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context) 
 {
-	if (code == EVENT_CODE_KEY_PRESSED) 
+	/* YTRACE("IM CALLED!!"); */
+	uint16_t keyCode = context.data.uint16_t[0];
+	YTRACE("'%c' key pressed in window.\n", keyCode);
+	if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
 	{
 		uint16_t keyCode = context.data.uint16_t[0];
 		if (keyCode == KEY_ESCAPE) 
@@ -102,8 +112,6 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 			// NOTE: Technically firing an event to itself, but there may be other listeners.
 			EventContext data = {0};
 			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
-
-			// Block anything else from processing this.
 			return TRUE;
 		}
 		YINFO("'%c' key pressed in window.\n", keyCode);

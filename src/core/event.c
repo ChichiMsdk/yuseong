@@ -6,7 +6,7 @@
 typedef struct RegisteredEvent 
 {
 	void* pListener;
-	PFN_OnEvent callback;
+	pfnOnEvent callback;
 } RegisteredEvent;
 
 typedef struct EventCodeEntry 
@@ -48,7 +48,7 @@ EventShutdown(void)
 }
 
 b8
-EventRegister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
+EventRegister(uint16_t code, void* pListener, pfnOnEvent onEvent)
 {
     if(bInitialized == FALSE)
 	{
@@ -78,7 +78,7 @@ EventRegister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
 }
 
 b8 
-EventUnregister(uint16_t code, void* pListener, PFN_OnEvent onEvent)
+EventUnregister(uint16_t code, void* pListener, pfnOnEvent onEvent)
 {
     if(bInitialized == FALSE)
 	{
@@ -115,18 +115,17 @@ EventFire(uint16_t code, void* pSender, EventContext context)
 	{
         return FALSE;
     }
-
     // If nothing is registered for the code, boot out.
     if(state.pRegistered[code].pEvents == 0)
 	{
         return FALSE;
     }
 
-    uint64_t registeredCount = darray_length(state.pRegistered[code].pEvents);
+    uint64_t registeredCount = DarrayLength(state.pRegistered[code].pEvents);
     for(uint64_t i = 0; i < registeredCount; ++i) 
 	{
-        RegisteredEvent e = state.pRegistered[code].pEvents[i];
-        if(e.callback(code, pSender, e.pListener, context))
+        RegisteredEvent eventRegistered = state.pRegistered[code].pEvents[i];
+        if(eventRegistered.callback(code, pSender, eventRegistered.pListener, context))
 		{
             // Message has been handled, do not send to other pListeners.
             return TRUE;

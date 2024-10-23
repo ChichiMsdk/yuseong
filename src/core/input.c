@@ -45,9 +45,8 @@ InputShutdown(void)
 }
 
 void
-InputUpdate(f64 deltaTime) 
+InputUpdate(YMB f64 deltaTime) 
 {
-	(void)deltaTime;
     if (!gbInitialized) 
 	{
         return;
@@ -61,20 +60,26 @@ void
 InputProcessKey(Keys key, b8 bPressed) 
 {
     // Only handle this if the state actually changed.
-    if (gState.keyboardCurrent.pKeys[key] != bPressed) 
+	if (gState.keyboardCurrent.pKeys[key] != bPressed) 
 	{
-        // Update internal state.
-        gState.keyboardCurrent.pKeys[key] = bPressed;
+		// Update internal state.
+		gState.keyboardCurrent.pKeys[key] = bPressed;
 
-        // Fire off an event for immediate processing.
-        EventContext context;
-        context.data.uint16_t[0] = key;
-        EventFire(bPressed ? EVENT_CODE_KEY_PRESSED : EVENT_CODE_KEY_RELEASED, 0, context);
-    }
+		// Fire off an event for immediate processing.
+		EventContext context;
+		context.data.uint16_t[0] = key;
+		YDEBUG("FIRING: %lu", context.data.uint16_t[0]);
+		YDEBUG("FIRING: %d", key);
+		EventFire(bPressed ? EVENT_CODE_KEY_PRESSED : EVENT_CODE_KEY_RELEASED, 0, context);
+	}
+	else
+	{
+		YDEBUG("Not handled, not changed");
+	}
 }
 
 void
-InputProcessButton(Buttons button, b8 bPressed) 
+InputProcessMouseButton(MouseButtons button, b8 bPressed) 
 {
     // If the state changed, fire an event.
     if (gState.mouseCurrent.pButtons[button] != bPressed) 
@@ -163,7 +168,7 @@ InputWasKeyUp(Keys key)
 
 // mouse input
 YND b8
-InputIsButtonDown(Buttons button) 
+InputIsButtonDown(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -173,7 +178,7 @@ InputIsButtonDown(Buttons button)
 }
 
 YND b8
-InputIsButtonUp(Buttons button) 
+InputIsButtonUp(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -183,7 +188,7 @@ InputIsButtonUp(Buttons button)
 }
 
 YND b8
-InputWasButtonDown(Buttons button) 
+InputWasButtonDown(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{
@@ -193,7 +198,7 @@ InputWasButtonDown(Buttons button)
 }
 
 YND b8
-InputWasButtonUp(Buttons button) 
+InputWasButtonUp(MouseButtons button) 
 {
     if (!gbInitialized) 
 	{

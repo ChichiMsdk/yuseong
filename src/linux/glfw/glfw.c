@@ -5,9 +5,11 @@
 
 extern b8 gRunning;
 
+#include "core/event.h"
+#include "core/input.h"
+#include "core/logger.h"
 #include "glfw_callback.h"
 
-#include "core/logger.h"
 #include <vulkan/vulkan.h>
 
 #include <math.h>
@@ -114,9 +116,7 @@ OS_Write(const char *pMessage, REDIR redir)
 b8
 OS_PumpMessages(YMB OS_State* pOsState)
 {
-	InternalState *pState = (InternalState *) pOsState->pInternalState;
-	if (glfwWindowShouldClose(pState->pWindow))
-		gRunning = FALSE;
+	YMB InternalState *pState = (InternalState *) pOsState->pInternalState;
 	glfwPollEvents();
 	static uint64_t startTime;
 	uint64_t currentTime = OS_GetAbsoluteTime();
@@ -150,16 +150,40 @@ ErrorCallback(int error, const char* pDescription)
 }
 
 static void
-_KeyCallback(GLFWwindow* pWindow, int key, YMB int scancode, int action, YMB int mods)
+_KeyCallback(YMB GLFWwindow* pWindow,YMB int key, YMB int scancode, int action, YMB int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(pWindow, GLFW_TRUE);
+	b8 bPressed = FALSE;
+	if (action == GLFW_PRESS || action == GLFW_REPEAT)
+		bPressed = TRUE;
+	InputProcessKey(scancode, bPressed);
+	if (key == 256)
+	{
+		if (bPressed)
+		{
+			YDEBUG("Pressed ESC int = %d scancode = %d", key, key, scancode);
+		}
+		else
+		{
+			YDEBUG("Released ESC int = %d scancode = %d", key, key, scancode);
+		}
+	}
+	else
+	{
+		if (bPressed)
+		{
+			YDEBUG("Pressed int = %d scancode = %d", key, key, scancode);
+		}
+		else
+		{
+			YDEBUG("Released int = %d scancode = %d", key, key, scancode);
+		}
+
+	}
 }
 
 static void
 _MouseCallback(YMB GLFWwindow* pWindow, YMB int button, YMB int action, YMB int mods)
 {
-
 }
 
 #endif // YGLFW3

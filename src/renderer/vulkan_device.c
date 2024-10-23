@@ -7,7 +7,127 @@
 #include <string.h>
 #include <stdlib.h>
 
-b8 
+static VkResult VulkanDeviceSelect(VkContext *pCtx);
+
+YND VkResult
+VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
+{
+	uint32_t queueCreateInfoCount = 1;
+	uint8_t index = 0;
+
+	VK_CHECK(VulkanDeviceSelect(pCtx));
+
+	YINFO("Creating logical device...");
+
+	b8 bPresentSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.presentQueueIndex;
+	b8 bTransferSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.transferQueueIndex;
+
+	if (!bPresentSharesGraphicsQueue) 
+		queueCreateInfoCount++;
+	if (!bTransferSharesGraphicsQueue) 
+		queueCreateInfoCount++;
+
+	uint32_t pIndices[queueCreateInfoCount];
+	pIndices[index++] = pCtx->device.graphicsQueueIndex;
+
+	if (!bPresentSharesGraphicsQueue) 
+		pIndices[index++] = pCtx->device.presentQueueIndex;
+	if (!bTransferSharesGraphicsQueue) 
+		pIndices[index++] = pCtx->device.transferQueueIndex;
+
+	struct temp {int32_t count; uint32_t index;};
+	struct temp tempIndices[queueCreateInfoCount];
+	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
+	{
+		tempIndices[i].index = -1;
+		tempIndices[i].count = 0;
+	}
+	uint32_t realQueueCreateInfoCount = 0;
+
+	YMB uint32_t i = 0;
+	YMB uint32_t j = 0;
+	/* Remove duplicates */
+	while (i < queueCreateInfoCount)
+	{
+		if (tempIndices[realQueueCreateInfoCount].index != pIndices[i])
+		{
+			tempIndices[realQueueCreateInfoCount].index = pIndices[i];
+			while ( j < queueCreateInfoCount && tempIndices[realQueueCreateInfoCount].index == pIndices[j])
+			{
+					tempIndices[realQueueCreateInfoCount].count++;
+					j++;
+			}
+			i++;
+			if (tempIndices[realQueueCreateInfoCount].count > 0)
+				realQueueCreateInfoCount++;
+			continue;
+		}
+		i++;
+	}
+
+	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
+	f32 queue_priority = 1.0f;
+	for (uint32_t i = 0; i < realQueueCreateInfoCount; ++i)
+	{
+		pQueueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		pQueueCreateInfos[i].queueFamilyIndex = tempIndices[i].index;
+		pQueueCreateInfos[i].queueCount = 1;
+		/*
+		 * TODO enable this for future enhancements.
+		 * 	if (indices[i] == context->device.graphics_queue_index)
+		 * 	{
+		 * 		pQueueCreateInfos[i].queueCount = 2;
+		 * 	}
+		 */
+		pQueueCreateInfos[i].flags = 0;
+		pQueueCreateInfos[i].pNext = 0;
+		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
+	}
+
+	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+		.synchronization2 = VK_TRUE,
+		.pNext = NULL,
+	};
+
+	/* TODO: shoud be config driven */
+	VkPhysicalDeviceFeatures enabledFeatures = {
+		.samplerAnisotropy = VK_TRUE,
+	};
+
+	YMB VkPhysicalDeviceFeatures2 enabledFeatures2 = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+		.features = enabledFeatures,
+		.pNext = &physicalDeviceSynch2Features,
+	};
+
+	const char **ppExtensionNames = DarrayCreate(const char *);
+	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	/* DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
+	YMB uint32_t extensionCount = DarrayLength(ppExtensionNames);
+
+	VkDeviceCreateInfo deviceCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.queueCreateInfoCount = realQueueCreateInfoCount,
+		.pQueueCreateInfos = pQueueCreateInfos,
+		.enabledExtensionCount = extensionCount,
+		.ppEnabledExtensionNames = ppExtensionNames,
+		.pNext = &enabledFeatures2,
+	};
+	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, &pCtx->device.logicalDev));
+	YINFO("Logical device created.");
+
+	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
+	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.graphicsQueueIndex, 0, &pCtx->device.graphicsQueue);
+	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
+
+	DarrayDestroy(ppExtensionNames);
+
+	YINFO("Queues obtained.");
+	return VK_SUCCESS;
+}
+
+static b8 
 PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 		const VkPhysicalDeviceProperties* pProperties,
 		const VkPhysicalDeviceFeatures* pFeatures,
@@ -141,7 +261,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
     return FALSE;
 }
 
-YND VkResult
+static VkResult
 VulkanDeviceSelect(VkContext *pCtx)
 {
 	uint32_t physicalDeviceCount = 0;
@@ -198,7 +318,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 					VK_VERSION_MINOR(properties.apiVersion),
 					VK_VERSION_PATCH(properties.apiVersion));
 			// Memory information
-			for (u32 j = 0; j < memory.memoryHeapCount; ++j)
+			for (uint32_t j = 0; j < memory.memoryHeapCount; ++j)
 			{
 				YMB f32 memorySizeGib = (((f32)memory.memoryHeaps[j].size) / 1024.0f / 1024.0f / 1024.0f);
 				if (memory.memoryHeaps[j].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
@@ -228,129 +348,4 @@ VulkanDeviceSelect(VkContext *pCtx)
 		return VK_ERROR_UNKNOWN;
 	}
 	return VK_SUCCESS;
-}
-
-YND VkResult
-VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
-{
-	VkResult errcode = 0;
-	VK_CHECK(VulkanDeviceSelect(pCtx));
-
-	YINFO("Creating logical device...");
-	uint32_t queueCreateInfoCount = 1;
-	uint8_t index = 0;
-	b8 bPresentSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.presentQueueIndex;
-	b8 bTransferSharesGraphicsQueue = pCtx->device.graphicsQueueIndex == pCtx->device.transferQueueIndex;
-
-	if (!bPresentSharesGraphicsQueue) queueCreateInfoCount++;
-	if (!bTransferSharesGraphicsQueue) queueCreateInfoCount++;
-
-	uint32_t pIndices[queueCreateInfoCount];
-	pIndices[index++] = pCtx->device.graphicsQueueIndex;
-
-	if (!bPresentSharesGraphicsQueue) pIndices[index++] = pCtx->device.presentQueueIndex;
-	if (!bTransferSharesGraphicsQueue) pIndices[index++] = pCtx->device.transferQueueIndex;
-
-	struct temp {int32_t count; uint32_t index;};
-	struct temp tempIndices[queueCreateInfoCount];
-	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
-	{
-		tempIndices[i].index = -1;
-		tempIndices[i].count = 0;
-	}
-	for (uint32_t i = 0; i < queueCreateInfoCount; i++)
-	{
-		/* YDEBUG("IndexInfos: %d:%d", pQueueCreateInfos[i].queueFamilyIndex, pQueueCreateInfos[i].queueCount); */
-		YDEBUG("%d", pIndices[i]);
-	}
-	uint32_t realQueueCreateInfoCount = 0;
-	YMB uint32_t i = 0;
-	YMB uint32_t j = 0;
-
-	while (i < queueCreateInfoCount)
-	{
-		if (tempIndices[realQueueCreateInfoCount].index != pIndices[i])
-		{
-			tempIndices[realQueueCreateInfoCount].index = pIndices[i];
-			while ( j < queueCreateInfoCount && tempIndices[realQueueCreateInfoCount].index == pIndices[j])
-			{
-					tempIndices[realQueueCreateInfoCount].count++;
-					j++;
-			}
-			i++;
-			if (tempIndices[realQueueCreateInfoCount].count > 0)
-				realQueueCreateInfoCount++;
-			continue;
-		}
-		i++;
-	}
-
-	VkDeviceQueueCreateInfo pQueueCreateInfos[realQueueCreateInfoCount];
-	f32 queue_priority = 1.0f;
-	/* for (uint32_t i = 0; i < queueCreateInfoCount; ++i) */
-	for (uint32_t i = 0; i < realQueueCreateInfoCount; ++i)
-	{
-		pQueueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		/* pQueueCreateInfos[i].queueFamilyIndex = pIndices[i]; */
-		pQueueCreateInfos[i].queueFamilyIndex = tempIndices[i].index;
-		pQueueCreateInfos[i].queueCount = 1;
-
-		/* pQueueCreateInfos[i].queueCount = tempIndices[i].count; */
-		/*
-		 * TODO enable this for future enhancements.
-		 * 	if (indices[i] == context->device.graphics_queue_index)
-		 * 	{
-		 * 		pQueueCreateInfos[i].queueCount = 2;
-		 * 	}
-		 */
-		pQueueCreateInfos[i].flags = 0;
-		pQueueCreateInfos[i].pNext = 0;
-		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
-	}
-
-	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-		.synchronization2 = VK_TRUE,
-		.pNext = NULL,
-	};
-
-	/* TODO: shoud be config driven */
-	VkPhysicalDeviceFeatures enabledFeatures = {
-		.samplerAnisotropy = VK_TRUE,
-	};
-
-	YMB VkPhysicalDeviceFeatures2 enabledFeatures2 = {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-		.features = enabledFeatures,
-		.pNext = &physicalDeviceSynch2Features,
-	};
-
-	const char **ppExtensionNames = DarrayCreate(const char *);
-	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	/* DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
-	YMB uint32_t extensionCount = DarrayLength(ppExtensionNames);
-	VkDeviceCreateInfo deviceCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		.queueCreateInfoCount = realQueueCreateInfoCount,
-		.pQueueCreateInfos = pQueueCreateInfos,
-		/* .pEnabledFeatures = &enabledFeatures, */
-		.enabledExtensionCount = extensionCount,
-		.ppEnabledExtensionNames = ppExtensionNames,
-		/* .pNext = VK_NULL_HANDLE, */
-		.pNext = &enabledFeatures2,
-	};
-	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, &pCtx->device.logicalDev));
-	YINFO("Logical device created.");
-	vkGetDeviceQueue(pCtx->device.logicalDev, 
-			pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
-
-	vkGetDeviceQueue(pCtx->device.logicalDev, 
-			pCtx->device.graphicsQueueIndex, 0, &pCtx->device.graphicsQueue);
-
-	vkGetDeviceQueue(pCtx->device.logicalDev, 
-			pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
-
-	DarrayDestroy(ppExtensionNames);
-	YINFO("Queues obtained.");
-	return errcode;
 }

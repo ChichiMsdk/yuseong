@@ -86,10 +86,8 @@ vkCommandBufferFree(VkContext *pCtx, VulkanCommandBuffer *pCommandBuffers, VkCom
 {
 	VkDevice device = pCtx->device.logicalDev;
 	VK_CHECK(vkDeviceWaitIdle(device));
-
 	for (uint32_t i = 0; i < poolCount; i++)
 		vkFreeCommandBuffers(device, *pPool, 1, &pCommandBuffers[i].handle);
-
     /*
 	 * NOTE: This here feels redundant 
 	 * if NULL then assume COMMAND_BUFFER_STATE_NOT_ALLOCATED

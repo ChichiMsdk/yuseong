@@ -28,7 +28,7 @@ typedef struct event_context
 }EventContext;
 
 // Should return true if handled.
-typedef b8 (*PFN_OnEvent)(
+typedef b8 (*pfnOnEvent)(
 		uint16_t							code,
 		void*								pSender,
 		void*								pListenerInst,
@@ -48,7 +48,7 @@ void EventShutdown(void);
 b8 EventRegister(
 		uint16_t							code,
 		void*								pListener,
-		PFN_OnEvent							on_event);
+		pfnOnEvent							onEvent);
 
 /**
  * Unregister from listening for when events are sent with the provided code. If no matching
@@ -61,7 +61,7 @@ b8 EventRegister(
 b8 EventUnregister(
 		uint16_t							code,
 		void*								pListener,
-		PFN_OnEvent							on_event);
+		pfnOnEvent							onEvent);
 
 /**
  * Fires an event to listeners of the given code. If an event handler returns 

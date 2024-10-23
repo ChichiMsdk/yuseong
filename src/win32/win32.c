@@ -319,7 +319,7 @@ Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
 			}
 			if (mouseButton != BUTTON_MAX_BUTTONS)
 			{
-				InputProcessButton(mouseButton, bPressed);
+				InputProcessMouseButton(mouseButton, bPressed);
 			}
         } break;
     }
