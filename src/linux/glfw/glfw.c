@@ -150,35 +150,12 @@ ErrorCallback(int error, const char* pDescription)
 }
 
 static void
-_KeyCallback(YMB GLFWwindow* pWindow,YMB int key, YMB int scancode, int action, YMB int mods)
+_KeyCallback(YMB GLFWwindow* pWindow, YMB int key, YMB int scancode, int action, YMB int mods)
 {
 	b8 bPressed = FALSE;
 	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 		bPressed = TRUE;
-	InputProcessKey(scancode, bPressed);
-	if (key == 256)
-	{
-		if (bPressed)
-		{
-			YDEBUG("Pressed ESC int = %d scancode = %d", key, key, scancode);
-		}
-		else
-		{
-			YDEBUG("Released ESC int = %d scancode = %d", key, key, scancode);
-		}
-	}
-	else
-	{
-		if (bPressed)
-		{
-			YDEBUG("Pressed int = %d scancode = %d", key, key, scancode);
-		}
-		else
-		{
-			YDEBUG("Released int = %d scancode = %d", key, key, scancode);
-		}
-
-	}
+	InputProcessKey(key, bPressed);
 }
 
 static void

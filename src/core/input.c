@@ -64,17 +64,10 @@ InputProcessKey(Keys key, b8 bPressed)
 	{
 		// Update internal state.
 		gState.keyboardCurrent.pKeys[key] = bPressed;
-
 		// Fire off an event for immediate processing.
 		EventContext context;
 		context.data.uint16_t[0] = key;
-		YDEBUG("FIRING: %lu", context.data.uint16_t[0]);
-		YDEBUG("FIRING: %d", key);
 		EventFire(bPressed ? EVENT_CODE_KEY_PRESSED : EVENT_CODE_KEY_RELEASED, 0, context);
-	}
-	else
-	{
-		YDEBUG("Not handled, not changed");
 	}
 }
 
@@ -85,7 +78,6 @@ InputProcessMouseButton(MouseButtons button, b8 bPressed)
     if (gState.mouseCurrent.pButtons[button] != bPressed) 
 	{
         gState.mouseCurrent.pButtons[button] = bPressed;
-
         // Fire the event.
         EventContext context;
         context.data.uint16_t[0] = button;
@@ -104,7 +96,6 @@ InputProcessMouseMove(int16_t x, int16_t y)
         // Update internal state.
         gState.mouseCurrent.x = x;
         gState.mouseCurrent.y = y;
-
         // Fire the event.
         EventContext context;
         context.data.uint16_t[0] = x;

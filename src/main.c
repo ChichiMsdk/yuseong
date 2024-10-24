@@ -55,7 +55,6 @@ main(void)
 b8
 _OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventContext context)
 {
-	YTRACE("IM CALLED!!");
 	switch (code) 
 	{
 		case EVENT_CODE_APPLICATION_QUIT: 
@@ -71,9 +70,6 @@ _OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventCon
 b8
 _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context) 
 {
-	/* YTRACE("IM CALLED!!"); */
-	uint16_t keyCode = context.data.uint16_t[0];
-	YTRACE("'%c' key pressed in window.\n", keyCode);
 	if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
 	{
 		uint16_t keyCode = context.data.uint16_t[0];
@@ -84,12 +80,12 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
 			return TRUE;
 		}
-		YINFO("'%c' key pressed in window.\n", keyCode);
+		YINFO("%d -> '%c' key pressed in window.\n", keyCode, keyCode);
 	}
 	else if (code == EVENT_CODE_KEY_RELEASED) 
 	{
 		YMB uint16_t keyCode = context.data.uint16_t[0];
-		YINFO("'%c' key released in window.\n", keyCode);
+		YINFO("%d -> '%c' key released in window.\n", keyCode, keyCode);
 	}
 	return FALSE;
 }
