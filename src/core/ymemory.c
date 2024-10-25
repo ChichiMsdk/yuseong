@@ -68,9 +68,12 @@ _yFree(void *pBlock, uint64_t size, MemoryTags tag)
 		YDEBUG("yFree called using MEMORY_TAG_UNKNOWN, re-class this allocation.");
 	gStats.totalAllocated -= size;
 	gStats.pTaggedAllocations[tag] -= size;
+
 	// TODO: Memory alignment
 	free(pBlock);
 	TracyCFree(pBlock);
+	// WARN: This might cost a lot ?
+	pBlock = NULL;
 }
 
 /**

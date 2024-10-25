@@ -246,44 +246,47 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     swapchainCreateInfo.clipped = VK_TRUE;
     swapchainCreateInfo.oldSwapchain = 0;
 
-    errcode = vkCreateSwapchainKHR(pContext->device.logicalDev, &swapchainCreateInfo, pContext->pAllocator,
-			&pSwapchain->handle);
-	if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); return errcode;}
+    VK_CHECK(vkCreateSwapchainKHR(pContext->device.logicalDev, &swapchainCreateInfo, pContext->pAllocator,
+				&pSwapchain->handle));
 
     // Start with a zero frame index.
     pContext->currentFrame = 0;
 
     // Images
     pSwapchain->imageCount = 0;
-    errcode = vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount, 0);
-    if (!pSwapchain->pImages)
-	{
-        pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
-    }
-    if (!pSwapchain->pViews)
-	{
-        pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
-    }
-    errcode = vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount,
-			pSwapchain->pImages);
-	if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); return errcode;}
+    VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount, 0));
+    /*
+     * if (!pSwapchain->pImages)
+	 * {
+     *     pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+     * }
+     * if (!pSwapchain->pViews)
+	 * {
+     *     pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+     * }
+     */
+	pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+	pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
+	VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount,
+				pSwapchain->pImages));
+	VkImageViewCreateInfo viewInfo = {0};
 
     // Views
     for (uint32_t i = 0; i < pSwapchain->imageCount; ++i)
 	{
-        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-        view_info.image = pSwapchain->pImages[i];
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = pSwapchain->imageFormat.format;
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+		/* YINFO("i: %u/%u", i + 1, pSwapchain->imageCount); */
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = pSwapchain->pImages[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = pSwapchain->imageFormat.format;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
 
-        errcode = vkCreateImageView(pContext->device.logicalDev, &view_info, pContext->pAllocator, 
-				&pSwapchain->pViews[i]);
-		if (errcode != VK_SUCCESS) { YERROR("%s", string_VkResult(errcode)); return errcode;}
+        VK_CHECK(vkCreateImageView(pContext->device.logicalDev, &viewInfo, pContext->pAllocator, 
+				&pSwapchain->pViews[i]));
     }
 
     // Depth resources
@@ -333,9 +336,11 @@ vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
 {
 	VkDevice device = pCtx->device.logicalDev;
 	VK_CHECK(vkDeviceWaitIdle(device));
-	vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
+		vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
 	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
+	{
 		vkDestroyImageView(device, pCtx->swapchain.pViews[i], pCtx->pAllocator);
+	}
 	vkDestroySwapchainKHR(device, pCtx->swapchain.handle, pCtx->pAllocator);
 	yFree(pCtx->swapchain.pImages, pCtx->swapchain.imageCount, MEMORY_TAG_RENDERER);
 	yFree(pCtx->swapchain.pViews, pCtx->swapchain.imageCount, MEMORY_TAG_RENDERER);
