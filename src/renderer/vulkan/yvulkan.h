@@ -12,7 +12,7 @@
 #	endif
 #endif
 
-typedef struct OS_State OS_State;
+typedef struct OsState OsState;
 
 #define VK_ASSERT(expr) KASSERT_MSG(expr == VK_SUCCESS, string_VkResult(expr));
 
@@ -219,12 +219,13 @@ typedef struct VkContext
 
 }VkContext;
 
-YND VkResult RendererInit(
-		OS_State*							pState);
+YND VkResult vkInit(
+		OsState*							pState);
 
-void RendererShutdown(
-		OS_State*							pState);
+void vkShutdown(void);
 
 YND VkResult vkCommandPoolCreate(
 		VkContext*							pContext);
+
+YND VkResult vkDrawImpl(void);
 #endif // YVULKAN_H

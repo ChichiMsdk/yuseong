@@ -38,7 +38,7 @@ static f64 gClockFrequency;
 static LARGE_INTEGER gStartTime;
 
 YND b8 
-OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
+OsInit(OsState *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
 {
 	pOsState->pInternalState = calloc(1, sizeof(InternalState));
 	InternalState *pState = (InternalState *)pOsState->pInternalState;
@@ -125,7 +125,7 @@ OS_Init(OS_State *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t 
 }
 
 void 
-OS_Shutdown(OS_State *pState)
+OsShutdown(OsState *pState)
 {
     // Simply cold-cast to the known type.
     InternalState *state = (InternalState *)pState->pInternalState;
@@ -137,7 +137,7 @@ OS_Shutdown(OS_State *pState)
 }
 
 b8
-OS_PumpMessages(YMB OS_State *pState) 
+OS_PumpMessages(YMB OsState *pState) 
 {
     MSG message;
     while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE)) 
@@ -188,7 +188,7 @@ ErrorExit(LPCTSTR lpszFunction, DWORD dw)
 
 /* TODO: ERROR Handling !! */
 void
-OS_Write(const char *pMessage, DWORD redir)
+OsWrite(const char *pMessage, DWORD redir)
 {
 	HANDLE consoleHandle = GetStdHandle(redir); 
 	DWORD dwMode = 0;
@@ -204,7 +204,7 @@ OS_Write(const char *pMessage, DWORD redir)
 }
 
 YND f64
-OS_GetAbsoluteTime(void)
+OsGetAbsoluteTime(void)
 {
     LARGE_INTEGER nowTime;
     QueryPerformanceCounter(&nowTime);
@@ -219,7 +219,7 @@ OS_Sleep(uint64_t ms)
 
 // Surface creation for Vulkan
 YND VkResult
-OS_CreateVkSurface(OS_State *pOsState, VkContext *pContext)
+OsCreateVkSurface(OsState *pOsState, VkContext *pContext)
 {
     InternalState *pState = (InternalState *)pOsState->pInternalState;
 
@@ -234,7 +234,7 @@ OS_CreateVkSurface(OS_State *pOsState, VkContext *pContext)
 }
 
 void
-FramebufferGetDimensions(OS_State *pOsState, uint32_t* pWidth, uint32_t* pHeight)
+FramebufferGetDimensions(OsState *pOsState, uint32_t* pWidth, uint32_t* pHeight)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	*pWidth = pState->windowWidth;

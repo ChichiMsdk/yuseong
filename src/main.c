@@ -1,18 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "os.h"
-#include "core/event.h"
-#include "core/input.h"
-#include "core/ymemory.h"
-#include "core/logger.h"
-
-#include "renderer/vulkan/yvulkan.h"
-#include <vulkan/vk_enum_string_helper.h>
+#include "yuseong.h"
 
 b8 gRunning = TRUE;
 
-YND VkResult vkDraw(void);
 b8 _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
@@ -24,11 +16,11 @@ const char* __asan_default_options() { return "detect_leaks=0"; }
 int
 main(void)
 {
-	OS_State state = {0};
+	OsState state = {0};
 	int32_t x = 100; int32_t y = 100;
 	int32_t w = 500; int32_t h = 500;
 	const char *pAppName = "yuseong";
-	if (!OS_Init(&state, pAppName, x, y, w, h))
+	if (!OsInit(&state, pAppName, x, y, w, h))
 		exit(1);
 
 	EventInit();
@@ -37,17 +29,20 @@ main(void)
 	EventRegister(EVENT_CODE_KEY_PRESSED, 0, _OnKey);
 	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
 
-	VK_ASSERT(RendererInit(&state));
+	RendererConfig config = {.type = RENDERER_TYPE_VULKAN};
+
+	YuRenderer *pRenderer = RendererInit(&state, config);
+	YU_ASSERT(pRenderer);
 
 	while (gRunning)
 	{
 		OS_PumpMessages(&state);
 		InputUpdate(1);
-		VK_ASSERT(vkDraw());
+		YU_ASSERT(YuDraw(pRenderer) == YU_SUCCESS);
 	}
-	RendererShutdown(&state);
+	YuShutdown(pRenderer);
 	InputShutdown();
-	OS_Shutdown(&state);
+	OsShutdown(&state);
 	/* SystemMemoryUsagePrint(); */
 	return 0;
 }

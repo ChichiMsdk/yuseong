@@ -5,10 +5,10 @@
 #include "renderer/vulkan/yvulkan.h"
 #include <stdint.h>
 
-typedef struct OS_State
+typedef struct OsState
 {
 	void *pInternalState;
-}OS_State;
+}OsState;
 
 #ifdef PLATFORM_WINDOWS
 #	ifndef _WINDEF_
@@ -36,30 +36,30 @@ typedef struct OS_State
 extern b8 gRunning;
 
 void FramebufferUpdateInternalDimensions(
-		OS_State*							pOsState,
+		OsState*							pOsState,
 		uint32_t							width,
 		uint32_t							height);
 
 void FramebufferGetDimensions(
-		OS_State*							pOsState,
+		OsState*							pOsState,
 		uint32_t*							pWidth,
 		uint32_t*							pHeight);
 
 b8 OS_PumpMessages(
-		OS_State*							pState);
+		OsState*							pState);
 
-YND b8 OS_Init(
-		OS_State*							pState,
+YND b8 OsInit(
+		OsState*							pState,
 		const char*							pAppName,
 		int32_t								x,
 		int32_t								y,
 		int32_t								w,
 		int32_t								h);
 
-void OS_Shutdown(
-		OS_State*							pState);
+void OsShutdown(
+		OsState*							pState);
 
-void OS_Write(
+void OsWrite(
 		const char*							pMessage,
 		REDIR								redir);
 
@@ -74,10 +74,10 @@ void OS_Write(
 void OS_Sleep(
 		uint64_t							ms);
 
-YND f64 OS_GetAbsoluteTime(void);
+YND f64 OsGetAbsoluteTime(void);
 
-YND VkResult OS_CreateVkSurface(
-		OS_State*							pState,
+YND VkResult OsCreateVkSurface(
+		OsState*							pState,
 		VkContext*							pContext);
 
 #endif // OS_H

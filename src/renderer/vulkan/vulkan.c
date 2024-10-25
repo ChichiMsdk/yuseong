@@ -31,7 +31,7 @@ vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugU
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
 
 void
-RendererShutdown(YMB OS_State *pState)
+vkShutdown(void)
 {
 	VkDevice device = gVkCtx.device.logicalDev;
 	VulkanDevice myDevice = gVkCtx.device;
@@ -138,7 +138,7 @@ SyncInit(void)
 }
 
 YND VkResult
-RendererInit(OS_State *pOsState)
+vkInit(OsState *pOsState)
 {
 	char*			pGPUName = "NVIDIA GeForce RTX 3080";
 	const char**	ppRequiredValidationLayerNames = 0;
@@ -208,7 +208,7 @@ RendererInit(OS_State *pOsState)
 		.ppEnabledExtensionNames = ppRequiredExtensions
 	};
 	VK_ASSERT(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
-	VK_CHECK(OS_CreateVkSurface(pOsState, &gVkCtx));
+	VK_CHECK(OsCreateVkSurface(pOsState, &gVkCtx));
 
 	YDEBUG("Vulkan surface created");
 
@@ -287,7 +287,7 @@ RendererInit(OS_State *pOsState)
 }
 
 YND VkResult
-vkDraw(void)
+vkDrawImpl(void)
 {
 	TracyCZoneN(drawCtx, "yDraw", 1);
 	YMB VkDevice device = gVkCtx.device.logicalDev;

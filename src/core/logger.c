@@ -28,8 +28,16 @@
 void
 ReportAssertionFailure(const char *pExpression, const char *pMessage, const char *pFile, int32_t line)
 {
-	LogOutput(LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d",
+	if (strlen(pMessage) == 0)
+	{
+		LogOutput(LOG_LEVEL_FATAL, "Assertion Failure: %s, in file: %s, line: %d",
+			pExpression, pFile, line);
+	}
+	else
+	{
+		LogOutput(LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d",
 			pExpression, pMessage, pFile, line);
+	}
 }
 
 b8
@@ -69,7 +77,7 @@ LogOutput(LogLevel level, const char *pMessage, ...)
 	else
 		sprintf(pOutMessage2, "%s%s%s\n", pLevelStrings[level], pOutMessage, YU_ALL_DEFAULT);
 	if (bError)
-		OS_Write(pOutMessage2, FDERROR);
+		OsWrite(pOutMessage2, FDERROR);
 	else
-		OS_Write(pOutMessage2, FDOUTPUT);
+		OsWrite(pOutMessage2, FDOUTPUT);
 }
