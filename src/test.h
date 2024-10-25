@@ -1,8 +1,6 @@
 #ifndef TEST_H
 #define TEST_H
 
-#define TESTING
-
 #ifdef TESTING
 
 #include <stdio.h>
@@ -21,7 +19,7 @@ int main(void) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // Create a windowed mode window and its context
-    GLFWwindow* window = glfwCreateWindow(800, 600, "PUTEPUTEPUTEPUTPEUTPEUTE", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "abcdefghijklmnopqrstuvwxyz", NULL, NULL);
     if (!window) {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();

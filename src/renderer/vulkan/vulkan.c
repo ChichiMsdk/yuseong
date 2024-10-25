@@ -38,11 +38,11 @@ RendererShutdown(YMB OS_State *pState)
 	VkContext *pCtx = &gVkCtx;
 
 #ifdef DEBUG
-		PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)
+		PFN_vkDestroyDebugUtilsMessengerEXT pfnDestroyDebug = (PFN_vkDestroyDebugUtilsMessengerEXT)
 			vkGetInstanceProcAddr(gVkCtx.instance, "vkDestroyDebugUtilsMessengerEXT");
 
-		KASSERT_MSG(func, "Failed to create debug destroy messenger!");
-		func(gVkCtx.instance, gVkCtx.debugMessenger, gVkCtx.pAllocator);
+		KASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
+		pfnDestroyDebug(gVkCtx.instance, gVkCtx.debugMessenger, gVkCtx.pAllocator);
 #endif // DEBUG
 
 	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
@@ -71,7 +71,6 @@ RendererShutdown(YMB OS_State *pState)
 		vkDestroySemaphore(device, gVkCtx.pSemaphoresQueueComplete[i], gVkCtx.pAllocator);
 		vkFenceDestroy(&gVkCtx, &gVkCtx.pFencesInFlight[i]);
 	}
-
 	DarrayDestroy(gVkCtx.pSemaphoresQueueComplete);
 	DarrayDestroy(gVkCtx.pSemaphoresAvailableImage);
 	DarrayDestroy(gVkCtx.pFencesInFlight);
@@ -89,7 +88,6 @@ RendererShutdown(YMB OS_State *pState)
 		yFree(gVkCtx.device.swapchainSupport.pPresentModes, gVkCtx.device.swapchainSupport.presentModeCount, 
 				MEMORY_TAG_RENDERER);
 	}
-
 	vkDestroyDevice(gVkCtx.device.logicalDev, gVkCtx.pAllocator);
 	vkDestroyInstance(gVkCtx.instance, gVkCtx.pAllocator);
 }
@@ -289,7 +287,7 @@ RendererInit(OS_State *pOsState)
 }
 
 YND VkResult
-yDraw(void)
+vkDraw(void)
 {
 	TracyCZoneN(drawCtx, "yDraw", 1);
 	YMB VkDevice device = gVkCtx.device.logicalDev;

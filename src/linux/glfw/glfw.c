@@ -1,6 +1,5 @@
 #include "os.h"
 
-#ifdef PLATFORM_LINUX
 #ifdef YGLFW3
 
 extern b8 gRunning;
@@ -164,4 +163,3 @@ _MouseCallback(YMB GLFWwindow* pWindow, YMB int button, YMB int action, YMB int 
 }
 
 #endif // YGLFW3
-#endif // PLATFORM_LINUX

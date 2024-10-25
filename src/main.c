@@ -12,13 +12,14 @@
 
 b8 gRunning = TRUE;
 
-YND VkResult yDraw(void);
+YND VkResult vkDraw(void);
 b8 _OnEvent(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnKey(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 b8 _OnResized(uint16_t code, void* pSender, void* pListenerInst, EventContext context);
 
 const char* __asan_default_options() { return "detect_leaks=0"; }
-/* #include "test.h" */
+#include "test.h"
+
 #ifndef TESTING
 int
 main(void)
@@ -42,12 +43,12 @@ main(void)
 	{
 		OS_PumpMessages(&state);
 		InputUpdate(1);
-		VK_ASSERT(yDraw());
+		VK_ASSERT(vkDraw());
 	}
 	RendererShutdown(&state);
 	InputShutdown();
 	OS_Shutdown(&state);
-	SystemMemoryUsagePrint();
+	/* SystemMemoryUsagePrint(); */
 	return 0;
 }
 #endif // TESTING
