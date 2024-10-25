@@ -7,46 +7,71 @@ TESTDIR =obj
 CC =clang
 CPP =clang++
 
-SRC_DIR =src
-SRC_1_DIR =src/platform
-SRC_2_DIR =src/core
-SRC_3_DIR =src/renderer
-SRC_4_DIR =src/renderer/vulkan
+CCJSON =compile_commands.json
 
-INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include\
-	-IC:\Lib\tracy-0.11.1\public -IC:\Lib\tracy-0.11.1\public\tracy
+JASB =jasb.exe
+JASB_FILE =jasb.c
+JASB_CMD = *.o.json
+JASB_LIB =-luser32
+
+TESTING =
+
+SRC_DIR =src
+
+INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include
+INCLUDE_DIRS +=-IC:\Lib\tracy-0.11.1\public -IC:\Lib\tracy-0.11.1\public\tracy
+INCLUDE_DIRS +=-IC:\Lib\glfw\include
 
 LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 
+LIBS +=-lglfw3_mt
+
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
+LIB_PATH +=-LC:\Lib\glfw\lib-vc2022
 
 CFLAGS =-Wall -Wextra -Werror
 # CFLAGS +=-std=c23
 
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
-# CFLAGS +=-Wno-uninitialized
-
+CFLAGS +=-Wno-uninitialized
 CFLAGS +=-DPLATFORM_WINDOWS
-CFLAGS +=-g -Wvarargs -O0
-CFLAGS +=-D_DEBUG -DDEBUG
-CFLAGS +=-DTRACY_ENABLE
 
-CFLAGS +=-fsanitize=address
+ifdef TESTING
+	CFLAGS +=-DTESTING
+endif
 
-CPPFLAGS =-Wno-format
-CPPFLAGS +=-DTRACY_ENABLE
+ifdef $(RELEASE_USE)
+	CFLAGS +=-Wvarargs -O3
+	CFLAGS +=-D_RELEASE -DRELEASE
+endif
+
+ifndef RELEASE_USE
+	CFLAGS +=-g3 -Wvarargs -O0
+	CFLAGS +=-D_DEBUG -DDEBUG
+endif
+
+ifdef ASAN_USE
+	CFLAGS +=-fsanitize=address
+endif
+
+ifdef TRACY_USE
+	CFLAGS +=-DTRACY_ENABLE
+
+	CPPFLAGS +=-DTRACY_ENABLE
+	CPPFLAGS =-Wno-format
+	CPP_FILES =$(wildcard $(SRC_DIR)/*.cpp)
+	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+endif
 
 MYFIND =C:\msys64\usr\bin\find.exe
 
 FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
-CPP_FILES =$(wildcard $(SRC_DIR)/*.cpp)
-CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON)
 
-sorry: re
-
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT)
+$(BUILD_DIR)/$(JASB): $(JASB_FILE)
+	@$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
 
 $(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
@@ -62,8 +87,9 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(BUILD_DIR)/$(TESTDIR):
 	@mkdir -p build/obj
 
-compile_commands.json: $(OBJS)
-	@pwsh .\sed.ps1
+$(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB)
+	@echo Updating compile_commands.json
+	@$(BUILD_DIR)/$(JASB) $(JASB_CMD)
 
 clean:
 	@echo Deleting files..
@@ -72,6 +98,7 @@ clean:
 	@rm -f $(BUILD_DIR)/$(NAME).pdb
 	@rm -f $(BUILD_DIR)/$(NAME).exp
 	@rm -f $(BUILD_DIR)/$(NAME).lib
+	@rm -f $(BUILD_DIR)/$(NAME).rdi
 	@rm -f $(BUILD_DIR)/*.ilk
 	@rm -f $(BUILD_DIR)/vc140.pdb
 	@rm -f $(BUILD_DIR)/*.obj
