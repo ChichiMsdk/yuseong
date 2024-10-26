@@ -1,0 +1,3 @@
+#ifndef YDIRECTX11_H
+#define YDIRECTX11_H
+#endif //YDIRECTX12_H

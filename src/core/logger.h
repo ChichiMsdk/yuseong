@@ -3,10 +3,6 @@
 
 #include "mydefines.h"
 
-#define LOG_WARN_ENABLED 1
-#define LOG_INFO_ENABLED 1
-#define LOG_DEBUG_ENABLED 1
-#define LOG_TRACE_ENABLED 1
 
 //colors VIRTUALTERMINAL ONLY WINDOWS
 
@@ -46,7 +42,13 @@
 #if YURELEASE == 1
  #define LOG_DEBUG_ENABLED 0
  #define LOG_TRACE_ENABLED 0
-#endif
+#else
+ #define LOG_DEBUG_ENABLED 1
+ #define LOG_TRACE_ENABLED 1
+#endif // YURELEASE
+
+#define LOG_WARN_ENABLED 1
+#define LOG_INFO_ENABLED 1
 
 typedef enum LogLevel
 {

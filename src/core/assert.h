@@ -2,16 +2,15 @@
 #define ASSERTS_H
 #include "mydefines.h"
 
-#ifdef DEBUG
 #define YASSERTIONS_ENABLED
 
 #ifdef YASSERTIONS_ENABLED
-#if _MSC_VER
+#ifdef _MSC_VER
 #include <intrin.h>
 #define YDebugBreak() __debugbreak()
 #else
 #define YDebugBreak() __builtin_trap()
-#endif
+#endif // YASSERTIONS_ENABLED
 
 #include <stdint.h>
 
@@ -19,7 +18,7 @@ void ReportAssertionFailure(
 		const char*							pExpression, 
 		const char*							pMessage,
 		const char*							pFile,
-		int32_t line);
+		int32_t								line);
 
 #define KASSERT(expr)														\
 {																			\
@@ -40,7 +39,7 @@ void ReportAssertionFailure(
         }                                                                 \
     }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(DEBUG)
 #define KASSERT_DEBUG(expr)                                          \
     {                                                                \
         if (expr) {                                                  \
@@ -51,14 +50,13 @@ void ReportAssertionFailure(
     }
 #else
 #define KASSERT_DEBUG(expr)  // Does nothing at all
-#endif
+#endif //_DEBUG
 
 #else
 #define KASSERT(expr)               // Does nothing at all
 #define KASSERT_MSG(expr, message)  // Does nothing at all
 #define KASSERT_DEBUG(expr)         // Does nothing at all
 
-#endif
 #endif //DEBUG
 
 #endif // ASSERT_H
