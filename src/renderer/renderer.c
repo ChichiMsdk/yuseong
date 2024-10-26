@@ -1,55 +1,6 @@
-#include "renderer.h"
-#include "core/logger.h"
-#include "core/ymemory.h"
-
-#include "vulkan/yvulkan.h"
-#include "opengl/opengl.h"
-#include "directx/11/directx11.h"
-#include "metal/metal.h"
+#include "rendererimpl.h"
 
 const char *pRendererType[] = { "Vulkan", "OpenGL", "D3D11", "D3D12", "Metal", "Software" };
-
-typedef b8 GlResult;
-typedef b8 D11Result;
-YND YuResult VulkanErrorToYuseong(VkResult result);
-YND YuResult GlErrorToYuseong(GlResult result);
-YND YuResult D11ErrorToYuseong(int result);
-
-YND YuResult
-vkResize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height)
-{
-	return YU_SUCCESS;
-}
-
-YND YuResult
-vkDraw(YMB OsState* pOsState)
-{
-	return VulkanErrorToYuseong(vkDrawImpl());
-}
-
-YND YuResult
-glDraw(OsState* pOsState)
-{
-	return GlErrorToYuseong(glDrawImpl(pOsState));
-}
-
-YND YuResult
-glResize(OsState* pOsState, uint32_t width, uint32_t height)
-{
-	return GlErrorToYuseong(glResizeImpl(pOsState, width, height));
-}
-
-YND YuResult
-D11Draw(OsState* pOsState)
-{
-	return D11ErrorToYuseong(D11DrawImpl(pOsState));
-}
-
-YND YuResult
-D11Resize(OsState* pOsState, uint32_t width, uint32_t height)
-{
-	return D11ErrorToYuseong(D11ResizeImpl(pOsState, width, height));
-}
 
 YND YuRenderer*
 RendererInit(OsState* pOsState, RendererConfig rendererConfig)
@@ -58,7 +9,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 	switch (rendererConfig.type)
 	{
 		case RENDERER_TYPE_VULKAN:
-			if (VulkanErrorToYuseong(vkInit(pOsState)) != YU_SUCCESS)
+			if (vkErrorToYuseong(vkInit(pOsState)) != YU_SUCCESS)
 				return pRenderer;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
 			pRenderer->YuDraw = vkDraw;
@@ -66,7 +17,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 			pRenderer->YuResize = vkResize;
 			goto finish;
 		case RENDERER_TYPE_OPENGL:
-			if (GlErrorToYuseong(glInit(pOsState)) != YU_SUCCESS)
+			if (glErrorToYuseong(glInit(pOsState)) != YU_SUCCESS)
 				return pRenderer;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
 			pRenderer->YuDraw = glDraw;
@@ -114,8 +65,12 @@ YuDraw(OsState* pOsState, YuRenderer *pRenderer)
 	return pRenderer->YuDraw(pOsState);
 }
 
+/******************************************************************************************************************/
+/***************************************** Renderer Specific functions ********************************************/
+/******************************************************************************************************************/
+
 YND YuResult
-VulkanErrorToYuseong(VkResult result)
+vkErrorToYuseong(VkResult result)
 {
 	switch (result)
 	{
@@ -139,7 +94,7 @@ D11ErrorToYuseong(int result)
 }
 
 YND YuResult
-GlErrorToYuseong(GlResult result)
+glErrorToYuseong(GlResult result)
 {
 	switch (result)
 	{
@@ -148,4 +103,40 @@ GlErrorToYuseong(GlResult result)
 		default:
 			return YU_FAILURE;
 	}
+}
+
+YND YuResult
+vkDraw(YMB OsState* pOsState)
+{
+	return vkErrorToYuseong(vkDrawImpl());
+}
+
+YND YuResult
+vkResize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height)
+{
+	return YU_SUCCESS;
+}
+
+YND YuResult
+glDraw(OsState* pOsState)
+{
+	return glErrorToYuseong(glDrawImpl(pOsState));
+}
+
+YND YuResult
+glResize(OsState* pOsState, uint32_t width, uint32_t height)
+{
+	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
+}
+
+YND YuResult
+D11Draw(OsState* pOsState)
+{
+	return D11ErrorToYuseong(D11DrawImpl(pOsState));
+}
+
+YND YuResult
+D11Resize(OsState* pOsState, uint32_t width, uint32_t height)
+{
+	return D11ErrorToYuseong(D11ResizeImpl(pOsState, width, height));
 }

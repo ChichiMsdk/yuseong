@@ -40,6 +40,15 @@ typedef struct D11Context
 	D3D11_VIEWPORT viewport;
 }D11Context;
 
+#define D11_CHECK(expr) \
+	do { \
+		HRESULT hr = (expr); \
+		if (FAILED(hr)) \
+		{ \
+			return PrintHresult(hr); \
+		} \
+	} while (0);
+
 
 YND int D11Init(
 		OsState*							pOsState,
@@ -52,6 +61,12 @@ b8 D11ResizeImpl(
 
 b8 D11DrawImpl(
 		YMB OsState*						pOsState);
+
+b8 PrintHresult(
+		HRESULT								hr);
+
+char *GetErrorMessage(
+		HRESULT								hr);
 
 void D11Shutdown(void);
 
