@@ -10,6 +10,18 @@ typedef struct OsState
 	void *pInternalState;
 }OsState;
 
+typedef struct YuRenderer YuRenderer;
+
+// TODO: Change the name to reflect the state 
+typedef struct AppConfig
+{
+	const char *pAppName;
+	int32_t x; int32_t y;
+	int32_t w; int32_t h;
+	b8 bSuspended;
+	YuRenderer *pRenderer;
+}AppConfig;
+
 #ifdef PLATFORM_WINDOWS
 #	ifndef _WINDEF_
 		typedef unsigned long DWORD;
@@ -50,11 +62,7 @@ b8 OS_PumpMessages(
 
 YND b8 OsInit(
 		OsState*							pState,
-		const char*							pAppName,
-		int32_t								x,
-		int32_t								y,
-		int32_t								w,
-		int32_t								h);
+		AppConfig							appConfig);
 
 void OsShutdown(
 		OsState*							pState);
@@ -71,7 +79,7 @@ void OsWrite(
 		const char*							pMessage,
 		u8									colour);
 
-void OS_Sleep(
+void OsSleep(
 		uint64_t							ms);
 
 YND f64 OsGetAbsoluteTime(void);
@@ -79,5 +87,14 @@ YND f64 OsGetAbsoluteTime(void);
 YND VkResult OsCreateVkSurface(
 		OsState*							pState,
 		VkContext*							pContext);
+
+YND void *OsGetGLFuncAddress(
+		const char*							pName);
+
+YND b8 OsCreateGlContext(
+		OsState*							pOsState);
+
+YND b8 OsSwapBuffers(
+		OsState*							pOsState);
 
 #endif // OS_H

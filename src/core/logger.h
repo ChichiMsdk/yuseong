@@ -43,10 +43,10 @@
 #define LS_TRACE YU_FG_MAGENTA "[TRACE]: "
 
 // Disable debug and trace logging for release builds.
- #if YURELEASE == 1
+#if YURELEASE == 1
  #define LOG_DEBUG_ENABLED 0
  #define LOG_TRACE_ENABLED 0
- #endif
+#endif
 
 typedef enum LogLevel
 {

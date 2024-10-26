@@ -32,13 +32,15 @@ typedef struct InternalState
 	VkSurfaceKHR surface;
 	uint32_t windowWidth;
 	uint32_t windowHeight;
+
+	HDC glCtx;
 }InternalState;
 
 static f64 gClockFrequency;
 static LARGE_INTEGER gStartTime;
 
 YND b8 
-OsInit(OsState *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w, int32_t h)
+OsInit(OsState *pOsState, AppConfig appConfig)
 {
 	pOsState->pInternalState = calloc(1, sizeof(InternalState));
 	InternalState *pState = (InternalState *)pOsState->pInternalState;
@@ -65,10 +67,10 @@ OsInit(OsState *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w,
 	if (!RegisterClass(&wc)) ErrorExit("Window registration failed", GetLastError());
 
     // Create window
-	uint32_t clientX = x;
-	uint32_t clientY = y;
-	uint32_t clientWidth = w;
-	uint32_t clientHeight = h;
+	uint32_t clientX = appConfig.x;
+	uint32_t clientY = appConfig.y;
+	uint32_t clientWidth = appConfig.w;
+	uint32_t clientHeight = appConfig.h;
 	
 	uint32_t windowX = clientX;
 	uint32_t windowY = clientY;
@@ -92,7 +94,7 @@ OsInit(OsState *pOsState, const char *pAppName, int32_t x, int32_t y, int32_t w,
 	windowHeight += borderRect.bottom - borderRect.top;
 
     HWND handle = CreateWindowEx(
-        windowExStyle, "chichi_window_class", pAppName,
+        windowExStyle, "chichi_window_class", appConfig.pAppName,
         windowStyle, windowX, windowY, windowWidth, windowHeight,
         0, 0, pState->hInstance, 0);
 
@@ -212,9 +214,73 @@ OsGetAbsoluteTime(void)
 }
 
 void
-OS_Sleep(uint64_t ms)
+OsSleep(uint64_t ms)
 {
     Sleep(ms);
+}
+
+YND void *
+OsGetGLFuncAddress(const char *pName)
+{
+	void *pFunc = (void *)wglGetProcAddress(pName);
+	if (pFunc == 0 ||
+			(pFunc == (void*)0x1) || (pFunc == (void*)0x2) || (pFunc == (void*)0x3) ||
+			(pFunc == (void*)-1) )
+	{
+		HMODULE hModule = LoadLibraryA("opengl32.dll");
+		pFunc = (void *)GetProcAddress(hModule, pName);
+	}
+	return pFunc;
+}
+
+YND b8
+OsCreateGlContext(OsState *pOsState)
+{
+    InternalState *pState = (InternalState *)pOsState->pInternalState;
+
+	pState->glCtx = GetDC(pState->hwnd);
+    // Choose a pixel format
+    PIXELFORMATDESCRIPTOR pfd = {};
+    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 32;
+    pfd.cDepthBits = 24;
+    pfd.cStencilBits = 8;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+
+    int pixelFormat = ChoosePixelFormat(pState->glCtx, &pfd);
+    if (pixelFormat == 0) 
+	{
+        fprintf(stderr, "Failed to choose pixel format\n");
+        return FALSE;
+    }
+
+    if (!SetPixelFormat(pState->glCtx, pixelFormat, &pfd)) 
+	{
+        fprintf(stderr, "Failed to set pixel format\n");
+        return FALSE;
+    }
+
+    // Create a temporary OpenGL context
+    HGLRC tempContext = wglCreateContext(pState->glCtx);
+    if (!tempContext) 
+	{
+        fprintf(stderr, "Failed to create temporary OpenGL context\n");
+        return FALSE;
+    }
+
+    // Make the temporary context current
+    if (!wglMakeCurrent(pState->glCtx, tempContext)) 
+	{
+        fprintf(stderr, "Failed to make temporary OpenGL context current\n");
+        return FALSE;
+    }
+
+    // Use the temporary context to create a modern OpenGL context (if needed)
+    // For now, we're sticking with a simple one.
+	return TRUE;
 }
 
 // Surface creation for Vulkan
@@ -231,6 +297,13 @@ OsCreateVkSurface(OsState *pOsState, VkContext *pContext)
 
     pContext->surface = pState->surface;
     return VK_SUCCESS;
+}
+
+YND b8 
+OsSwapBuffers(OsState* pOsState)
+{
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
+	return SwapBuffers(pState->glCtx);
 }
 
 void

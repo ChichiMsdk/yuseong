@@ -28,7 +28,7 @@ typedef struct InternalState
 
 
 YND b8 
-OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, int32_t w, int32_t h)
+OsInit(OS_State *pOsState, AppConfig appConfig)
 {
 	/*
 	 * NOTE: Thorough error handling
@@ -55,7 +55,7 @@ OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, 
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	/* GLFWmonitor *pMonitor = glfwGetPrimaryMonitor(); */
 	GLFWmonitor *pMonitor = NULL;
-	pState->pWindow = glfwCreateWindow(w, h, pAppName, pMonitor, NULL);
+	pState->pWindow = glfwCreateWindow(appConfig.w, appConfig.h, appConfig.pAppName, pMonitor, NULL);
 	if (!pState->pWindow)
 	{
 		const char *pDesc; 
@@ -63,15 +63,15 @@ OS_Init(OS_State *pOsState, const char *pAppName, YMB int32_t x, YMB int32_t y, 
 		YFATAL("Error vulkan not supported in %s at %d: %s", __FILE__, __LINE__, pDesc);
 		return FALSE;
 	}
-	pState->windowWidth = w;
-	pState->windowHeight = w;
+	pState->windowWidth = appConfig.w;
+	pState->windowHeight = appConfig.h;
     glfwSetKeyCallback(pState->pWindow, _KeyCallback);
 	glfwSetMouseButtonCallback(pState->pWindow, _MouseCallback);
 	return TRUE;
 }
 
 YND VkResult
-OS_CreateVkSurface(OS_State *pOsState, VkContext *pContext)
+OsCreateVkSurface(OS_State *pOsState, VkContext *pContext)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	VK_CHECK(glfwCreateWindowSurface(pContext->instance, pState->pWindow, pContext->pAllocator, &pContext->surface));
@@ -95,7 +95,7 @@ FramebufferGetDimensions(OS_State* pOsState, uint32_t* pWidth, uint32_t* pHeight
 }
 
 void
-OS_Shutdown(OS_State* pOsState)
+OsShutdown(OS_State* pOsState)
 { 
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	glfwDestroyWindow(pState->pWindow);
@@ -106,14 +106,14 @@ OS_Shutdown(OS_State* pOsState)
 }
 
 void
-OS_Write(const char *pMessage, REDIR redir)
+OsWrite(const char *pMessage, REDIR redir)
 {
 	size_t msgLength = strlen(pMessage);
 	write(redir, pMessage, msgLength);
 }
 
 b8
-OS_PumpMessages(YMB OS_State* pOsState)
+OsPumpMessages(YMB OS_State* pOsState)
 {
 	YMB InternalState *pState = (InternalState *) pOsState->pInternalState;
 	glfwPollEvents();
@@ -128,15 +128,15 @@ OS_PumpMessages(YMB OS_State* pOsState)
 }
 
 YND f64 
-OS_GetAbsoluteTime(void)
+OsGetAbsoluteTime(void)
 {
 	struct timespec tp;
 	clock_gettime(CLOCK_REALTIME, &tp);
 	return tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void
-OS_Sleep(uint64_t ms)
+vid
+OsSleep(uint64_t ms)
 {
 	sleep(ms / 1000);
 }

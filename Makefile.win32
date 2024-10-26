@@ -21,8 +21,9 @@ SRC_DIR =src
 INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include
 INCLUDE_DIRS +=-IC:\Lib\tracy-0.11.1\public -IC:\Lib\tracy-0.11.1\public\tracy
 INCLUDE_DIRS +=-IC:\Lib\glfw\include
+INCLUDE_DIRS +=-Isrc/renderer/opengl
 
-LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 
+LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 -lopengl32
 LIBS +=-lglfw3_mt
 
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib

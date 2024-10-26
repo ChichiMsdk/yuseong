@@ -1,4 +1,7 @@
 TODO:
+
+- Config for building without backend
+- Better linker ? Improve compile times..
 - Change the input system
 - Remove the amount of layers
 - Config files ?
