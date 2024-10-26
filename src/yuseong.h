@@ -9,6 +9,31 @@
 #include "core/ymemory.h"
 #include "core/logger.h"
 
+extern AppConfig gAppConfig;
+extern OsState gOsState;
+
+void ArgvCheck(
+		int									argc,
+		char**								ppArgv,
+		RendererType*						pType);
+
+b8 _OnEvent(
+		uint16_t							code,
+		void*								pSender,
+		void*								pListenerInst,
+		EventContext						context);
+
+b8 _OnKey(
+		uint16_t							code,
+		void*								pSender,
+		void*								pListenerInst,
+		EventContext						context);
+
+b8 _OnResized(
+		uint16_t							code,
+		void*								pSender,
+		void*								pListenerInst,
+		EventContext						context);
 
 #define YU_ASSERT(expr) KASSERT(expr)
 

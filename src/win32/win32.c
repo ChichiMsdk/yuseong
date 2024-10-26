@@ -8,33 +8,7 @@
 
 #	include <stdio.h>
 
-#	include <sal.h>
-
-#	define _CRT_SECURE_NO_WARNINGS
-#	define WIN32_LEAN_AND_MEAN
-#	include <windows.h>
-#	include <windowsx.h> //param input extraction
-#	include <strsafe.h>
-#	include <malloc.h>
-#	include <vulkan/vulkan.h>
-#	include <vulkan/vulkan_win32.h>
-#	include <vulkan/vk_enum_string_helper.h>
-
-LRESULT CALLBACK Win32ProcessMessage(HWND hwnd, uint32_t msg, WPARAM wParam, LPARAM lParam);
-
-void ErrorExit(LPCTSTR lpszFunction, DWORD dw);
-void ErrorMsgBox(LPCTSTR lpszFunction, DWORD dw);
-
-typedef struct InternalState
-{
-	HINSTANCE hInstance;
-	HWND hwnd;
-	VkSurfaceKHR surface;
-	uint32_t windowWidth;
-	uint32_t windowHeight;
-
-	HDC glCtx;
-}InternalState;
+#	include "win32.h"
 
 static f64 gClockFrequency;
 static LARGE_INTEGER gStartTime;
@@ -85,7 +59,8 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 	windowStyle |= WS_THICKFRAME;
 
 	RECT borderRect = {0, 0, 0, 0};
-    AdjustWindowRectEx(&borderRect, windowStyle, 0, windowExStyle);
+	BOOL bMenu = FALSE;
+    AdjustWindowRectEx(&borderRect, windowStyle, bMenu, windowExStyle);
 
 	windowX += borderRect.left;
     windowY += borderRect.top;
@@ -104,7 +79,7 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 		YFATAL("Window creation failed!");
 		return FALSE;
 	}
-	else pState->hwnd = handle;
+	else pState->hWindow = handle;
 
 	pState->windowHeight = clientHeight;
 	pState->windowWidth = clientWidth;
@@ -115,7 +90,7 @@ OsInit(OsState *pOsState, AppConfig appConfig)
     int32_t showWindowCommandFlag = bShouldActivate ? SW_SHOW : SW_SHOWNOACTIVATE;
     // If initially minimized, use SW_MINIMIZE : SW_SHOWMINNOACTIVE;
     // If initially maximized, use SW_SHOWMAXIMIZED : SW_MAXIMIZE
-    ShowWindow(pState->hwnd, showWindowCommandFlag);
+    ShowWindow(pState->hWindow, showWindowCommandFlag);
 
     // Clock setup
     LARGE_INTEGER frequency;
@@ -131,10 +106,10 @@ OsShutdown(OsState *pState)
 {
     // Simply cold-cast to the known type.
     InternalState *state = (InternalState *)pState->pInternalState;
-    if (state->hwnd) 
+    if (state->hWindow) 
 	{
-        DestroyWindow(state->hwnd);
-        state->hwnd = 0;
+        DestroyWindow(state->hWindow);
+        state->hWindow = 0;
     }
 }
 
@@ -233,54 +208,46 @@ OsGetGLFuncAddress(const char *pName)
 	return pFunc;
 }
 
+const char *ppGLContextError[] = {
+	"choose pixel format\n", "set pixel format\n", "create temporary OpenGL context\n",
+	"make temporary OpenGL context current\n" };
+
 YND b8
 OsCreateGlContext(OsState *pOsState)
 {
     InternalState *pState = (InternalState *)pOsState->pInternalState;
+	uint16_t errcode = 0;
 
-	pState->glCtx = GetDC(pState->hwnd);
-    // Choose a pixel format
-    PIXELFORMATDESCRIPTOR pfd = {};
-    pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pfd.nVersion = 1;
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = 32;
-    pfd.cDepthBits = 24;
-    pfd.cStencilBits = 8;
-    pfd.iLayerType = PFD_MAIN_PLANE;
-
+	pState->glCtx = GetDC(pState->hWindow);
+	// Choose a pixel format
+	PIXELFORMATDESCRIPTOR pfd = {
+		.nSize = sizeof(PIXELFORMATDESCRIPTOR),
+		.nVersion = 1,
+		.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+		.iPixelType = PFD_TYPE_RGBA,
+		.cColorBits = 32,
+		.cDepthBits = 24,
+		.cStencilBits = 8,
+		.iLayerType = PFD_MAIN_PLANE,
+	};
     int pixelFormat = ChoosePixelFormat(pState->glCtx, &pfd);
-    if (pixelFormat == 0) 
-	{
-        fprintf(stderr, "Failed to choose pixel format\n");
-        return FALSE;
-    }
+    if (pixelFormat == 0) { errcode = 1; goto failed; }
 
-    if (!SetPixelFormat(pState->glCtx, pixelFormat, &pfd)) 
-	{
-        fprintf(stderr, "Failed to set pixel format\n");
-        return FALSE;
-    }
+    if (!SetPixelFormat(pState->glCtx, pixelFormat, &pfd)) { errcode = 2; goto failed; }
 
     // Create a temporary OpenGL context
     HGLRC tempContext = wglCreateContext(pState->glCtx);
-    if (!tempContext) 
-	{
-        fprintf(stderr, "Failed to create temporary OpenGL context\n");
-        return FALSE;
-    }
-
+    if (!tempContext) { errcode = 3; goto failed; }
+	
     // Make the temporary context current
-    if (!wglMakeCurrent(pState->glCtx, tempContext)) 
-	{
-        fprintf(stderr, "Failed to make temporary OpenGL context current\n");
-        return FALSE;
-    }
-
+    if (!wglMakeCurrent(pState->glCtx, tempContext)) { errcode = 4; goto failed; }
     // Use the temporary context to create a modern OpenGL context (if needed)
     // For now, we're sticking with a simple one.
 	return TRUE;
+
+failed:
+	fprintf(stderr, "Failed to %s", ppGLContextError[errcode]);
+	return FALSE;
 }
 
 // Surface creation for Vulkan
@@ -291,7 +258,7 @@ OsCreateVkSurface(OsState *pOsState, VkContext *pContext)
 
     VkWin32SurfaceCreateInfoKHR createInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
     createInfo.hinstance = pState->hInstance;
-    createInfo.hwnd = pState->hwnd;
+    createInfo.hwnd = pState->hWindow;
 
     VK_CHECK(vkCreateWin32SurfaceKHR(pContext->instance, &createInfo, pContext->pAllocator, &pState->surface));
 
@@ -424,22 +391,15 @@ OS_WriteOld(const char *pMessage, YMB uint8_t colour)
 [[deprecated]] void
 OS_WriteError(const char *pMessage, YMB uint8_t colour) 
 {
-	//  TODO: check error looks boring but important
 	HANDLE console_handle = GetStdHandle(STD_ERROR_HANDLE);
-
 	DWORD dwMode = 0;
 	GetConsoleMode(console_handle, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(console_handle, dwMode);
-
-	// FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-	//    static u8 levels[6] = {BACKGROUND_RED, FOREGROUND_RED, FOREGROUND_GREEN | FOREGROUND_RED, FOREGROUND_GREEN,FOREGROUND_BLUE, FOREGROUND_INTENSITY};
-	//    SetConsoleTextAttribute(console_handle, levels[colour]);
 	OutputDebugStringA(pMessage);
 	uint64_t length = strlen(pMessage);
 	LPDWORD number_written = 0;
 	WriteConsoleA(GetStdHandle(STD_ERROR_HANDLE), pMessage, (DWORD)length, number_written, 0);
-	//    SetConsoleTextAttribute(console_handle, 0x0F); //resets the color
 }
 
 #endif // YPLATFORM_WINDOWS

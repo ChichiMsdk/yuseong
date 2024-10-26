@@ -25,6 +25,7 @@ INCLUDE_DIRS +=-Isrc/renderer/opengl
 
 LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 -lopengl32
 LIBS +=-lglfw3_mt
+LIBS +=-ld3dcompiler -ld3d11 -ldxgi -ldxguid
 
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
 LIB_PATH +=-LC:\Lib\glfw\lib-vc2022
@@ -40,21 +41,17 @@ CFLAGS +=-DPLATFORM_WINDOWS
 ifdef TESTING
 	CFLAGS +=-DTESTING
 endif
-
 ifdef RELEASE_USE
 	CFLAGS +=-Wvarargs -O3
 	CFLAGS +=-D_RELEASE -DRELEASE -DYURELEASE
 endif
-
 ifndef RELEASE_USE
 	CFLAGS +=-g3 -Wvarargs -O0
 	CFLAGS +=-D_DEBUG -DDEBUG
 endif
-
 ifdef ASAN_USE
 	CFLAGS +=-fsanitize=address
 endif
-
 ifdef TRACY_USE
 	CFLAGS +=-DTRACY_ENABLE
 

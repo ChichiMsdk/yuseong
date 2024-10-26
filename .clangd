@@ -1,0 +1,2 @@
+If:
+  PathExclude: [src/renderer/opengl/KHR/*, src/renderer/opengl/glad/*, src/renderer/opengl/glad.c]

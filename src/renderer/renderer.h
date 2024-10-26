@@ -15,9 +15,10 @@ typedef enum RendererType
 {
     RENDERER_TYPE_VULKAN = 0x00,
     RENDERER_TYPE_OPENGL = 0x01,
-    RENDERER_TYPE_DIRECTX = 0x02,
-    RENDERER_TYPE_METAL = 0x03,
-	RENDERER_TYPE_SOFTWARE = 0x04,
+    RENDERER_TYPE_D3D11 = 0x02,
+    RENDERER_TYPE_D3D12 = 0x03,
+    RENDERER_TYPE_METAL = 0x04,
+	RENDERER_TYPE_SOFTWARE = 0x05,
 	MAX_RENDERER_TYPE
 }RendererType;
 
@@ -26,6 +27,7 @@ extern const char *pRendererType[];
 typedef struct RendererConfig
 {
 	RendererType type;
+	b8 bVsync;
 }RendererConfig;
 
 typedef struct YuRenderer
