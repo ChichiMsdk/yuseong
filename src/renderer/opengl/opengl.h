@@ -2,7 +2,7 @@
 #define YOPENGL_H
 
 #include "mydefines.h"
-
+#include "renderer/renderer_defines.h"
 
 typedef struct OsState OsState;
 

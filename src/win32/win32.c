@@ -274,7 +274,7 @@ OsSwapBuffers(OsState* pOsState)
 }
 
 void
-FramebufferGetDimensions(OsState *pOsState, uint32_t* pWidth, uint32_t* pHeight)
+OsFramebufferGetDimensions(OsState *pOsState, uint32_t* pWidth, uint32_t* pHeight)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	*pWidth = pState->windowWidth;

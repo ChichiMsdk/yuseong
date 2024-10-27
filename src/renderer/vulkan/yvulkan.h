@@ -2,9 +2,10 @@
 #define YVULKAN_H
 
 #	include <vulkan/vulkan.h>
-#	include "mydefines.h"
-# 	include "core/assert.h"
 #	include <vulkan/vk_enum_string_helper.h>
+
+#	include "renderer/renderer_defines.h"
+# 	include "core/assert.h"
 
 #ifdef PLATFORM_LINUX
 #	ifdef YGLFW3
@@ -35,16 +36,6 @@ typedef struct OsState OsState;
 		} \
 	} while (0);
 
-typedef struct ColorFloat
-{
-	f32 r; f32 g; f32 b; f32 a;
-}ColorFloat;
-
-typedef struct RectFloat
-{
-	f32 x; f32 y;
-	f32 w; f32 h;
-}RectFloat;
 
 typedef struct VkPhysicalDeviceRequirements
 {
@@ -150,6 +141,7 @@ typedef struct VkSwapchain
 	uint32_t imageCount;
 	VkImage* pImages;
 	VkImageView* pViews;
+	VkExtent3D extent;
 
 	// framebuffers used for on-screen rendering.
 	VulkanFramebuffer* pFramebuffers;
@@ -173,6 +165,14 @@ typedef struct VulkanCommandBuffer
 	VkCommandBuffer handle;
 	VkCommandBufferState state;
 } VulkanCommandBuffer;
+
+typedef struct DrawImage
+{
+	VulkanImage image;
+	VkImage handle;
+	VkExtent3D extent;
+	VkFormat format;
+}DrawImage;
 
 typedef struct VkContext
 {
@@ -205,6 +205,8 @@ typedef struct VkContext
     /* NOTE: Holds pointers to fences which exist and are owned elsewhere. */
 	VulkanFence **ppImagesInFlight;
 
+	DrawImage drawImage;
+
 	VkSwapchain swapchain;
 	uint32_t currentFrame;
 	uint32_t imageIndex;
@@ -226,6 +228,13 @@ void vkShutdown(void);
 
 YND VkResult vkCommandPoolCreate(
 		VkContext*							pContext);
+
+void vkClearBackground(
+		VulkanCommandBuffer*				pCmd,
+		VkImage								pImage);
+
+YND VkResult vkQueueSubmitAndSwapchainPresent(
+		VulkanCommandBuffer*				pCmd);
 
 YND VkResult vkDrawImpl(void);
 #endif // YVULKAN_H

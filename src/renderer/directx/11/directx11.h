@@ -2,7 +2,8 @@
 #define YDIRECTX11_H
 
 #ifdef PLATFORM_WINDOWS
- #include "mydefines.h"
+#include "mydefines.h"
+#include "renderer/renderer_defines.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

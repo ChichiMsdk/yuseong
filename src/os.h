@@ -52,7 +52,7 @@ void FramebufferUpdateInternalDimensions(
 		uint32_t							width,
 		uint32_t							height);
 
-void FramebufferGetDimensions(
+void OsFramebufferGetDimensions(
 		OsState*							pOsState,
 		uint32_t*							pWidth,
 		uint32_t*							pHeight);

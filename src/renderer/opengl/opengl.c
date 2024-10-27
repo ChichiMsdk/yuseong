@@ -32,7 +32,7 @@ glInit(OsState *pOsState)
 	int value = gladLoadGLLoader((GLADloadproc)OsGetGLFuncAddress);
 	if (!value)
 		return FALSE;
-	FramebufferGetDimensions(pOsState, &gGLContext.frameBufferWidth, &gGLContext.frameBufferHeight);
+	OsFramebufferGetDimensions(pOsState, &gGLContext.frameBufferWidth, &gGLContext.frameBufferHeight);
 	uint32_t width = gGLContext.frameBufferWidth;
 	uint32_t height = gGLContext.frameBufferHeight;
 	glViewport(0, 0, width, height);

@@ -1,4 +1,5 @@
 #include "directx11.h"
+#ifdef PLATFORM_WINDOWS
 
 /* https://www.3dgep.com/introduction-to-directx-11/  */
 
@@ -186,3 +187,4 @@ PrintHresult(HRESULT hr)
 	LocalFree(pStr);
 	return FALSE;
 }
+#endif // PLATFORM_WINDOWS
