@@ -31,14 +31,20 @@ main(int argc, char **ppArgv)
 	gAppConfig.pRenderer = RendererInit(&gOsState, config);
 	YU_ASSERT(gAppConfig.pRenderer);
 
+	f64 deltaFrameTime = 0.0f;
+	f64 startFrameTime = 0.0f;
+	f64 endFrameTime = 0.0f;
 	while (gRunning)
 	{
+		deltaFrameTime = endFrameTime - startFrameTime;
+		startFrameTime = OsGetAbsoluteTime(NANOSECONDS);
 		OS_PumpMessages(&gOsState);
-		if (!gAppConfig.bSuspended)
+		if (gAppConfig.bSuspended)
 		{
-			InputUpdate(1);
+			InputUpdate(deltaFrameTime);
 			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer) == YU_SUCCESS);
 		}
+		endFrameTime = OsGetAbsoluteTime(MICROSECONDS);
 	}
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();

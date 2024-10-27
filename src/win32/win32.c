@@ -94,10 +94,15 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 
     // Clock setup
     LARGE_INTEGER frequency;
-    QueryPerformanceFrequency(&frequency);
-    gClockFrequency = 1.0 / (f64)frequency.QuadPart;
+    if (!QueryPerformanceFrequency(&frequency))
+	{
+		MessageBoxA(NULL, "QueryPerformanceFrequency failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		YFATAL("QueryPerformanceFrequency failed!");
+		return FALSE;
+	}
+    /* gClockFrequency = 1.0 / (f64)frequency.QuadPart; */
+    gClockFrequency = frequency.QuadPart;
     QueryPerformanceCounter(&gStartTime);
-
     return TRUE;
 }
 
@@ -139,7 +144,8 @@ ErrorMsgBox(LPCTSTR lpszFunction, DWORD dw)
         dw,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR) &lpMsgBuf,
-        0, NULL );
+        0,
+		NULL );
 
     // Display the error message and exit the process
 
@@ -180,14 +186,41 @@ OsWrite(const char *pMessage, DWORD redir)
 	WriteConsole(GetStdHandle(redir), pMessage, (DWORD)length, numberWritten, 0);
 }
 
+
+/**
+ * Get current time in ms
+ */
 YND f64
-OsGetAbsoluteTime(void)
+OsGetAbsoluteTime(SECOND_UNIT unit)
 {
     LARGE_INTEGER nowTime;
+	f64 unitScale = 1.0f;
     QueryPerformanceCounter(&nowTime);
-    return (f64)nowTime.QuadPart * gClockFrequency;
+	switch (unit)
+	{
+		case NANOSECONDS:
+			unitScale *= 1000.0f * 1000.0f * 1000.0f;
+			break;
+		case MICROSECONDS:
+			unitScale *= 1000.0f * 1000.0f;
+			break;
+		case MILLISECONDS:
+			unitScale *= 1000.0f;
+			break;
+		case SECONDS:
+			unitScale *= 1.0f;
+			break;
+		default:
+			YERROR("Unkown unit %d defaults to milliseconds", unit);
+			break;
+	}
+	/* YDEBUG("Clock Frequency: %f", gClockFrequency); */
+    return (f64)nowTime.QuadPart / (gClockFrequency / unitScale);
 }
 
+/**
+ * Sleeps ms milliseconds
+ */
 void
 OsSleep(uint64_t ms)
 {
@@ -209,8 +242,11 @@ OsGetGLFuncAddress(const char *pName)
 }
 
 const char *ppGLContextError[] = {
-	"choose pixel format\n", "set pixel format\n", "create temporary OpenGL context\n",
-	"make temporary OpenGL context current\n" };
+	"choose pixel format\n", 
+	"set pixel format\n", 
+	"create temporary OpenGL context\n",
+	"make temporary OpenGL context current\n"
+};
 
 YND b8
 OsCreateGlContext(OsState *pOsState)

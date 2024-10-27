@@ -17,7 +17,7 @@
 #include <vulkan/vulkan_win32.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-#endif 
+#endif // 1
 
 typedef struct InternalState
 {

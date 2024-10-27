@@ -64,10 +64,44 @@ YuDraw(OsState* pOsState, YuRenderer *pRenderer)
 {
 	return pRenderer->YuDraw(pOsState);
 }
-
 /*******************************************************************************************************************
  ***************************************** Renderer Specific functions *********************************************
  *******************************************************************************************************************/
+YND YuResult
+vkDraw(YMB OsState* pOsState)
+{
+	return vkErrorToYuseong(vkDrawImpl());
+}
+
+YND YuResult
+vkResize(YMB OsState* pOsState, YMB uint32_t width, YMB uint32_t height)
+{
+	return YU_SUCCESS;
+}
+
+YND YuResult
+glDraw(OsState* pOsState)
+{
+	return glErrorToYuseong(glDrawImpl(pOsState));
+}
+
+YND YuResult
+glResize(OsState* pOsState, uint32_t width, uint32_t height)
+{
+	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
+}
+
+YND YuResult
+D11Draw(OsState* pOsState)
+{
+	return D11ErrorToYuseong(D11DrawImpl(pOsState));
+}
+
+YND YuResult
+D11Resize(OsState* pOsState, uint32_t width, uint32_t height)
+{
+	return D11ErrorToYuseong(D11ResizeImpl(pOsState, width, height));
+}
 
 YND YuResult
 vkErrorToYuseong(VkResult result)
@@ -103,40 +137,4 @@ glErrorToYuseong(GlResult result)
 		default:
 			return YU_FAILURE;
 	}
-}
-
-YND YuResult
-vkDraw(YMB OsState* pOsState)
-{
-	return vkErrorToYuseong(vkDrawImpl());
-}
-
-YND YuResult
-vkResize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height)
-{
-	return YU_SUCCESS;
-}
-
-YND YuResult
-glDraw(OsState* pOsState)
-{
-	return glErrorToYuseong(glDrawImpl(pOsState));
-}
-
-YND YuResult
-glResize(OsState* pOsState, uint32_t width, uint32_t height)
-{
-	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
-}
-
-YND YuResult
-D11Draw(OsState* pOsState)
-{
-	return D11ErrorToYuseong(D11DrawImpl(pOsState));
-}
-
-YND YuResult
-D11Resize(OsState* pOsState, uint32_t width, uint32_t height)
-{
-	return D11ErrorToYuseong(D11ResizeImpl(pOsState, width, height));
 }

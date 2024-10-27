@@ -5,6 +5,14 @@
 #include "renderer/vulkan/yvulkan.h"
 #include <stdint.h>
 
+typedef enum SECOND_UNIT
+{
+	NANOSECONDS,
+	MICROSECONDS,
+	MILLISECONDS,
+	SECONDS
+}SECOND_UNIT;
+
 typedef struct OsState
 {
 	void *pInternalState;
@@ -82,7 +90,8 @@ void OsWrite(
 void OsSleep(
 		uint64_t							ms);
 
-YND f64 OsGetAbsoluteTime(void);
+YND f64 OsGetAbsoluteTime(
+		SECOND_UNIT							unit);
 
 YND VkResult OsCreateVkSurface(
 		OsState*							pState,
