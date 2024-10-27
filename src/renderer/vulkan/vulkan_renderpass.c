@@ -8,7 +8,7 @@
  * needs more information and benchmarks to see if there are any differences
  */
 void 
-vkRenderPassCreate(VkContext* pCtx, VulkanRenderPass* pOutRenderPass, struct ColorFloat color, struct RectFloat rect, 
+vkRenderPassCreate(VkContext* pCtx, VulkanRenderPass* pOutRenderPass, RgbaFloat color, RectFloat rect, 
 		f32 depth, uint32_t stencil) 
 {
     pOutRenderPass->x = rect.x; pOutRenderPass->y = rect.y;

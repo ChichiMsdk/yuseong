@@ -39,3 +39,45 @@ vkImageTransition(VulkanCommandBuffer* pCmd, VkImage pImg, VkImageLayout current
 
     vkCmdPipelineBarrier2(pCmd->handle, &depInfo);
 }
+/**
+ * VkCmdCopyImage or VkCmdBlitImage. CopyImage is faster, but its much more restricted,
+ * for example the resolution on both images must match. Meanwhile, blit image lets you copy images of different
+ * formats and different sizes into one another
+ */
+void
+vkImageCopy(VkCommandBuffer cmd, VkImage srcImage, VkImage dstImage, VkExtent2D srcSize, VkExtent2D dstSize)
+{
+	VkImageBlit2 blitRegion = { 
+		.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+		.srcOffsets[1].x = srcSize.width,
+		.srcOffsets[1].y = srcSize.height,
+		.srcOffsets[1].z = 1,
+
+		.dstOffsets[1].x = dstSize.width,
+		.dstOffsets[1].y = dstSize.height,
+		.dstOffsets[1].z = 1,
+
+		.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.srcSubresource.baseArrayLayer = 0,
+		.srcSubresource.layerCount = 1,
+		.srcSubresource.mipLevel = 0,
+
+		.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.dstSubresource.baseArrayLayer = 0,
+		.dstSubresource.layerCount = 1,
+		.dstSubresource.mipLevel = 0,
+	};
+
+	VkBlitImageInfo2 blitInfo = {
+		.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+		.dstImage = dstImage,
+		.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		.srcImage = srcImage,
+		.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		.filter = VK_FILTER_LINEAR,
+		.regionCount = 1,
+		.pRegions = &blitRegion,
+	};
+
+	vkCmdBlitImage2(cmd, &blitInfo);
+}

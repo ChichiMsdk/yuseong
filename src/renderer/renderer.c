@@ -10,7 +10,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 	{
 		case RENDERER_TYPE_VULKAN:
 			if (vkErrorToYuseong(vkInit(pOsState)) != YU_SUCCESS)
-				return pRenderer;
+				goto finish;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
 			pRenderer->YuDraw = vkDraw;
 			pRenderer->YuShutdown = vkShutdown;
@@ -18,7 +18,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 			goto finish;
 		case RENDERER_TYPE_OPENGL:
 			if (glErrorToYuseong(glInit(pOsState)) != YU_SUCCESS)
-				return pRenderer;
+				goto finish;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
 			pRenderer->YuDraw = glDraw;
 			pRenderer->YuShutdown = glShutdown;
@@ -26,7 +26,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 			goto finish;
 		case RENDERER_TYPE_D3D11:
 			if (D11ErrorToYuseong(D11Init(pOsState, rendererConfig.bVsync))!= YU_SUCCESS)
-				return pRenderer;
+				goto finish;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
 			pRenderer->YuDraw = D11Draw;
 			pRenderer->YuShutdown = D11Shutdown;
@@ -36,10 +36,10 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 		case RENDERER_TYPE_METAL:
 		case RENDERER_TYPE_SOFTWARE:
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
-			return pRenderer;
+			goto finish;
 		default:
 			YFATAL("No renderer found.");
-			return pRenderer;
+			goto finish;
 	}
 finish:
 	return pRenderer;
@@ -65,9 +65,9 @@ YuDraw(OsState* pOsState, YuRenderer *pRenderer)
 	return pRenderer->YuDraw(pOsState);
 }
 
-/******************************************************************************************************************/
-/***************************************** Renderer Specific functions ********************************************/
-/******************************************************************************************************************/
+/*******************************************************************************************************************
+ ***************************************** Renderer Specific functions *********************************************
+ *******************************************************************************************************************/
 
 YND YuResult
 vkErrorToYuseong(VkResult result)

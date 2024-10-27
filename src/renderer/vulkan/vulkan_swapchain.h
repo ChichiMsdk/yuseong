@@ -13,7 +13,7 @@ YND VkResult vkSwapchainCreate(
 		uint32_t							height,
 		VkSwapchain*						pSwapchain);
 
-void vkDeviceQuerySwapchainSupport(
+YND VkResult vkDeviceQuerySwapchainSupport(
 		VkPhysicalDevice					physDevice,
 		VkSurfaceKHR						surface,
 		VkSwapchainSupportInfo*				pOutSupportInfo);
@@ -33,5 +33,20 @@ YND VkResult vkSwapchainPresent(
 		VkQueue								presentQueue,
 		VkSemaphore							semaphoreRenderComplete,
 		uint32_t							presentImageIndex);
+
+YND VkResult vkImageCreate(
+		VkContext*							pContext,
+		VkImageType							imageType,
+		uint32_t							width,
+		uint32_t							height,
+		VkFormat							format,
+		VkImageTiling						tiling,
+		VkImageUsageFlags					usage,
+		VkMemoryPropertyFlags				memoryFlags,
+		b32									bCreateView,
+		VkImageAspectFlags					viewAspectFlags,
+		VulkanImage*						pOutImage,
+		YMB VkExtent3D						extent,
+		uint32_t mipLevels					);
 
 #endif // VULKAN_SWAPCHAIN_H

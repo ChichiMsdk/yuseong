@@ -49,6 +49,9 @@ vkShutdown(void)
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
 
 	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
+	vkDestroyImage(device, pCtx->drawImage.image.handle, pCtx->pAllocator);
+	vkDestroyImageView(device, pCtx->drawImage.image.view, pCtx->pAllocator);
+	vkFreeMemory(device, pCtx->drawImage.image.memory, pCtx->pAllocator);
     /*
 	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
 	 * for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
@@ -93,7 +96,7 @@ vkShutdown(void)
 }
 
 void
-FramebuffersRegenerate(VkSwapchain *pSwapchain, VulkanRenderPass *pRenderpass)
+vkFramebuffersRegenerate(VkSwapchain *pSwapchain, VulkanRenderPass *pRenderpass)
 {
 	for (uint32_t i = 0; i < pSwapchain->imageCount; i++)
 	{
@@ -124,7 +127,6 @@ SyncInit(void)
 	 * This will prevent the application from waiting indefinitely for the first frame to render since it
 	 * cannot be rendered until a frame is "rendered" before it.
      */
-
 	VkDevice device = gVkCtx.device.logicalDev;
 	for (uint8_t i = 0; i < gVkCtx.swapchain.maxFrameInFlight; i++)
 	{
@@ -150,8 +152,7 @@ vkInit(OsState *pOsState)
 	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
 
 	gVkCtx.MemoryFindIndex = MemoryFindIndex;
-	FramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
-
+	OsFramebufferGetDimensions(pOsState, &gVkCtx.framebufferWidth, &gVkCtx.framebufferHeight);
 #ifdef DEBUG
 		DarrayPush(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		YDEBUG("Required extensions:");
@@ -209,9 +210,7 @@ vkInit(OsState *pOsState)
 	};
 	VK_ASSERT(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
 	VK_CHECK(OsCreateVkSurface(pOsState, &gVkCtx));
-
 	YDEBUG("Vulkan surface created");
-
 #ifdef DEBUG
 		YDEBUG("Creating Vulkan debugger...");
 		uint32_t logSeverity = 
@@ -235,11 +234,7 @@ vkInit(OsState *pOsState)
 		VK_CHECK(func(gVkCtx.instance, &debugCreateInfo, gVkCtx.pAllocator, &gVkCtx.debugMessenger));
 		YDEBUG("Vulkan debugger created.");
 #endif // DEBUG
-
-	/* VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName)); */
-	VkResult errcode = VulkanCreateDevice(&gVkCtx, pGPUName);
-	if (errcode != VK_SUCCESS)
-		return errcode;
+	VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName));
 
 	int32_t width = gVkCtx.framebufferWidth;
 	int32_t height = gVkCtx.framebufferHeight;
@@ -247,7 +242,7 @@ vkInit(OsState *pOsState)
 	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
 	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
 
-	YMB ColorFloat color = {
+	YMB RgbaFloat color = {
 		.r = 30.0f,
 		.g = 30.0f,
 		.b = 200.0f,
@@ -262,7 +257,7 @@ vkInit(OsState *pOsState)
 
 	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
 	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
-	FramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
+	vkFramebuffersRegenerate(&gVkCtx.swapchain, &gVkCtx.mainRenderpass);
 
 	gVkCtx.pSemaphoresAvailableImage = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
 	gVkCtx.pSemaphoresQueueComplete = DarrayReserve(VkSemaphore, gVkCtx.swapchain.maxFrameInFlight);
@@ -286,41 +281,85 @@ vkInit(OsState *pOsState)
 	return VK_SUCCESS;
 }
 
+void
+PrintColor(RgbaFloat c)
+{
+	YINFO("r: %f, g: %f, b: %f, a:%f", c.r, c.g, c.b, c.a);
+}
+
+/* WARN: Leaking currently, needs to free at the beginning or at the end */
+/* 
+ * TODO: Profile ImageCopy&Co's
+ */
 YND VkResult
 vkDrawImpl(void)
 {
 	TracyCZoneN(drawCtx, "yDraw", 1);
+
 	YMB VkDevice device = gVkCtx.device.logicalDev;
-	uint64_t timeoutNs = 1000 * 1000 * 1000; // 1 sec - 1 billion nanoseconds
-	VK_CHECK(vkFenceWait(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame], timeoutNs));
+	uint64_t fenceWaitTimeoutNs = 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
+	VK_CHECK(vkFenceWait(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame], fenceWaitTimeoutNs));
 	/*
 	 * NOTE: Fences have to be reset between uses, you can’t use the same
 	 * fence on multiple GPU commands without resetting it in the middle.
 	 */
 	VK_CHECK(vkFenceReset(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame]));
+
 	VK_CHECK(vkSwapchainAcquireNextImageIndex(
 				&gVkCtx,
 				&gVkCtx.swapchain,
-				timeoutNs,
+				fenceWaitTimeoutNs,
 				gVkCtx.pSemaphoresAvailableImage[gVkCtx.currentFrame],
 				VK_NULL_HANDLE, 
 				&gVkCtx.imageIndex));
 
-	/* NOTE: Getting the current frame's cmd buffer */
+	/* NOTE: Getting the current frame's cmd buffer and reset it */
 	VulkanCommandBuffer *pCmd = &gVkCtx.pGfxCommands[gVkCtx.imageIndex];
 	VkCommandBufferResetFlags flags = 0;
 	VK_CHECK(vkCommandBufferReset(pCmd, flags));
 
 	/* NOTE: Start command recording */
 	vkCommandBufferBegin(pCmd, TRUE, FALSE, FALSE);
-	/* NOTE: make the swapchain image into writeable mode before rendering */
-	VkImage img = gVkCtx.swapchain.pImages[gVkCtx.imageIndex];
-	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	VkImage swapchainImage = gVkCtx.swapchain.pImages[gVkCtx.imageIndex];
+	DrawImage drawImage = gVkCtx.drawImage;
+	VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	VkImageLayout newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 
+	/* NOTE: Clear the background */
+	vkClearBackground(pCmd, drawImage.image.handle);
+
+	/* NOTE: Make the swapchain image into presentable mode */
+	currentLayout = VK_IMAGE_LAYOUT_GENERAL;
+	newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
+	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	/* NOTE: Copy the image */
+	VkExtent2D swapchainExtent = {.width = gVkCtx.swapchain.extent.width, .height = drawImage.extent.height};
+	VkExtent2D drawExtent = {.width = drawImage.extent.width, .height = drawImage.extent.height};
+	vkImageCopy(pCmd->handle, drawImage.image.handle, swapchainImage, drawExtent, swapchainExtent);
+
+	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	/* NOTE: End command recording */
+	VK_CHECK(vkCommandBufferEnd(pCmd));
+	/*
+	 * NOTE: submit command buffer to the queue and execute it.
+	 * 	_renderFence will now block until the graphic commands finish execution
+	 */
+	VK_CHECK(vkQueueSubmitAndSwapchainPresent(pCmd));
+
+	TracyCZoneEnd(drawCtx);
+	return VK_SUCCESS;
+}
+
+void
+vkClearBackground(VulkanCommandBuffer *pCmd, VkImage pImage)
+{
 	f32 flashSpeed = 960.0f;
-	f32 flash = fabs(sin(gVkCtx.nbFrames / flashSpeed));
+	YMB f32 flash = fabs(sin(gVkCtx.nbFrames / flashSpeed));
 	VkClearColorValue clearValue = {.float32 = {0.0f, 0.0f, flash, 1.0f}};
-
 	VkImageSubresourceRange clearRange = {
 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 		.baseMipLevel = 0,
@@ -328,37 +367,30 @@ vkDrawImpl(void)
 		.baseArrayLayer = 0,
 		.layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
+	VkImageLayout clearColorImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	uint32_t rangeCount = 1;
+	vkCmdClearColorImage(pCmd->handle, pImage, clearColorImageLayout, &clearValue, rangeCount, &clearRange);
+}
 
-	vkCmdClearColorImage(pCmd->handle, img, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
-
-	/* NOTE: make the swapchain image into presentable mode */
-	vkImageTransition(pCmd, img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	/* NOTE: VK_IMAGE_LAYOUT_GENERAL is the image layout you want to use if you want to write a image from a
-	 * compute shader. If you want a read-only image or a image to be used with rasterization commands, 
-	 * there are better options. 
-	 */
-	VK_CHECK(vkCommandBufferEnd(pCmd));
-
+YND VkResult
+vkQueueSubmitAndSwapchainPresent(VulkanCommandBuffer *pCmd)
+{
 	VkSemaphoreSubmitInfo semaphoreWaitSubmitInfo = {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
 		.semaphore = gVkCtx.pSemaphoresAvailableImage[gVkCtx.currentFrame],
 		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 		.value = 1,
 	};
-
 	VkSemaphoreSubmitInfo semaphoreSignalSubmitInfo = {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
 		.semaphore = gVkCtx.pSemaphoresQueueComplete[gVkCtx.currentFrame],
 		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 		.value = 1,
 	};
-
 	VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
 		.commandBuffer = pCmd->handle,
 	};
-
 	VkSubmitInfo2 submitInfo2 = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
 		.commandBufferInfoCount = 1,
@@ -367,20 +399,16 @@ vkDrawImpl(void)
 		.waitSemaphoreInfoCount = 1,
 		.pSignalSemaphoreInfos = &semaphoreSignalSubmitInfo,
 		.signalSemaphoreInfoCount = 1,
-
 	};
-	/*
-	 * NOTE: submit command buffer to the queue and execute it.
-	 * 	_renderFence will now block until the graphic commands finish execution
-	 */
+	uint32_t submitCount = 1;
 	VK_CHECK(vkQueueSubmit2(
 				gVkCtx.device.graphicsQueue,
-				1,
+				submitCount,
 				&submitInfo2,
 				gVkCtx.pFencesInFlight[gVkCtx.currentFrame].handle));
 
 	pCmd->state = COMMAND_BUFFER_STATE_SUBMITTED;
-	TracyCFrameMark
+
 	VK_CHECK(vkSwapchainPresent(
 				&gVkCtx,
 				&gVkCtx.swapchain,
@@ -388,7 +416,7 @@ vkDrawImpl(void)
 				gVkCtx.device.presentQueue,
 				gVkCtx.pSemaphoresQueueComplete[gVkCtx.currentFrame],
 				gVkCtx.imageIndex));
-	TracyCZoneEnd(drawCtx);
+
 	return VK_SUCCESS;
 }
 
@@ -401,8 +429,7 @@ MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags)
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{
         // Check each memory type to see if its bit is set to 1.
-        if (typeFilter & (1 << i) 
-				&& (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+        if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
 		{
             return i;
         }

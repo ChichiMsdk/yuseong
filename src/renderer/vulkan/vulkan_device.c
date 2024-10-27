@@ -200,7 +200,7 @@ PhysicalDeviceMeetsRequirements( VkPhysicalDevice device, VkSurfaceKHR surface,
 				pOutQueueInfo->transferFamilyIndex, pOutQueueInfo->computeFamilyIndex);
 
         // Query swapchain support.
-        vkDeviceQuerySwapchainSupport(device, surface, pOutSwapchainSupport);
+        VK_CHECK(vkDeviceQuerySwapchainSupport(device, surface, pOutSwapchainSupport));
         if (pOutSwapchainSupport->formatCount < 1 || pOutSwapchainSupport->presentModeCount < 1)
 		{
 			/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
