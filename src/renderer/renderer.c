@@ -25,6 +25,7 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 			pRenderer->YuResize = glResize;
 			goto finish;
 		case RENDERER_TYPE_D3D11:
+#ifdef PLATFORM_WINDOWS
 			if (D11ErrorToYuseong(D11Init(pOsState, rendererConfig.bVsync))!= YU_SUCCESS)
 				goto finish;
 			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
@@ -32,7 +33,16 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 			pRenderer->YuShutdown = D11Shutdown;
 			pRenderer->YuResize = D11Resize;
 			goto finish;
+#else
+			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
+			goto finish;
+#endif // PLATFORM_WINDOWS
 		case RENDERER_TYPE_D3D12:
+#ifdef PLATFORM_WINDOWS
+#else
+			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
+			goto finish;
+#endif // PLATFORM_WINDOWS
 		case RENDERER_TYPE_METAL:
 		case RENDERER_TYPE_SOFTWARE:
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
@@ -91,6 +101,7 @@ glResize(OsState* pOsState, uint32_t width, uint32_t height)
 	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
 }
 
+#ifdef PLATFORM_WINDOWS
 YND YuResult
 D11Draw(OsState* pOsState)
 {
@@ -104,6 +115,19 @@ D11Resize(OsState* pOsState, uint32_t width, uint32_t height)
 }
 
 YND YuResult
+D11ErrorToYuseong(int result)
+{
+	switch (result)
+	{
+		case TRUE:
+			return YU_SUCCESS;
+		default:
+			return YU_FAILURE;
+	}
+}
+#endif //PLATFORM_WINDOWS
+
+YND YuResult
 vkErrorToYuseong(VkResult result)
 {
 	switch (result)
@@ -115,17 +139,6 @@ vkErrorToYuseong(VkResult result)
 	}
 }
 
-YND YuResult
-D11ErrorToYuseong(int result)
-{
-	switch (result)
-	{
-		case TRUE:
-			return YU_SUCCESS;
-		default:
-			return YU_FAILURE;
-	}
-}
 
 YND YuResult
 glErrorToYuseong(GlResult result)

@@ -9,7 +9,11 @@
 #include <windows.h>
 #endif
 
-#include <glad/glad.h>
+#include "glad/glad.h"
+
+#ifdef YGLFW3
+#include <GLFW/glfw3.h>
+#endif
 
 typedef struct GLContext
 {
@@ -27,11 +31,18 @@ glInit(OsState *pOsState)
 	YDEBUG("Creating OpenGL context..");
 	b8 errCode = OsCreateGlContext(pOsState);
 	if (errCode == FALSE)
+	{
+		YFATAL("Error on %s:%d: %s", __FILE__, __LINE__);
 		return FALSE;
+	}
 	YDEBUG("Retrieving OpenGL functions..");
 	int value = gladLoadGLLoader((GLADloadproc)OsGetGLFuncAddress);
 	if (!value)
+	{
+		YFATAL("Error on %s:%d: %s", __FILE__, __LINE__);
 		return FALSE;
+	}
+	YDEBUG("OpenGL version %s", glGetString(GL_VERSION));
 	OsFramebufferGetDimensions(pOsState, &gGLContext.frameBufferWidth, &gGLContext.frameBufferHeight);
 	uint32_t width = gGLContext.frameBufferWidth;
 	uint32_t height = gGLContext.frameBufferHeight;

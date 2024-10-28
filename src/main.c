@@ -16,7 +16,11 @@ int
 main(int argc, char **ppArgv)
 {
 	RendererType defaultType = RENDERER_TYPE_VULKAN;
+
 	ArgvCheck(argc, ppArgv, &defaultType);
+	RendererConfig config = {.type = defaultType};
+	gAppConfig.pRendererConfig = &config;
+
 	if (!OsInit(&gOsState, gAppConfig))
 		exit(1);
 
@@ -27,7 +31,6 @@ main(int argc, char **ppArgv)
 	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
 	EventRegister(EVENT_CODE_RESIZED, 0, _OnResized);
 
-	RendererConfig config = {.type = defaultType};
 	gAppConfig.pRenderer = RendererInit(&gOsState, config);
 	YU_ASSERT(gAppConfig.pRenderer);
 
@@ -38,8 +41,8 @@ main(int argc, char **ppArgv)
 	{
 		deltaFrameTime = endFrameTime - startFrameTime;
 		startFrameTime = OsGetAbsoluteTime(NANOSECONDS);
-		OS_PumpMessages(&gOsState);
-		if (gAppConfig.bSuspended)
+		OsPumpMessages(&gOsState);
+		if (!gAppConfig.bSuspended)
 		{
 			InputUpdate(deltaFrameTime);
 			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer) == YU_SUCCESS);

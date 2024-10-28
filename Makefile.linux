@@ -6,12 +6,24 @@ OBJ_DIR =build/obj
 TESTDIR =obj
 CC =clang-19
 CPP =clang++
+LINKER =mold
+
+CCJSON =compile_commands.json
+
+JASB =jasb.exe
+JASB_FILE =jasb.c
+JASB_CMD = *.o.json
+JASB_LIB =
+
+GLFW3 =1
+TESTING =
 
 SRC_DIR =src
 
 INCLUDE_DIRS =-Isrc -Isrc/core -I$(HOME)/tracy/public -I$(HOME)/tracy/public/tracy
+INCLUDE_DIRS +=-Isrc/renderer/opengl
 
-LIBS =-lglfw -lvulkan -lwayland-client -lxkbcommon -lm
+LIBS =-lGL -lglfw -lvulkan -lwayland-client -lxkbcommon -lm
 LIB_PATH =
 
 CFLAGS =-Wall -Wextra -Werror
@@ -19,35 +31,57 @@ CFLAGS =-Wall -Wextra -Werror
 
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
-# CFLAGS +=-Wno-uninitialized
+CFLAGS +=-Wno-uninitialized
+CFLAGS +=-DPLATFORM_LINUX
 
-CFLAGS += -DPLATFORM_LINUX
-CFLAGS +=-ggdb3 -Wvarargs -O0
-CFLAGS +=-D_DEBUG -DDEBUG
-CFLAGS +=-DYGLFW3
+ifdef GLFW3
+	CFLAGS +=-DYGLFW3
+endif
 
-CFLAGS +=-fsanitize=address
-# CFLAGS +=-fsanitize=thread
+ifdef TESTING
+	CFLAGS +=-DTESTING
+endif
+
+ifdef RELEASE_USE
+	CFLAGS +=-ggdb3 -Wvarargs -O3
+	CFLAGS +=-D_RELEASE -DRELEASE -DYURELEASE
+endif
+
+ifndef RELEASE_USE
+	CFLAGS +=-ggdb3 -Wvarargs -O0
+	CFLAGS +=-D_DEBUG -DDEBUG
+endif
+
+ifdef ASAN_USE
+	CFLAGS +=-fsanitize=address
+endif
+
+ifdef TRACY_USE
+	CFLAGS +=-DTRACY_ENABLE
+
+	CPPFLAGS =-DTRACY_ENABLE
+	CPPFLAGS +=-Wno-format
+	CPPFLAGS +=-stdlib=libc++
+	CPP_FILES =$(wildcard $(SRC_DIR)/*.cpp)
+	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+
+	INCLUDE_DIRS +=-I/usr/include/x86_64-unknown-linux-gnu/c++/v1
+	LIB_PATH +=-L/usr/lib/x86_64-unknown-linux-gnu
+	LIBS +=-lc++
+endif
 
 FILES =$(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
-# CPPFLAGS =-Wno-format
-# CPPFLAGS +=-stdlib=libc++
-# CFLAGS +=-DTRACY_ENABLE
-# CPPFLAGS +=-DTRACY_ENABLE
-# INCLUDE_DIRS +=-I/usr/include/x86_64-unknown-linux-gnu/c++/v1
-# LIB_PATH +=-L/usr/lib/x86_64-unknown-linux-gnu
-# LIBS +=-lc++
-# CPP_FILES =$(shell find $(SRC_DIR) -type f -name '*.cpp')
-# CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON)
 
-sorry: re
-
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) compile_commands.json
+$(BUILD_DIR)/$(JASB): $(JASB_FILE)
+	$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
+	# $(LINKER) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
 
 $(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+	# $(LINKER) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
@@ -60,19 +94,14 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(BUILD_DIR)/$(TESTDIR):
 	@mkdir -p build/obj
 
-compile_commands.json: $(OBJS)
-	@pwsh sed.ps1
+$(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB)
+	@echo Updating compile_commands.json
+	@$(BUILD_DIR)/$(JASB) $(JASB_CMD)
 
 clean:
 	@echo Deleting files..
 	rm -rf $(OBJ_DIR)
 	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
-	@rm -f $(BUILD_DIR)/$(NAME).pdb
-	@rm -f $(BUILD_DIR)/$(NAME).exp
-	@rm -f $(BUILD_DIR)/$(NAME).lib
-	@rm -f $(BUILD_DIR)/vc140.pdb
-	@rm -f $(BUILD_DIR)/*.obj
-	@rm -f $(BUILD_DIR)/*.ilk
 
 fclean: clean
 	rm -f compile_commands.json

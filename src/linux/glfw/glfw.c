@@ -17,6 +17,8 @@ extern b8 gRunning;
 #include <unistd.h>
 #include <string.h>
 
+#include "renderer/renderer.h"
+
 typedef struct InternalState
 {
 	VkSurfaceKHR	surface;
@@ -24,18 +26,18 @@ typedef struct InternalState
 	GLFWwindow*		pWindow;
 	uint32_t		windowWidth;
 	uint32_t		windowHeight;
+	b8				bGlfwInit;
 }InternalState;
 
-
 YND b8 
-OsInit(OS_State *pOsState, AppConfig appConfig)
+OsInit(OsState *pOsState, AppConfig appConfig)
 {
 	/*
 	 * NOTE: Thorough error handling
 	 */
 	pOsState->pInternalState = calloc(1, sizeof(InternalState));
 	InternalState *pState = (InternalState *)pOsState->pInternalState;
-	glfwSetErrorCallback(ErrorCallback);
+	glfwSetErrorCallback(_ErrorCallback);
 	if (!glfwInit())
 	{
 		const char *pDesc; 
@@ -50,8 +52,23 @@ OsInit(OS_State *pOsState, AppConfig appConfig)
 		YFATAL("Error vulkan not supported in %s at %d: %s", __FILE__, __LINE__, pDesc);
 		return FALSE;
 	}
+	switch (appConfig.pRendererConfig->type)
+	{
+		case RENDERER_TYPE_VULKAN:
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+			YDEBUG("GLFW_VULKAN_API");
+			break;
+		case RENDERER_TYPE_OPENGL:
+			/* glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); */
+			YDEBUG("GLFW_OPENGL_API");
+		default:
+			break;
+	}
+	int minor, patch;
+	glfwGetVersion(NULL, &minor, &patch);
+	if (minor > 3 || (minor == 3 && patch >= 9))
+		glfwInitHint(0x00053001 /*GLFW_WAYLAND_LIBDECOR*/, 0x00038002 /*GLFW_WAYLAND_DISABLE_LIBDECOR*/);
 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	/* GLFWmonitor *pMonitor = glfwGetPrimaryMonitor(); */
 	GLFWmonitor *pMonitor = NULL;
@@ -60,26 +77,52 @@ OsInit(OS_State *pOsState, AppConfig appConfig)
 	{
 		const char *pDesc; 
 		glfwGetError(&pDesc);
-		YFATAL("Error vulkan not supported in %s at %d: %s", __FILE__, __LINE__, pDesc);
+		YFATAL("Error window creation in %s at %d: %s", __FILE__, __LINE__, pDesc);
 		return FALSE;
 	}
+	glfwMakeContextCurrent(pState->pWindow);
 	pState->windowWidth = appConfig.w;
 	pState->windowHeight = appConfig.h;
     glfwSetKeyCallback(pState->pWindow, _KeyCallback);
 	glfwSetMouseButtonCallback(pState->pWindow, _MouseCallback);
-	return TRUE;
+	pState->bGlfwInit = TRUE;
+	return pState->bGlfwInit ;
 }
 
 YND VkResult
-OsCreateVkSurface(OS_State *pOsState, VkContext *pContext)
+OsCreateVkSurface(OsState *pOsState, VkContext *pContext)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	VK_CHECK(glfwCreateWindowSurface(pContext->instance, pState->pWindow, pContext->pAllocator, &pContext->surface));
 	return VK_SUCCESS;
 }
 
+void _FramebufferSizeCallback(YMB GLFWwindow* pWindow, int width, int height);
+
+YND b8
+OsCreateGlContext(OsState* pOsState)
+{
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
+	glfwSetFramebufferSizeCallback(pState->pWindow, _FramebufferSizeCallback);
+	return pState->bGlfwInit;
+}
+
+YND void *
+OsGetGLFuncAddress(const char* pName)
+{
+	return glfwGetProcAddress(pName);
+}
+
+YND b8
+OsSwapBuffers(OsState *pOsState)
+{
+	InternalState *pState = (InternalState *) pOsState->pInternalState;
+	glfwSwapBuffers(pState->pWindow);
+	return TRUE;
+}
+
 void
-FramebufferUpdateInternalDimensions(OS_State* pOsState, uint32_t width, uint32_t height)
+FramebufferUpdateInternalDimensions(OsState* pOsState, uint32_t width, uint32_t height)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	pState->windowWidth = width;
@@ -87,7 +130,7 @@ FramebufferUpdateInternalDimensions(OS_State* pOsState, uint32_t width, uint32_t
 }
 
 void
-FramebufferGetDimensions(OS_State* pOsState, uint32_t* pWidth, uint32_t* pHeight)
+OsFramebufferGetDimensions(OsState* pOsState, uint32_t* pWidth, uint32_t* pHeight)
 {
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	*pWidth = pState->windowWidth;
@@ -95,7 +138,7 @@ FramebufferGetDimensions(OS_State* pOsState, uint32_t* pWidth, uint32_t* pHeight
 }
 
 void
-OsShutdown(OS_State* pOsState)
+OsShutdown(OsState* pOsState)
 { 
 	InternalState *pState = (InternalState *) pOsState->pInternalState;
 	glfwDestroyWindow(pState->pWindow);
@@ -113,36 +156,58 @@ OsWrite(const char *pMessage, REDIR redir)
 }
 
 b8
-OsPumpMessages(YMB OS_State* pOsState)
+OsPumpMessages(YMB OsState* pOsState)
 {
 	YMB InternalState *pState = (InternalState *) pOsState->pInternalState;
 	glfwPollEvents();
-	static uint64_t startTime;
-	uint64_t currentTime = OS_GetAbsoluteTime();
-	if (currentTime - startTime >= 100000000)
-	{
-		startTime = OS_GetAbsoluteTime();
-		/* YINFO("time: %llu",  startTime); */
-	}
 	return TRUE;
 }
-
+/**
+ * Get current time in unit
+ */
 YND f64 
-OsGetAbsoluteTime(void)
+OsGetAbsoluteTime(SECOND_UNIT unit)
 {
 	struct timespec tp;
 	clock_gettime(CLOCK_REALTIME, &tp);
-	return tp.tv_sec * 1000000000LL + tp.tv_nsec;
+	f64 unitScale = 1.0f;
+	switch (unit)
+	{
+		case NANOSECONDS:
+			unitScale *= 1000.0f * 1000.0f * 1000.0f;
+			break;
+		case MICROSECONDS:
+			unitScale *= 1000.0f * 1000.0f;
+			break;
+		case MILLISECONDS:
+			unitScale *= 1000.0f;
+			break;
+		case SECONDS:
+			unitScale *= 1.0f;
+			break;
+		default:
+			YERROR("Unkown unit %d defaults to milliseconds", unit);
+			break;
+	}
+
+	return tp.tv_sec * unitScale + tp.tv_nsec;
+	/* return tp.tv_sec * 1000000000LL + tp.tv_nsec; */
 }
 
-vid
+void
 OsSleep(uint64_t ms)
 {
 	sleep(ms / 1000);
 }
 
 void
-ErrorCallback(int error, const char* pDescription)
+_FramebufferSizeCallback(YMB GLFWwindow* pWindow, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
+void
+_ErrorCallback(int error, const char* pDescription)
 {
 	YFATAL("Error[%d]: %s", error, pDescription);
 	exit(1);

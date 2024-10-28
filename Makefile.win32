@@ -14,6 +14,7 @@ JASB_FILE =jasb.c
 JASB_CMD = *.o.json
 JASB_LIB =-luser32
 
+GLFW3 =
 TESTING =
 
 SRC_DIR =src
@@ -41,17 +42,21 @@ CFLAGS +=-DPLATFORM_WINDOWS
 ifdef TESTING
 	CFLAGS +=-DTESTING
 endif
+
 ifdef RELEASE_USE
 	CFLAGS +=-Wvarargs -O3
 	CFLAGS +=-D_RELEASE -DRELEASE -DYURELEASE
 endif
+
 ifndef RELEASE_USE
 	CFLAGS +=-g3 -Wvarargs -O0
 	CFLAGS +=-D_DEBUG -DDEBUG
 endif
+
 ifdef ASAN_USE
 	CFLAGS +=-fsanitize=address
 endif
+
 ifdef TRACY_USE
 	CFLAGS +=-DTRACY_ENABLE
 

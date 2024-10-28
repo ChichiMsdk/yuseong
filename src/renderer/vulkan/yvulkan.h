@@ -9,7 +9,6 @@
 
 #ifdef PLATFORM_LINUX
 #	ifdef YGLFW3
-#	include <GLFW/glfw3.h>
 #	endif
 #endif
 

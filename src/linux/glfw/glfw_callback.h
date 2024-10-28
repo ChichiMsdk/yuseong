@@ -15,6 +15,8 @@
 		} \
 	} while (0);
 
+#include <GLFW/glfw3.h>
+
 YMB static void _KeyCallback(
 		GLFWwindow*							pWindow,
 		int									key,
@@ -28,7 +30,7 @@ YMB static void _MouseCallback(
 		YMB int								action,
 		YMB int								mods);
 
-void ErrorCallback(
+void _ErrorCallback(
 		int									error,
 		const char*							pDescription);
 

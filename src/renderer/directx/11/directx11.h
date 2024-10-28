@@ -1,17 +1,16 @@
 #ifndef YDIRECTX11_H
 #define YDIRECTX11_H
 
-#ifdef PLATFORM_WINDOWS
 #include "mydefines.h"
 #include "renderer/renderer_defines.h"
+#include "os.h"
 
+#ifdef PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <initguid.h>
-
-#include "os.h"
 
 // DEFINE_GUID(IID_ID3D11Texture2D, 0x6f15aaf2, 0xd208, 0x4e89, 0x9a, 0xb4, 0x48, 0x95, 0x98, 0xb3, 0x17, 0x5b);
 
@@ -68,6 +67,14 @@ b8 PrintHresult(
 
 char *GetErrorMessage(
 		HRESULT								hr);
+
+b8 D11ResizeImpl(
+		OsState*							pOsState,
+		uint32_t							width,
+		uint32_t							height);
+
+b8 D11DrawImpl(
+		YMB OsState*						pOsState);
 
 void D11Shutdown(void);
 

@@ -119,7 +119,7 @@ OsShutdown(OsState *pState)
 }
 
 b8
-OS_PumpMessages(YMB OsState *pState) 
+OsPumpMessages(YMB OsState *pState) 
 {
     MSG message;
     while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE)) 
@@ -188,7 +188,7 @@ OsWrite(const char *pMessage, DWORD redir)
 
 
 /**
- * Get current time in ms
+ * Get current time in unit
  */
 YND f64
 OsGetAbsoluteTime(SECOND_UNIT unit)

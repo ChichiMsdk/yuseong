@@ -7,25 +7,36 @@
  * differ from os and shell's this one should actually be portable.           *
  ******************************************************************************/
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #ifdef _WIN32
 	#define _CRT_SECURE_NO_WARNINGS
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <strsafe.h>
 	#include <corecrt_io.h>
+	#define YO_RDONLY _O_RDONLY
+	#define OPEN(a, b) _open(a, b)
+	#define CLOSE(a) _close(a)
+	#define READ(a, b, c) _read(a, b, c)
 #elif __linux__
 	#include <stdarg.h>
 	#include <ftw.h>
 	#include <dirent.h>
 	#include <errno.h>
+	#include <unistd.h>
 	#define MAX_PATH 320
 	char pError[1124];
+
+	#define YO_RDONLY O_RDONLY
+	#define OPEN(a, b) open(a, b)
+	#define CLOSE(a) close(a)
+	#define READ(a, b, c) read(a, b, c)
 #endif // WIN32
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 /* NOTE: YES ! All on the heap. */
 typedef struct sFile
@@ -44,8 +55,8 @@ typedef struct FileList
 {
 	char **ppList;
 	sFile *pFiles;
-	int nbElems;
-	int sizeMax;
+	size_t nbElems;
+	size_t sizeMax;
 }FileList;
 
 #ifdef _WIN32
@@ -119,7 +130,7 @@ isValidDirWinImpl(const char *pStr, int attr, ...)
 #endif // WIN32
 
 void
-findDirWin(const char *path)
+findDirWin([[maybe_unused]] const char *path)
 {
 #ifdef _WIN32
 	WIN32_FIND_DATA findData;
@@ -148,7 +159,7 @@ findDirWin(const char *path)
 void
 DestroyFileList(FileList *pFileList)
 {
-	for (int i = 0; i < pFileList->sizeMax; i++)
+	for (size_t i = 0; i < pFileList->sizeMax; i++)
 	{
 		free(pFileList->pFiles[i].pDirName);
 		free(pFileList->pFiles[i].pFileName);
@@ -185,7 +196,7 @@ int WildcardMatch(const char *pStr, const char *pPattern);
 
 /* TODO: Construct absolute path instead of relative */
 void
-GetFilesWin(const char *pPath, const char *pRegex, sFile *pFiles, int *pNb)
+GetFilesWin(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb)
 {
 #ifdef WIN32
 	WIN32_FIND_DATA findFileData;
@@ -214,10 +225,7 @@ GetFilesWin(const char *pPath, const char *pRegex, sFile *pFiles, int *pNb)
 #elif __linux__
 	DIR *pdStream;
 	struct dirent *pdEntry;
-	char pFullPath[1024];
 	char pSearchPath[1024];
-	int index = 0;
-	int j = 0;
 
 	sprintf(pSearchPath, "%s/.", pPath);
 	sprintf(pError, "Couldn't open '%s'", pSearchPath);
@@ -229,20 +237,6 @@ GetFilesWin(const char *pPath, const char *pRegex, sFile *pFiles, int *pNb)
 		{
 			if (WildcardMatch(pdEntry->d_name, pRegex))
 			{
-				int lenName = strlen(pdEntry->d_name);
-				sprintf(pFiles[*pNb].pObjName, "%s/", pBuildFolder);
-				int lenObj = strlen(pFiles[*pNb].pObjName);
-				for (int i = 0; i < lenName; i++)
-				{
-					if (pdEntry->d_name[i] == '.')
-					{
-						pFiles[*pNb].pObjName[i + lenObj] = pdEntry->d_name[i];
-						pFiles[*pNb].pObjName[++i + lenObj] = 'o';
-						pFiles[*pNb].pObjName[++i + lenObj] = 0;
-						break;
-					}
-					pFiles[*pNb].pObjName[i + lenObj] = pdEntry->d_name[i];
-				}
 				strncpy(pFiles[*pNb].pFileName, pdEntry->d_name, MAX_PATH);
 				sprintf(pFiles[*pNb].pFullPath, "%s/%s", pPath, pdEntry->d_name);
 				(*pNb)++;
@@ -379,9 +373,9 @@ GetFileList(const char *path, const char *regex)
 void
 PrintFileList(FileList *pList)
 {
-	for (int i = 0; i < pList->nbElems; i++)
+	for (size_t i = 0; i < pList->nbElems; i++)
 	{
-		printf("File %d: %s\n", i, pList->pFiles[i].pFullPath);
+		printf("File %zu: %s\n", i, pList->pFiles[i].pFullPath);
 	}
 }
 
@@ -396,6 +390,33 @@ FlushIt(char *pLine, FILE* pFd, size_t size)
 	int count = fprintf(pFd, "%s", pLine);
 	memset(pLine, 0, size);
 	return count;
+}
+
+int
+WildcardMatch(const char *pStr, const char *pPattern)
+{
+	const char *pStar = NULL;
+
+	while (*pStr)
+	{
+		if (*pPattern == *pStr)
+		{
+			pPattern++;
+			pStr++;
+		}
+		else if (*pPattern == '*')
+			pStar = pPattern++;
+		else if (pStar)
+		{
+			pPattern = pStar++;
+			pStr++;
+		}
+		else
+			return 0;
+	}
+	while (*pPattern == '*')
+		pPattern++;
+	return *pPattern == '\0';
 }
 
 int
@@ -429,12 +450,12 @@ main(int argc, char **ppArgv)
 	size_t lastOne = CFiles->nbElems - 1; 
 	while (i < CFiles->nbElems)
 	{
-		fd = _open(CFiles->pFiles[i].pFullPath, _O_RDONLY);
+		fd = OPEN(CFiles->pFiles[i].pFullPath, YO_RDONLY);
 		if (!fd)
 			goto exiting;
 		while (1)
 		{
-			count = _read(fd, pLine, STEPS);
+			count = READ(fd, pLine, STEPS);
 			totalSize+=count;
 			if (totalSize >= (START_ALLOC - STEPS))
 			{
@@ -457,7 +478,7 @@ main(int argc, char **ppArgv)
 			if (count < 0)
 				goto exiting;
 		}
-		_close(fd);
+		CLOSE(fd);
 		i++;
 	}
 	fprintf(pFd1, "%s", CCJSON_END);
@@ -468,8 +489,7 @@ main(int argc, char **ppArgv)
 exiting:
 	perror(CFiles->pFiles->pFullPath);
 	DestroyFileList(CFiles);
-	_close(fd);
+	CLOSE(fd);
 	fclose(pFd1);
 	return 1;
 }
-

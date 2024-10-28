@@ -1,0 +1,406 @@
+version: 1
+creator: remake 4.3+dbg-1.6
+cmd: remake --profile
+pid: 30290
+
+desc: Trigger: Normal program termination
+desc: Node: Targets
+
+positions: line
+event: Wt : Wall Time
+event: Rt : Recipe Time
+events: Wt Rt
+summary: 5866106
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/glfw/glfw.o
+90 209791 209336
+cfn=src/linux/glfw/glfw.c
+calls=1 90
+90 40 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/logger.o
+90 204126 203708
+cfn=src/core/logger.c
+calls=1 90
+90 36 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/jasb.exe
+78 47 0
+cfn=jasb.c
+calls=1 78
+78 43 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/directx/11/directx11.o
+90 120844 120406
+cfn=src/renderer/directx/11/directx11.c
+calls=1 90
+90 45 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_device.o
+90 151663 151249
+cfn=src/renderer/vulkan/vulkan_device.c
+calls=1 90
+90 45 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/input.o
+90 92520 92157
+cfn=src/core/input.c
+calls=1 90
+90 31 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/opengl/glad.o
+90 2020480 2020059
+cfn=src/renderer/opengl/glad.c
+calls=1 90
+90 47 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_swapchain.o
+90 153285 152876
+cfn=src/renderer/vulkan/vulkan_swapchain.c
+calls=1 90
+90 41 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/directx/12/directx12.o
+90 30678 30137
+cfn=src/renderer/directx/12/directx12.c
+calls=1 90
+90 48 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_descriptor.o
+90 30290 29805
+cfn=src/renderer/vulkan/vulkan_descriptor.c
+calls=1 90
+90 47 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/event.o
+90 39516 39117
+cfn=src/core/event.c
+calls=1 90
+90 35 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/wayland/linux.o
+90 123751 123342
+cfn=src/linux/wayland/linux.c
+calls=1 90
+90 44 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/wayland/linux_utils.o
+90 88481 88028
+cfn=src/linux/wayland/linux_utils.c
+calls=1 90
+90 50 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/wayland/pointers.o
+90 245623 245195
+cfn=src/linux/wayland/pointers.c
+calls=1 90
+90 40 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/main.o
+90 173091 172660
+cfn=src/main.c
+calls=1 90
+90 36 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/yuseong
+82 5855913 124684
+cfi=Makefile.linux
+cfn=build/obj/main.o
+calls=1 82
+82 173091 172660
+cfi=Makefile.linux
+cfn=build/obj/linux/wayland/pointers.o
+calls=1 82
+82 245623 245195
+cfi=Makefile.linux
+cfn=build/obj/linux/wayland/linux_utils.o
+calls=1 82
+82 88481 88028
+cfi=Makefile.linux
+cfn=build/obj/linux/wayland/linux.o
+calls=1 82
+82 123751 123342
+cfi=Makefile.linux
+cfn=build/obj/linux/wayland/keyboard.o
+calls=1 82
+82 172671 172271
+cfi=Makefile.linux
+cfn=build/obj/linux/wayland/xdg-shell-client-protocol.o
+calls=1 82
+82 54636 54180
+cfi=Makefile.linux
+cfn=build/obj/linux/glfw/glfw.o
+calls=1 82
+82 209791 209336
+cfi=Makefile.linux
+cfn=build/obj/win32/win32.o
+calls=1 82
+82 117287 116851
+cfi=Makefile.linux
+cfn=build/obj/core/logger.o
+calls=1 82
+82 204126 203708
+cfi=Makefile.linux
+cfn=build/obj/core/ymemory.o
+calls=1 82
+82 138882 138525
+cfi=Makefile.linux
+cfn=build/obj/core/input.o
+calls=1 82
+82 92520 92157
+cfi=Makefile.linux
+cfn=build/obj/core/darray.o
+calls=1 82
+82 46121 45773
+cfi=Makefile.linux
+cfn=build/obj/core/ystring.o
+calls=1 82
+82 40380 40024
+cfi=Makefile.linux
+cfn=build/obj/core/event.o
+calls=1 82
+82 39516 39117
+cfi=Makefile.linux
+cfn=build/obj/renderer/directx/12/directx12.o
+calls=1 82
+82 30678 30137
+cfi=Makefile.linux
+cfn=build/obj/renderer/directx/11/directx11.o
+calls=1 82
+82 120844 120406
+cfi=Makefile.linux
+cfn=build/obj/renderer/renderer.o
+calls=1 82
+82 129964 129481
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_framebuffer.o
+calls=1 82
+82 129925 129573
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_descriptor.o
+calls=1 82
+82 30290 29805
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_fence.o
+calls=1 82
+82 130950 130508
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_renderpass.o
+calls=1 82
+82 202339 201921
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_image.o
+calls=1 82
+82 122134 121751
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan.o
+calls=1 82
+82 178466 178002
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_swapchain.o
+calls=1 82
+82 153285 152876
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_device.o
+calls=1 82
+82 151663 151249
+cfi=Makefile.linux
+cfn=build/obj/renderer/vulkan/vulkan_command.o
+calls=1 82
+82 139728 139184
+cfi=Makefile.linux
+cfn=build/obj/renderer/opengl/glad.o
+calls=1 82
+82 2020480 2020059
+cfi=Makefile.linux
+cfn=build/obj/renderer/opengl/opengl.o
+calls=1 82
+82 201697 201215
+cfi=Makefile.linux
+cfn=build/obj/appevent.o
+calls=1 82
+82 240765 240491
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/darray.o
+90 46121 45773
+cfn=src/core/darray.c
+calls=1 90
+90 28 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=all
+76 5861006 0
+cfi=Makefile.linux
+cfn=compile_commands.json
+calls=1 76
+76 3959 3549
+cfi=Makefile.linux
+cfn=build/yuseong
+calls=1 76
+76 5855913 124684
+cfi=Makefile.linux
+cfn=build/obj
+calls=1 76
+76 1089 824
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/renderer.o
+90 129964 129481
+cfn=src/renderer/renderer.c
+calls=1 90
+90 54 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_fence.o
+90 130950 130508
+cfn=src/renderer/vulkan/vulkan_fence.c
+calls=1 90
+90 44 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/ystring.o
+90 40380 40024
+cfn=src/core/ystring.c
+calls=1 90
+90 28 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj
+94 1089 824
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_command.o
+90 139728 139184
+cfn=src/renderer/vulkan/vulkan_command.c
+calls=1 90
+90 52 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/wayland/keyboard.o
+90 172671 172271
+cfn=src/linux/wayland/keyboard.c
+calls=1 90
+90 38 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/core/ymemory.o
+90 138882 138525
+cfn=src/core/ymemory.c
+calls=1 90
+90 31 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_image.o
+90 122134 121751
+cfn=src/renderer/vulkan/vulkan_image.c
+calls=1 90
+90 39 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/opengl/opengl.o
+90 201697 201215
+cfn=src/renderer/opengl/opengl.c
+calls=1 90
+90 51 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=compile_commands.json
+97 3959 3549
+cfi=Makefile.linux
+cfn=build/jasb.exe
+calls=1 97
+97 47 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/win32/win32.o
+90 117287 116851
+cfn=src/win32/win32.c
+calls=1 90
+90 40 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/linux/wayland/xdg-shell-client-protocol.o
+90 54636 54180
+cfn=src/linux/wayland/xdg-shell-client-protocol.c
+calls=1 90
+90 52 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_renderpass.o
+90 202339 201921
+cfn=src/renderer/vulkan/vulkan_renderpass.c
+calls=1 90
+90 44 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan_framebuffer.o
+90 129925 129573
+cfn=src/renderer/vulkan/vulkan_framebuffer.c
+calls=1 90
+90 35 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/appevent.o
+90 240765 240491
+cfn=src/appevent.c
+calls=1 90
+90 30 0
+
+fl=/home/chichi/yuseong/Makefile.linux
+
+fn=build/obj/renderer/vulkan/vulkan.o
+90 178466 178002
+cfn=src/renderer/vulkan/vulkan.c
+calls=1 90
+90 43 0
+

@@ -19,6 +19,7 @@ typedef struct OsState
 }OsState;
 
 typedef struct YuRenderer YuRenderer;
+typedef struct RendererConfig RendererConfig;
 
 // TODO: Change the name to reflect the state 
 typedef struct AppConfig
@@ -28,6 +29,7 @@ typedef struct AppConfig
 	int32_t w; int32_t h;
 	b8 bSuspended;
 	YuRenderer *pRenderer;
+	RendererConfig *pRendererConfig;
 }AppConfig;
 
 #ifdef PLATFORM_WINDOWS
@@ -65,7 +67,7 @@ void OsFramebufferGetDimensions(
 		uint32_t*							pWidth,
 		uint32_t*							pHeight);
 
-b8 OS_PumpMessages(
+b8 OsPumpMessages(
 		OsState*							pState);
 
 YND b8 OsInit(
