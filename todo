@@ -1,11 +1,14 @@
 TODO:
 
+- Filesystem's API layer
+- Build system using the Filesystem's api layer
 - Config for building without backend
 - Better linker ? Improve compile times..
 - Change the input system
 - Remove the amount of layers
 - Config files ?
-- Change backend easily
+
 
 
 DONE:
+* Change backend easily

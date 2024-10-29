@@ -37,11 +37,24 @@
 	#define READ(a, b, c) read(a, b, c)
 #endif // WIN32
 
+#define CCJSON_BEGIN "[\n"
+#define CCJSON_END "]"
+#define STEPS 3000
+#define START_ALLOC 10240
+#define MAX_SIZE_COMMAND 10000
+#define STACK_SIZE 1024
+
+void MakeCleanImpl([[maybe_unused]] void *none, ...);
+int isValidDirImpl(const char *pStr, int attr, ...);
+
+#define isValidDir(...) isValidDirImpl(__VA_ARGS__, NULL)
+#define MakeClean(...) MakeCleanImpl(__VA_ARGS__, NULL)
 
 /* NOTE: YES ! All on the heap. */
 typedef struct sFile
 {
 	char *pFileName;
+	char *pObjName;
 	char *pDirName;
 
 	/* NOTE: I'm insecure */
@@ -58,103 +71,6 @@ typedef struct FileList
 	size_t nbElems;
 	size_t sizeMax;
 }FileList;
-
-#ifdef _WIN32
-void
-ErrorExit(LPCTSTR lpszFunction, DWORD dw)
-{ 
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-    // Display the error message and exit the process
-
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
-    StringCchPrintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
-
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-	printf("%lu\n", dw);
-    ExitProcess(dw); 
-}
-
-int
-isValidDirWin(const char *str, DWORD dwAttr)
-{
-	if (strcmp(str, ".") && strcmp(str, ".."))
-	{
-		if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
-			return 1;
-	}
-	return 0;
-}
-
-#elif __linux__
-#define isValidDirWin(...) isValidDirWinImpl(__VA_ARGS__, NULL)
-int
-isValidDirWinImpl(const char *pStr, int attr, ...)
-{
-	va_list args;
-	va_start(args, attr);
-	char *pArgStr = NULL;
-	while ((pArgStr = va_arg(args, char *)) != NULL)
-	{
-		if (!strcmp(pArgStr, pStr))
-		{
-			va_end(args);
-			return 0;
-		}
-	}
-	if (strcmp(pStr, ".") && strcmp(pStr, ".."))
-	{
-		if ((unsigned char)attr == DT_DIR)
-			return va_end(args), 1;
-	}
-	va_end(args);
-	return 0;
-}
-#endif // WIN32
-
-void
-findDirWin([[maybe_unused]] const char *path)
-{
-#ifdef _WIN32
-	WIN32_FIND_DATA findData;
-	char newPath[MAX_PATH];
-	sprintf(newPath, "%s\\*", path);
-	/* printf("newPath1: %s\n", newPath); */
-	HANDLE hFind = FindFirstFile(newPath, &findData);
-	memset(newPath, 0, sizeof(newPath) / sizeof(newPath[0]));
-
-	if (hFind == INVALID_HANDLE_VALUE) { printf("FindFirstDir failed (%lu)\n", GetLastError()); return; } 
-	do
-	{
-		if (isValidDirWin(findData.cFileName, findData.dwFileAttributes))
-		{
-			/* printf("Dir: %s\n", findData.cFileName); */
-			sprintf(newPath, "%s\\%s", path, findData.cFileName);
-			printf("Dir: %s\n", newPath);
-			findDirWin(newPath);
-		}
-	}
-	while (FindNextFile(hFind, &findData) != 0);
-#elif __linux__
-#endif
-}
 
 void
 DestroyFileList(FileList *pFileList)
@@ -195,157 +111,10 @@ InitFileList(FileList **ppFileList)
 int WildcardMatch(const char *pStr, const char *pPattern);
 
 /* TODO: Construct absolute path instead of relative */
-void
-GetFilesWin(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb)
-{
-#ifdef WIN32
-	WIN32_FIND_DATA findFileData;
-	char pSearchPath[MAX_PATH];
-	sprintf(pSearchPath, "%s\\%s", pPath, pRegex);
-	HANDLE hFind = FindFirstFile(pSearchPath, &findFileData);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		DWORD dw = GetLastError();
-		if (dw != ERROR_FILE_NOT_FOUND)
-			ErrorExit(pSearchPath, dw);
-		return ; 
-	}
-	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
-	do
-	{
-		strncpy(pFiles[*pNb].pFileName, findFileData.cFileName, MAX_PATH);
-		sprintf(pFiles[*pNb].pFullPath, "%s\\%s", pPath, findFileData.cFileName);
-		(*pNb)++;
-		/* printf("%s\n", fullPath); //findFileData.cFileName); */
-	}
-	while (FindNextFile(hFind, &findFileData) != 0);
-
-	FindClose(hFind);
-#elif __linux__
-	DIR *pdStream;
-	struct dirent *pdEntry;
-	char pSearchPath[1024];
-
-	sprintf(pSearchPath, "%s/.", pPath);
-	sprintf(pError, "Couldn't open '%s'", pSearchPath);
-	if ((pdStream = opendir(pSearchPath)) == NULL) { perror(pError); return ; }
-	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
-	while ((pdEntry = readdir(pdStream)) != NULL)
-	{
-		if (pdEntry->d_type == DT_REG)
-		{
-			if (WildcardMatch(pdEntry->d_name, pRegex))
-			{
-				strncpy(pFiles[*pNb].pFileName, pdEntry->d_name, MAX_PATH);
-				sprintf(pFiles[*pNb].pFullPath, "%s/%s", pPath, pdEntry->d_name);
-				(*pNb)++;
-			}
-		}
-	}
-	closedir(pdStream);
-#endif
-}
-
-#define STACK_SIZE 1024
+void GetFiles(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb);
 
 /* TODO: more robust way please, this is clunky */
-char ** 
-GetFilesDirIter(const char *pBasePath) 
-{
-#ifdef _WIN32
-	char **ppDir = malloc(sizeof(char *) * STACK_SIZE);
-	for (int i = 0; i < STACK_SIZE; i++)
-	{
-		ppDir[i] = malloc(sizeof(char) * MAX_PATH);
-		memset(ppDir[i], 0, MAX_PATH);
-	}
-	int index = 0;
-
-	strncpy(ppDir[index], pBasePath, MAX_PATH);
-	char fullPath[1024];
-	WIN32_FIND_DATA fileInfo;
-	int j = 0;
-	do
-	{
-		char *currentPath = ppDir[index];
-		char searchPath[1024];
-
-		sprintf(searchPath, "%s\\*", currentPath);
-		HANDLE handle = FindFirstFile(searchPath, &fileInfo);
-		if (handle == INVALID_HANDLE_VALUE)
-			fprintf(stderr, "Unable to open directory: Error(%lu)\n", GetLastError());
-		do
-		{
-			if (isValidDirWin(fileInfo.cFileName, fileInfo.dwFileAttributes))
-			{
-				j++;
-				memset(fullPath, 0, sizeof(fullPath) / sizeof(fullPath[0]));
-				sprintf(fullPath, "%s\\%s", currentPath, fileInfo.cFileName);
-
-				if (j < STACK_SIZE) strncpy(ppDir[j], fullPath, MAX_PATH);
-				else fprintf(stderr, "Stack overflow: too many directories to handle.\n");
-			}
-			if (FindNextFile(handle, &fileInfo) == 0) { break; }
-		} while (1);
-
-		FindClose(handle);
-		index++;
-
-	} while (ppDir[index][0]);
-	return ppDir;
-#elif __linux__
-	DIR *pdStream;
-	struct dirent *pdEntry;
-	char pFullPath[1024];
-	char pSearchPath[1024];
-	int index = 0;
-	int j = 0;
-
-	char **ppDir = malloc(sizeof(char *) * STACK_SIZE);
-	for (int i = 0; i < STACK_SIZE; i++)
-	{
-		ppDir[i] = malloc(sizeof(char) * MAX_PATH);
-		memset(ppDir[i], 0, MAX_PATH);
-	}
-	strncpy(ppDir[index], pBasePath, MAX_PATH);
-
-	do
-	{
-		char *pCurrentPath = ppDir[index];
-		sprintf(pSearchPath, "%s/.", pCurrentPath);
-		sprintf(pError, "Couldn't open '%s'", pSearchPath);
-		if ((pdStream = opendir(pSearchPath)) == NULL) { perror(pError); return NULL; }
-		while ((pdEntry = readdir(pdStream)) != NULL)
-		{
-			if (isValidDirWin(pdEntry->d_name, pdEntry->d_type, ".git"))
-			{
-				j++;
-				memset(pFullPath, 0, sizeof(pFullPath) / sizeof(pFullPath[0]));
-				sprintf(pFullPath, "%s/%s", pCurrentPath, pdEntry->d_name);
-				/* printf("pFullPath[%d] at index[%d]: %s\n", j, index, pFullPath); */
-				if (j < STACK_SIZE) strncpy(ppDir[j], pFullPath, MAX_PATH);
-				else
-				{
-					fprintf(stderr, "Stack overflow:"
-							"too many directories to handle:"
-							" %s\n", pFullPath);
-					goto panic;
-				}
-			}
-		}
-		closedir(pdStream);
-		index++;
-	} while (ppDir[index][0]);
-	return ppDir;
-panic:
-	closedir(pdStream);
-	for (int i = 0; i < STACK_SIZE; i++)
-		free(ppDir[i]);
-	free(ppDir);
-	return NULL;
-#endif // WIN32
-}
+char **GetFilesDirIter(const char *pBasePath);
 
 /*
  * TODO:
@@ -361,7 +130,7 @@ GetFileList(const char *path, const char *regex)
 	char **ppDir = GetFilesDirIter(path); // free this somewhere
 	for (int i = 0; ppDir[i][0]; i++)
 	{
-		GetFilesWin(ppDir[i], regex, pFileList->pFiles, &pFileList->nbElems);
+		GetFiles(ppDir[i], regex, pFileList->pFiles, &pFileList->nbElems);
 	}
 
 	for (int i = 0; i < STACK_SIZE; i++)
@@ -378,11 +147,6 @@ PrintFileList(FileList *pList)
 		printf("File %zu: %s\n", i, pList->pFiles[i].pFullPath);
 	}
 }
-
-#define CCJSON_BEGIN "[\n"
-#define CCJSON_END "]"
-#define STEPS 3000
-#define START_ALLOC 10240
 
 int
 FlushIt(char *pLine, FILE* pFd, size_t size)
@@ -420,37 +184,26 @@ WildcardMatch(const char *pStr, const char *pPattern)
 }
 
 int
-main(int argc, char **ppArgv)
+ConstructCompileCommandsJson(FileList *pList, const char *pName)
 {
-	if (argc != 2)
-	{
-		fprintf(stderr, "Usage: jasb <regex>\n");
-		return 1;
-	}
-	char *pFolder = ".";
-	char *pRegex = ppArgv[1];
-	char *pCompileCommands = "compile_commands.json";
-
-	FileList *CFiles = GetFileList(pFolder, pRegex);
-	/* PrintFileList(CFiles); */
-	FILE *pFd1 = fopen(pCompileCommands, "w");
+	FILE *pFd1 = fopen(pName, "w");
 	if (!pFd1)
 	{
 		fprintf(stderr, "Cp2\n");
-		perror(pCompileCommands);
-		DestroyFileList(CFiles);
+		perror(pName);
+		DestroyFileList(pList);
 		return 1;
 	}
 	fprintf(pFd1, "%s", CCJSON_BEGIN);
 	size_t totalSize = 0;
 	size_t count = 0;
 	char *pLine = calloc(START_ALLOC, sizeof(char));
-	size_t i = 0;
 	int fd = 0;
-	size_t lastOne = CFiles->nbElems - 1; 
-	while (i < CFiles->nbElems)
+	size_t i = 0;
+	size_t lastOne = pList->nbElems - 1; 
+	while (i < pList->nbElems)
 	{
-		fd = OPEN(CFiles->pFiles[i].pFullPath, YO_RDONLY);
+		fd = OPEN(pList->pFiles[i].pFullPath, YO_RDONLY);
 		if (!fd)
 			goto exiting;
 		while (1)
@@ -483,13 +236,482 @@ main(int argc, char **ppArgv)
 	}
 	fprintf(pFd1, "%s", CCJSON_END);
 	fclose(pFd1);
-	DestroyFileList(CFiles);
 	return 0;
-
 exiting:
-	perror(CFiles->pFiles->pFullPath);
-	DestroyFileList(CFiles);
 	CLOSE(fd);
 	fclose(pFd1);
 	return 1;
 }
+
+char *
+Compile(const char *cc, const char *flags, FileList *pList)
+{
+	if (pList->nbElems <= 0)
+	{
+		fprintf(stderr, "No files to compile found ..\n");
+		return NULL;
+	}
+	char *pObjs;
+	for (size_t i = 0; i < pList->nbElems; i++)
+	{
+		char *fname = pList->pFiles[i].pFullPath;
+		char *outname = pList->pFiles[i].pObjName;
+		char *command = malloc(sizeof(char) * MAX_SIZE_COMMAND);
+		size_t totalCount = strlen(cc) + strlen(flags) + strlen(fname) + strlen(outname);
+		snprintf(command, totalCount + 10, "%s %s -c %s -o %s", cc, flags, fname, outname);
+		printf("Command: %s\n", command);
+		/* system(command); */
+		free(command);
+	}
+
+	size_t count = 0;
+	size_t total = 0;
+
+	for (size_t i = 0; i < pList->nbElems; i++)
+		total += strlen(pList->pFiles[i].pObjName);
+
+	pObjs = malloc(sizeof(char) * total + (pList->nbElems) + 1);
+	for (size_t i = 0; i < pList->nbElems; i++)
+		count += sprintf(pObjs + count, "%s ", pList->pFiles[i].pObjName);
+	pObjs[--count] = 0;
+	if (!pObjs)
+	{
+		free(pObjs);
+		return "";
+	}
+	return pObjs;
+}
+
+int
+Link(const char *pCc, const char *pFlags, const char *pObj, const char *pOutname)
+{
+	char *pCommand = malloc(sizeof(char) * MAX_SIZE_COMMAND);
+	size_t totalCount = strlen(pCc) + strlen(pFlags) + strlen(pObj) + strlen(pOutname);
+	snprintf(pCommand, totalCount + 7, "%s %s %s -o %s", pCc, pFlags, pObj, pOutname);
+	printf("Command: %s\n", pCommand);
+	int error = system(pCommand);
+	free(pCommand);
+	return error;
+}
+
+int
+Build(const char* pCompiler, const char* pCflags, FileList* pListCfiles, char* pObjs)
+{
+	char *pFinal = NULL;
+	char *pOutput = "test";
+	char *pBuildFolder = "build";
+	char *pLibs = "";
+
+	pObjs = Compile(pCompiler, pCflags, pListCfiles);
+	pFinal = malloc(sizeof(char) * strlen(pOutput) + strlen(pBuildFolder) + 2);
+	size_t count = sprintf(pFinal, "%s/%s", pBuildFolder, pOutput);
+	pFinal[count--] = 0;
+	int error = Link(pCompiler, pLibs, pObjs, pFinal);
+	free(pFinal);
+	return error;
+}
+
+#define JSONREGEX "*.o.json"
+
+int
+CreateCompileCommandsJson(const char *pCompileCommands)
+{
+	FileList *pListJson = GetFileList(".", JSONREGEX);
+	if (!pListJson)
+		return 1;
+	return ConstructCompileCommandsJson(pListJson, pCompileCommands);
+}
+
+int GetFilesAndObj(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb, const char *pBuildFolder);
+
+
+int
+main(int argc, char **ppArgv)
+{
+	if (argc == 2)
+	{
+		if (strcmp(ppArgv[1], "-h"))
+			fprintf(stderr, "Usage: jasb\n");
+		return 1;
+	}
+	char *pExtension = ".exe";
+	char *pBuildFolder = "build";
+	char *pRegex = ppArgv[1];
+	char *pFolder = ".";
+	char *pAsan = "";
+	char *pCompileCommands = "compile_commands.json";
+	char *pObjs = NULL;
+
+	FileList *pListCfiles = GetFileList(pFolder, "*.c");
+	FileList *pListCppFiles = GetFileList(pFolder, "*.cpp");
+	PrintFileList(pListCfiles);
+	PrintFileList(pListCppFiles);
+	return 1;
+	if (CreateCompileCommandsJson(pCompileCommands))
+		goto exiting;
+
+    /*
+	 * if (strlen(pObjs) > 0)
+	 * 	free(pObjs);
+	 * free(pObjs2);
+     */
+	/* DestroyFileList(pListJson); */
+	return 0;
+
+exiting:
+	fprintf(stderr, "Error");
+	/* perror(pListJson->pFiles->pFullPath); */
+	/* DestroyFileList(pListJson); */
+	return 1;
+}
+
+/*****************************************************************************/
+/*WINDOWS*/
+/*****************************************************************************/
+#ifdef WIN32
+
+char ** 
+GetFilesDirIter(const char *pBasePath) 
+{
+	char **ppDir = malloc(sizeof(char *) * STACK_SIZE);
+	for (int i = 0; i < STACK_SIZE; i++)
+	{
+		ppDir[i] = malloc(sizeof(char) * MAX_PATH);
+		memset(ppDir[i], 0, MAX_PATH);
+	}
+	int index = 0;
+
+	strncpy(ppDir[index], basePath, MAX_PATH);
+	char fullPath[1024];
+	WIN32_FIND_DATA fileInfo;
+	int j = 0;
+	do
+	{
+		char *currentPath = ppDir[index];
+		char searchPath[1024];
+
+		sprintf(searchPath, "%s\\*", currentPath);
+		HANDLE handle = FindFirstFile(searchPath, &fileInfo);
+		if (handle == INVALID_HANDLE_VALUE)
+			fprintf(stderr, "Unable to open directory: Error(%lu)\n", GetLastError());
+		do
+		{
+			if (isValidDir(fileInfo.cFileName, fileInfo.dwFileAttributes))
+			{
+				j++;
+				memset(fullPath, 0, sizeof(fullPath) / sizeof(fullPath[0]));
+				sprintf(fullPath, "%s\\%s", currentPath, fileInfo.cFileName);
+
+				if (j < STACK_SIZE) strncpy(ppDir[j], fullPath, MAX_PATH);
+				else fprintf(stderr, "Stack overflow: too many directories to handle.\n");
+			}
+			if (FindNextFile(handle, &fileInfo) == 0) { break; }
+		} while (1);
+
+		FindClose(handle);
+		index++;
+
+	} while (ppDir[index][0]);
+	return ppDir;
+}
+
+void
+GetFiles(const char *pPath, const char *pRegex, sFile *pFiles, int *pNb, const char *pBuildFolder)
+{
+	WIN32_FIND_DATA findFileData;
+	char pSearchPath[MAX_PATH];
+	sprintf(pSearchPath, "%s\\%s", pPath, pRegex);
+	HANDLE hFind = FindFirstFile(pSearchPath, &findFileData);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		DWORD dw = GetLastError();
+		if (dw != ERROR_FILE_NOT_FOUND)
+			ErrorExit(pSearchPath, dw);
+		return ; 
+	}
+	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
+	do
+	{
+		strncpy(pFiles[*pNb].pFileName, findFileData.cFileName, MAX_PATH);
+		sprintf(pFiles[*pNb].pFullPath, "%s\\%s", pPath, findFileData.cFileName);
+		(*pNb)++;
+		/* printf("%s\n", fullPath); //findFileData.cFileName); */
+	}
+	while (FindNextFile(hFind, &findFileData) != 0);
+
+	FindClose(hFind);
+}
+
+int
+GetFilesAndObj(const char *pPath, const char *pRegex, sFile *pFiles, int *pNb, const char *pBuildFolder)
+{
+	WIN32_FIND_DATA findFileData;
+	char pSearchPath[MAX_PATH];
+	sprintf(pSearchPath, "%s\\%s", pPath, pRegex);
+	HANDLE hFind = FindFirstFile(pSearchPath, &findFileData);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		DWORD dw = GetLastError();
+		if (dw != ERROR_FILE_NOT_FOUND)
+			ErrorExit(pSearchPath, dw);
+		return ; 
+	}
+	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
+	do
+	{
+		int lenName = strlen(findFileData.cFileName);
+		sprintf(pFiles[*pNb].pObjName, "%s\\", pBuildFolder);
+		int lenObj = strlen(pFiles[*pNb].pObjName);
+		for (int i = 0; i < lenName; i++)
+		{
+			if (findFileData.cFileName[i] == '.')
+			{
+				pFiles[*pNb].pObjName[i + lenObj] = findFileData.cFileName[i];
+				pFiles[*pNb].pObjName[++i + lenObj] = 'o';
+				pFiles[*pNb].pObjName[++i + lenObj] = 0;
+				break;
+			}
+			pFiles[*pNb].pObjName[i + lenObj] = findFileData.cFileName[i];
+		}
+		strncpy(pFiles[*pNb].pFileName, findFileData.cFileName, MAX_PATH);
+		sprintf(pFiles[*pNb].pFullPath, "%s\\%s", pPath, findFileData.cFileName);
+		(*pNb)++;
+		/* printf("%s\n", fullPath); //findFileData.cFileName); */
+	}
+	while (FindNextFile(hFind, &findFileData) != 0);
+
+	FindClose(hFind);
+}
+
+void
+findDirWin([[maybe_unused]] const char *path)
+{
+	WIN32_FIND_DATA findData;
+	char newPath[MAX_PATH];
+	sprintf(newPath, "%s\\*", path);
+	/* printf("newPath1: %s\n", newPath); */
+	HANDLE hFind = FindFirstFile(newPath, &findData);
+	memset(newPath, 0, sizeof(newPath) / sizeof(newPath[0]));
+
+	if (hFind == INVALID_HANDLE_VALUE) { printf("FindFirstDir failed (%lu)\n", GetLastError()); return; } 
+	do
+	{
+		if (isValidDir(findData.cFileName, findData.dwFileAttributes))
+		{
+			/* printf("Dir: %s\n", findData.cFileName); */
+			sprintf(newPath, "%s\\%s", path, findData.cFileName);
+			printf("Dir: %s\n", newPath);
+			findDirWin(newPath);
+		}
+	}
+	while (FindNextFile(hFind, &findData) != 0);
+}
+
+int
+isValidDir(const char *str, DWORD dwAttr)
+{
+	if (strcmp(str, ".") && strcmp(str, ".."))
+	{
+		if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
+			return 1;
+	}
+	return 0;
+}
+
+void
+ErrorExit(LPCTSTR lpszFunction, DWORD dw) 
+{ 
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        TEXT("%s failed with error %d: %s"), 
+        lpszFunction, dw, lpMsgBuf); 
+    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+    ExitProcess(dw); 
+}
+
+#endif
+
+/*****************************************************************************/
+/*LINUX*/
+/*****************************************************************************/
+#ifdef __linux__
+
+char ** 
+GetFilesDirIter(const char *pBasePath) 
+{
+	DIR *pdStream;
+	struct dirent *pdEntry;
+	char pFullPath[1024];
+	char pSearchPath[1024];
+	int index = 0;
+	int j = 0;
+
+	char **ppDir = malloc(sizeof(char *) * STACK_SIZE);
+	for (int i = 0; i < STACK_SIZE; i++)
+	{
+		ppDir[i] = malloc(sizeof(char) * MAX_PATH);
+		memset(ppDir[i], 0, MAX_PATH);
+	}
+	strncpy(ppDir[index], pBasePath, MAX_PATH);
+	do
+	{
+		char *pCurrentPath = ppDir[index];
+		sprintf(pSearchPath, "%s/.", pCurrentPath);
+		sprintf(pError, "Couldn't open '%s'", pSearchPath);
+		if ((pdStream = opendir(pSearchPath)) == NULL) { perror(pError); return NULL; }
+		while ((pdEntry = readdir(pdStream)) != NULL)
+		{
+			if (isValidDir(pdEntry->d_name, pdEntry->d_type, ".git"))
+			{
+				j++;
+				memset(pFullPath, 0, sizeof(pFullPath) / sizeof(pFullPath[0]));
+				sprintf(pFullPath, "%s/%s", pCurrentPath, pdEntry->d_name);
+				if (j < STACK_SIZE) 
+					strncpy(ppDir[j], pFullPath, MAX_PATH);
+				else
+				{
+					fprintf(stderr, "Stack overflow:" "too many directories to handle:" " %s\n", pFullPath);
+					goto panic;
+				}
+			}
+		}
+		closedir(pdStream);
+		index++;
+	} while (ppDir[index][0]);
+	return ppDir;
+
+panic:
+	closedir(pdStream);
+	for (int i = 0; i < STACK_SIZE; i++)
+		free(ppDir[i]);
+	free(ppDir);
+	return NULL;
+}
+
+void
+GetFiles(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb)
+{
+	DIR *pdStream;
+	struct dirent *pdEntry;
+	char pSearchPath[1024];
+
+	sprintf(pSearchPath, "%s/.", pPath);
+	sprintf(pError, "Couldn't open '%s'", pSearchPath);
+	if ((pdStream = opendir(pSearchPath)) == NULL) 
+	{ 
+		perror(pError); 
+		return ; 
+	}
+	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
+	while ((pdEntry = readdir(pdStream)) != NULL)
+	{
+		if (pdEntry->d_type == DT_REG)
+		{
+			if (WildcardMatch(pdEntry->d_name, pRegex))
+			{
+				strncpy(pFiles[*pNb].pFileName, pdEntry->d_name, MAX_PATH);
+				sprintf(pFiles[*pNb].pFullPath, "%s/%s", pPath, pdEntry->d_name);
+				(*pNb)++;
+			}
+		}
+	}
+	closedir(pdStream);
+}
+
+int
+GetFilesAndObj(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb, const char *pBuildFolder)
+{
+	DIR *pdStream;
+	struct dirent *pdEntry;
+	char pSearchPath[1024];
+
+	sprintf(pSearchPath, "%s/.", pPath);
+	sprintf(pError, "Couldn't open '%s'", pSearchPath);
+	if ((pdStream = opendir(pSearchPath)) == NULL) 
+	{ 
+		perror(pError); 
+		return 1; 
+	}
+	strncpy(pFiles[*pNb].pDirName, pPath, MAX_PATH);
+	while ((pdEntry = readdir(pdStream)) != NULL)
+	{
+		if (pdEntry->d_type == DT_REG)
+		{
+			if (WildcardMatch(pdEntry->d_name, pRegex))
+			{
+				int lenName = strlen(pdEntry->d_name);
+				sprintf(pFiles[*pNb].pObjName, "%s/", pBuildFolder);
+				int lenObj = strlen(pFiles[*pNb].pObjName);
+				for (int i = 0; i < lenName; i++)
+				{
+					if (pdEntry->d_name[i] == '.')
+					{
+						pFiles[*pNb].pObjName[i + lenObj] = pdEntry->d_name[i];
+						pFiles[*pNb].pObjName[++i + lenObj] = 'o';
+						pFiles[*pNb].pObjName[++i + lenObj] = 0;
+						break;
+					}
+					pFiles[*pNb].pObjName[i + lenObj] = pdEntry->d_name[i];
+				}
+				strncpy(pFiles[*pNb].pFileName, pdEntry->d_name, MAX_PATH);
+				sprintf(pFiles[*pNb].pFullPath, "%s/%s", pPath, pdEntry->d_name);
+				(*pNb)++;
+			}
+		}
+	}
+	closedir(pdStream);
+	return 0;
+}
+
+int
+isValidDirImpl(const char *pStr, int attr, ...)
+{
+	va_list args;
+	va_start(args, attr);
+	char *pArgStr = NULL;
+	while ((pArgStr = va_arg(args, char *)) != NULL)
+	{
+		if (!strcmp(pArgStr, pStr))
+		{
+			va_end(args);
+			return 0;
+		}
+	}
+	if (strcmp(pStr, ".") && strcmp(pStr, ".."))
+	{
+		if ((unsigned char)attr == DT_DIR)
+			return va_end(args), 1;
+	}
+	va_end(args);
+	return 0;
+}
+
+void
+ErrorExit(char *pMsg) 
+{
+	perror(pMsg);
+	exit(1);
+}
+#endif
