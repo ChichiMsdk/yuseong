@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #define YMB [[maybe_unused]]
 
@@ -20,27 +21,34 @@
 	#include <windows.h>
 	#include <strsafe.h>
 	#include <corecrt_io.h>
+	#include <shlwapi.h>
 
+
+	void ErrorExit(char* lpszMsg, unsigned long dw);
+
+#pragma comment(lib, "shlwapi.lib")
 	#define YO_RDONLY _O_RDONLY
 	#define OPEN(a, b) _open(a, b)
 	#define CLOSE(a) _close(a)
 	#define READ(a, b, c) _read(a, b, c)
 	#define STRDUP(str) _strdup(str)
-
-	void ErrorExit(char* lpszMsg, unsigned long dw);
+	#define MKDIR(str) CreateDirectory(str, NULL)
+	#define ISDIRECTORY(str) PathIsDirectory(str)
+	#define ERROR_EXIT(str) ErrorExit(str, GetLastError())
 
 	#define SLASH "\\"
 	#define EXTENSION ".exe"
-	#define TRACY_PATH "-IC:\\Lib\\tracy-0.11.1\\public -IC:\\Lib\\tracy-0.11.1\\public\\tracy"
+	#define TRACY_PATH "C:\\Lib\\tracy-0.11.1\\public"
+	#define TRACYTRACY_PATH "C:\\Lib\\tracy-0.11.1\\public\\tracy"
 
-	#define GLFW_PATH "-IC:\\Lib\\glfw\\include" 
-	#define GLFWLIB_PATH "-LC:\\Lib\\glfw\\lib-vc2022"
-	#define GLFWLIB "-lgflw3_mt"
+	#define GLFW_PATH "C:\\Lib\\glfw\\include" 
+	#define GLFWLIB_PATH "C:\\Lib\\glfw\\lib-vc2022"
+	#define GLFWLIB "gflw3_mt"
 
-	#define VULKAN_PATH "-IC:/VulkanSDK/1.3.275.0/Include"
-	#define VULKANLIB_PATH "-LC:/VulkanSDK/1.3.275.0/Lib"
-	#define VULKANLIB "-lvulkan-1"
-	#define OPENGLLIB "-lopeng32"
+	#define VULKAN_PATH "C:/VulkanSDK/1.3.275.0/Include"
+	#define VULKANLIB_PATH "C:/VulkanSDK/1.3.275.0/Lib"
+	#define VULKANLIB "vulkan-1"
+	#define OPENGLLIB "opengl32"
 #elif __linux__
 	#include <stdarg.h>
 	#include <ftw.h>
@@ -51,12 +59,17 @@
 	#define MAX_PATH 320
 	char pError[1124];
 
+
+	void ErrorExit(char *pMsg) ;
+
 	#define YO_RDONLY O_RDONLY
 	#define OPEN(a, b) open(a, b)
 	#define CLOSE(a) close(a)
 	#define READ(a, b, c) read(a, b, c)
 	#define STRDUP(str) strdup(str)
-	void ErrorExit(char *pMsg) ;
+	#define MKDIR(str) mkdir(str, 0700)
+	#define ISDIRECTORY(str) PathIsDirectory(str)
+	#define ERROR_EXIT(str) ErrorExit(str)
 
 	#define SLASH "/"
 	#define EXTENSION ""
@@ -74,6 +87,8 @@
 
 #endif // WIN32
 
+#define JASBAPPEND 1
+#define JASBPREPEND 2
 #define CCJSON_BEGIN "[\n"
 #define CCJSON_END "]"
 #define STEPS 3000
@@ -161,7 +176,7 @@ ChefDestroy(void)
 {
 	for (size_t i = 0; i < gChef.nbElems; i++)
 	{
-		printf("Freeing: \"%s\" at %p\n", (char*)gChef.ppTable[i], gChef.ppTable[i]);
+		/* printf("Freeing: \"%s\" at %p\n", (char*)gChef.ppTable[i], gChef.ppTable[i]); */
 		free(gChef.ppTable[i]);
 	}
 }
@@ -195,10 +210,10 @@ ChefRealloc(void *pPtr, size_t size)
 	return gChef.ppTable[i];
 }
 
+#define SPACELEN 1
 char *
 ChefStrAppendSpaceImpl(char *pDst, ...)
 {
-#define SPACELEN 1
 
 	va_list args;
 	va_start(args, pDst);
@@ -234,9 +249,73 @@ ChefStrAppendImpl(char *pDst, ...)
 	return pDst;
 }
 
+char *
+ChefStrAppendWithFlagsImpl(char *pDst, char *pFlag, ...)
+{
+	va_list args;
+	va_start(args, pFlag);
+	char *pArg = NULL;
+	size_t flagSize = strlen(pFlag);
+	size_t dstSize = strlen(pDst);
+	while ((pArg = va_arg(args, char *)) != NULL)
+	{
+		size_t srcSize = strlen(pArg);
+		size_t dstSize = strlen(pDst);
+		pDst = ChefRealloc(pDst, dstSize + srcSize + 1 + flagSize + SPACELEN);
+		memcpy(&pDst[dstSize], pFlag, flagSize);
+		memcpy(&pDst[dstSize + flagSize], pArg, srcSize);
+		pDst[dstSize + srcSize + flagSize] = ' ';
+		pDst[dstSize + srcSize + flagSize + 1] = 0;
+	}
+	va_end(args);
+	return pDst;
+	return pDst;
+}
+
+char *
+ChefStrPrependWithFlagsImpl(char *pDst, char *pFlag, ...)
+{
+	va_list args;
+	va_start(args, pFlag);
+	char *pArg = NULL;
+	size_t flagSize = strlen(pFlag);
+	while ((pArg = va_arg(args, char *)) != NULL)
+	{
+		size_t srcSize = strlen(pArg);
+		size_t dstSize = strlen(pDst);
+		char *tmp = malloc(dstSize + 1);
+
+		pDst = ChefRealloc(pDst, dstSize + srcSize + 1 + flagSize + SPACELEN);
+
+		memcpy(&pDst[dstSize], pFlag, flagSize);
+		memcpy(&pDst[dstSize + flagSize], pArg, srcSize);
+
+		pDst[dstSize + srcSize + flagSize] = ' ';
+		pDst[dstSize + srcSize + flagSize + 1] = 0;
+
+		free(tmp);
+	}
+	va_end(args);
+	return pDst;
+}
+
 #define STR(a) ChefStrDup(a)
 #define APPEND(a, ...) a = ChefStrAppendImpl(a, __VA_ARGS__, NULL)
 #define APPEND_SPACE(a, ...) a = ChefStrAppendSpaceImpl(a, __VA_ARGS__, NULL)
+
+#define PREPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrPrependWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+#define APPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrAppendWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+
+#define ADD_FLAGS(dst, flags, ...) \
+	do { \
+		if (strcmp(flags, "-l") == 0) { \
+			APPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
+		} \
+		if (strcmp(flags, ".lib") == 0) { \
+			PREPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
+		} \
+	} while(0);
+
 
 void MakeCleanImpl(void *none, ...);
 int IsValidDirImpl(const char *pStr, unsigned long attr, ...);
@@ -373,74 +452,79 @@ Build(Command* pCmd, FileList* pListCfiles)
  * - Incremental builds -> Most of the time useless / problematic
  */
 
+bool gbDebug = TRUE;
+bool gbRelease = FALSE;
+
+bool gbTracy = FALSE;
+bool gbAsan = FALSE;
+bool gbTest = FALSE;
+
 bool gbVulkan = FALSE;
 bool gbOpenGL = FALSE;
 bool gbD3D11 = FALSE;
 bool gbD3D12 = FALSE;
 bool gbGLFW3 = FALSE;
-bool gbTracy = FALSE;
-bool gbRelease = FALSE;
-bool gbDebug = TRUE;
-bool gbTest = FALSE;
-bool gbAsan = FALSE;
 
-int
-main(int argc, char **ppArgv)
-{
-#if 0
-	char test[1000000];
-	printf("Wrote: %d\n", sprintf(test, "TEST:|%s%s%s%s|", "", "SALUT", "", "YO"));
-	printf("%s", test);
-	return 1;
-#endif
 
-	if (argc == 2)
-	{
-		if (strcmp(ppArgv[1], "-h"))
-			fprintf(stderr, "Usage: jasb\n");
-		return 1;
-	}
-	gbVulkan = FALSE; gbOpenGL = FALSE; gbD3D11 = FALSE; gbD3D12 = FALSE; gbGLFW3 = FALSE;
-	gbTracy = FALSE;
-	gbRelease = FALSE; gbDebug = TRUE; gbTest = FALSE;
-	gbAsan = FALSE;
-
-	ChefInit();
+Command
+CommandInit(void)
+{	
 	Command cmd = {
-		.pNAME = STR("yuseong"),
 		.pROOTFOLDER = STR("."),
+		.pNAME = STR("yuseong"),
 		.pEXTENSION = STR(EXTENSION),
 		.pBUILD_DIR = STR("build"),
 		.pOBJ_DIR = STR("build" SLASH "obj"),
 		.pCC = STR("clang"),
 		.pCPP = STR("clang++"),
 		.pSRC_DIR = STR("src"),
-		.pINCLUDE_DIRS = STR("-Isrc -Isrc/core"),
-		.pCFLAGS = STR("-Wall -Wextra -Werror"),
+		.pCFLAGS = STR(""),
 		.pLIB_PATH = STR(""),
-        /*
-		 * pNAME;
-		 * pROOTFOLDER;
-		 * pEXTENSION;
-		 * pBUILD_DIR;
-		 * pOBJ_DIR;
-		 * pCC;
-		 * pCPP;
-		 * pSRC_DIR;
-		 * pINCLUDE_DIRS;
-		 * pLIB_PATH;
-		 * pLIBS;
-		 * pCFLAGS;
-		 * pCPPFLAGS;
-		 * pDEFINES;
-         */
+		.pINCLUDE_DIRS = STR(""),
+		.pLIBS = STR(""),
+		.pDEFINES = STR(""),
 	};
+	char *INCLUDEFLAG = NULL;
+	char *LIBFLAG = NULL;
+	char *LIBDEPEND = NULL;
+	char *OPTIFLAGS = NULL;
+	char *DEBUGFLAGS = NULL;
+	char *DEFINEFLAG = NULL;
 
 #ifdef _WIN32 
-	cmd.pDEFINES = STR("-DPLATFORM_WINDOWS");
-	cmd.pLIBS = STR("-lshell32 -lgdi32 -lwinmm -luser32");
-	APPEND(cmd.pCFLAGS, " -g3");
+	if ((strcmp(cmd.pCC, "clang") == 0 || (strcmp(cmd.pCC, "gcc") == 0)))
+	{
+		OPTIFLAGS = STR("-O3");
+		DEBUGFLAGS = STR("-O0");
+		DEFINEFLAG = STR("-D");
+		INCLUDEFLAG = STR("-I");
+		LIBFLAG = STR("-L");
+		LIBDEPEND = STR("-l");
+		APPEND(cmd.pCFLAGS, "-Wall -Wextra -Werror");
+		APPEND(cmd.pCFLAGS, " -g3");
+	}
+	else
+	{
+		OPTIFLAGS = STR("/O2");
+		DEBUGFLAGS = STR("/O");
+		DEFINEFLAG = STR("/D");
+		INCLUDEFLAG = STR("/I");
+		LIBFLAG = STR("/L");
+		LIBDEPEND = STR(".lib");
+		APPEND(cmd.pCFLAGS, "/Wall");
+		APPEND(cmd.pCFLAGS, " /Zi");
+	}
+	PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "PLATFORM_WINDOWS");
+	ADD_FLAGS(cmd.pLIBS, LIBDEPEND, "shlwapi", "shell32", "gdi32", "winmm", "user32");
+	PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, "src", "src/core", "src/renderer/opengl");
+
 #elif __linux__
+	INCLUDEFLAG = STR("-I");
+	LIBFLAG = STR("-L");
+	LIBPREPEND = STR("-l");
+	DEFINEFLAG = STR("-D");
+	OPTIFLAGS = STR("-O3");
+	DEBUGFLAGS = STR("-O0");
 	cmd.pDEFINES = STR("-DPLATFORM_LINUX");
 	cmd.pLIBS = STR("");
 	APPEND(cmd.pCFLAGS, " -ggdb3");
@@ -450,53 +534,51 @@ main(int argc, char **ppArgv)
 #endif
 
 	cmd.pCPPFLAGS = STR("");
-	APPEND(cmd.pCFLAGS, " -fno-inline", " -fno-omit-frame-pointer");
-	APPEND(cmd.pCFLAGS, " -Wno-missing-field-initializers", " -Wno-unused-but-set-variable");
-	APPEND(cmd.pCFLAGS, " -Wno-uninitialized");
-	APPEND(cmd.pCFLAGS, " -Wvarargs");
+
+	if ((strcmp(cmd.pCC, "clang") == 0 || (strcmp(cmd.pCC, "gcc") == 0)))
+	{
+		APPEND(cmd.pCFLAGS, " -fno-inline", " -fno-omit-frame-pointer");
+		APPEND(cmd.pCFLAGS, " -Wno-missing-field-initializers", " -Wno-unused-but-set-variable");
+		APPEND(cmd.pCFLAGS, " -Wno-uninitialized");
+		APPEND(cmd.pCFLAGS, " -Wvarargs");
+	}
 	if (gbDebug)
 	{
-		APPEND(cmd.pDEFINES, " -D_DEBUG", " -DDEBUG", " -DYUDEBUG");
-		APPEND(cmd.pCFLAGS, " -O0");
+		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_DEBUG", "DEBUG", "YUDEBUG");
+		APPEND(cmd.pCFLAGS, " ", DEBUGFLAGS);
 	}
 	else if (gbRelease)
 	{
-		APPEND(cmd.pDEFINES, " -D_RELEASE", " -DRELEASE", " -DYURELEASE");
-		APPEND(cmd.pCFLAGS, " -O3");
+		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_RELEASE", "RELEASE", "YURELEASE");
+		APPEND(cmd.pCFLAGS, " ", OPTIFLAGS);
 	}
 
-	if (gbTest) APPEND(cmd.pDEFINES, " ", "-DTESTING");
+	if (gbTest) PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TESTING");
 
 	if (gbVulkan)
 	{
-		APPEND(cmd.pLIB_PATH, " ", VULKANLIB_PATH);
-		APPEND(cmd.pINCLUDE_DIRS, " ", VULKANLIB_PATH);
-		APPEND(cmd.pLIBS, " ", VULKANLIB);
+		PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, VULKANLIB_PATH);
+		PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, VULKAN_PATH);
+		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, VULKANLIB);
 	}
 	else if (gbOpenGL)
 	{
-		APPEND(cmd.pLIBS, " ", OPENGLLIB);
+		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, OPENGLLIB);
 	}
 #ifdef _WIN32
-	else if (gbD3D11)
-	{
-		APPEND(cmd.pLIBS, " ", "-ld3dcompiler -ld3d11 -ldxgi -ldxguid");
-	}
-	else if (gbD3D12)
-	{
-
-	}
+	else if (gbD3D11) { ADD_FLAGS(cmd.pLIBS, LIBDEPEND, "d3dcompiler", "d3d11", "dxgi", "dxguid"); }
+	else if (gbD3D12) { }
 #endif
 	if (gbGLFW3)
 	{
-		APPEND(cmd.pINCLUDE_DIRS, " ", GLFW_PATH);
-		APPEND(cmd.pLIB_PATH, " ", GLFWLIB_PATH);
-		APPEND(cmd.pLIBS, " ", GLFWLIB);
+		PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, GLFW_PATH);
+		PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, GLFWLIB_PATH);
+		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, GLFWLIB);
 	}
 	if (gbTracy)
 	{
 		APPEND(cmd.pINCLUDE_DIRS, " ", TRACY_PATH);
-		APPEND(cmd.pDEFINES, " ", "-DTRACY_ENABLE");
+		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TRACY_ENABLE");
 		/* CPPFLAGS =-Wno-format */
 		/* Also, compile cpp flags with different struct ? */
 	}
@@ -504,18 +586,36 @@ main(int argc, char **ppArgv)
 	{
 		APPEND(cmd.pCFLAGS, " ", "-fsanitize=address");
 	}
+	return cmd;
+}
 
-	APPEND(cmd.pINCLUDE_DIRS, " -Isrc/renderer/opengl");
+int ArgsCheck(int argc, char** ppArgv);
+
+int
+main(int argc, char **ppArgv)
+{
+	if (argc >= 2)
+	{
+		if (ArgsCheck(argc, ppArgv) == FALSE)
+			return 1;
+	}
+
+	ChefInit();
+	Command cmd = CommandInit();
+	if (ISDIRECTORY(cmd.pBUILD_DIR) == FALSE)
+	{
+		if (MKDIR(cmd.pBUILD_DIR) == FALSE )
+			ERROR_EXIT("Mkdir failed..");
+		if (MKDIR(cmd.pOBJ_DIR) == FALSE )
+			ERROR_EXIT("Mkdir failed..");
+	}
+
 	char *pCompileCommands = STR("compile_commands.json");
 
-	FileList *pListCfiles = {0};
-
-	pListCfiles = GetFileListAndObjs(&cmd, "*.c");
+	FileList *pListCfiles = GetFileListAndObjs(&cmd, "*.c");
 	if (!pListCfiles) { fprintf(stderr, "Something happened in c\n"); return 1; }
 
-	FileList *pListCppFiles = {0};
-
-	pListCppFiles = GetFileListAndObjs(&cmd, "*.cpp");
+	FileList *pListCppFiles = GetFileListAndObjs(&cmd, "*.cpp");
 	if (!pListCppFiles) { fprintf(stderr, "Something happened in cpp\n"); return 1; }
 
 	if (Build(&cmd, pListCfiles) == 1)
@@ -539,6 +639,73 @@ exiting:
 	printf("number = %zu\n", gChef.nbElems);
 	ChefDestroy();
 	return 1;
+}
+
+int
+ArgsCheck(int argc, char** ppArgv)
+{
+
+	if (strcmp(ppArgv[1], "-h") == 0)
+	{
+		fprintf(stderr, "Usage: jasb\n");
+		return FALSE;
+	}
+	int i = 0;
+	while (i < argc)
+	{
+		if (strcmp(ppArgv[i], "vk") == 0 || strcmp(ppArgv[i], "vulkan") == 0 || strcmp(ppArgv[i], "VULKAN") == 0 
+				|| strcmp(ppArgv[i], "Vulkan") == 0)
+		{
+			gbVulkan = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "TRACY") == 0 || strcmp(ppArgv[i], "tracy") == 0)
+		{
+			gbTracy = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "gl") == 0 || strcmp(ppArgv[i], "opengl") == 0 || strcmp(ppArgv[i], "OpenGL") == 0)
+		{
+			gbOpenGL = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "D3D11"))
+		{
+			gbD3D11 = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "D3D12"))
+		{
+			gbD3D12 = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "GLFW3"))
+		{
+			gbGLFW3 = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "TEST"))
+		{
+			gbTest = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "DEBUG"))
+		{
+			gbDebug = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "RELEASE"))
+		{
+			gbRelease = TRUE;
+			continue;
+		}
+		if (strcmp(ppArgv[i], "ASAN"))
+		{
+			gbAsan = TRUE;
+			continue;
+		}
+	}
+	return TRUE;
 }
 
 int
@@ -737,13 +904,20 @@ WildcardMatch(const char *pStr, const char *pPattern)
 
 
 
-
-
 /*****************************************************************************/
 								/*WINDOWS*/
 /*****************************************************************************/
 #ifdef WIN32
 
+/*
+ * BOOL
+ * DirectoryExists(LPCTSTR szPath)
+ * {
+ *   DWORD dwAttrib = GetFileAttributes(szPath);
+ * 
+ *   return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+ * }
+ */
 char ** 
 GetFilesDirIter(const char *pBasePath)
 {
@@ -1067,7 +1241,7 @@ GetFilesAndObj(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb
 }
 
 int
-isValidDirImpl(const char *pStr, unsigned long attr, ...)
+IsValidDirImpl(const char *pStr, unsigned long attr, ...)
 {
 	va_list args;
 	va_start(args, attr);
