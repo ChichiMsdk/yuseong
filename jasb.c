@@ -6,13 +6,54 @@
  * a Makefile that will compile it and then use after each build. As sed could*
  * differ from os and shell's this one should actually be portable.           *
  ******************************************************************************/
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <sys/stat.h>
+
+typedef enum yError {
+	Y_NO_ERROR = 0x00,
+
+	Y_ERROR_EMPTY = 0x01,
+	Y_ERROR_UNKNOWN = 0x02,
+	Y_ERROR_EXEC = 0x03,
+	Y_ERROR_BUILD = 0x04,
+	Y_ERROR_LINK = 0x05,
+	Y_ERROR_JSON = 0x06,
+	Y_MAX_ERROR
+}yError;
+
+char *pErrorMsg[] = {
+	"No error.",
+	"List is empty.",
+	"Unknown error.",
+	"Execution error.",
+	"Build couldn't finish.",
+	"Link couldn't finish.",
+	"Json couldn't not be created.",
+};
+
+#define GetErrorMsg(a) pErrorMsg[a]
+
+char *gpPrintHelper[] = {
+	"{ ",
+	"\"directory\": ",
+	"\"file\": ",
+	"\"output\": ",
+	"\"arguments\": [",
+	"]}",
+};
+
+#define Y_OPENCURLY gpPrintHelper[0]
+#define Y_DIRECTORY gpPrintHelper[1]
+#define Y_FILE gpPrintHelper[2]
+#define Y_OUTPUT gpPrintHelper[3]
+#define Y_BEGIN_ARGUMENTS gpPrintHelper[4]
+#define Y_CLOSE_ARGUMENTS gpPrintHelper[5]
+#define YCOMA ","
+
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 #define YMB [[maybe_unused]]
 
@@ -23,8 +64,8 @@
 	#include <corecrt_io.h>
 	#include <shlwapi.h>
 
-
 	void ErrorExit(char* lpszMsg, unsigned long dw);
+	bool MkdirImpl(str);
 
 #pragma comment(lib, "shlwapi.lib")
 	#define YO_RDONLY _O_RDONLY
@@ -32,7 +73,7 @@
 	#define CLOSE(a) _close(a)
 	#define READ(a, b, c) _read(a, b, c)
 	#define STRDUP(str) _strdup(str)
-	#define MKDIR(str) CreateDirectory(str, NULL)
+	#define MKDIR(str) MkdirImpl(str)
 	#define ISDIRECTORY(str) PathIsDirectory(str)
 	#define ERROR_EXIT(str) ErrorExit(str, GetLastError())
 
@@ -49,41 +90,49 @@
 	#define VULKANLIB_PATH "C:/VulkanSDK/1.3.275.0/Lib"
 	#define VULKANLIB "vulkan-1"
 	#define OPENGLLIB "opengl32"
+	#define DOESEXIST(str) DoesExistImpl(str)
+
 #elif __linux__
 	#include <stdarg.h>
 	#include <ftw.h>
 	#include <dirent.h>
 	#include <errno.h>
 	#include <unistd.h>
+	#include <sys/stat.h>
 
 	#define MAX_PATH 320
 	char pError[1124];
 
 
-	void ErrorExit(char *pMsg) ;
+	void ErrorExit(char *pMsg);
+	bool PathIsDirectory(const char *pPath);
+	void PerrorLog(char *pMsg, char *pFile, int line);
 
+	#define PERROR_LOG(str) PerrorLog(str, __FILE__, __LINE__)
 	#define YO_RDONLY O_RDONLY
 	#define OPEN(a, b) open(a, b)
 	#define CLOSE(a) close(a)
 	#define READ(a, b, c) read(a, b, c)
 	#define STRDUP(str) strdup(str)
-	#define MKDIR(str) mkdir(str, 0700)
+	#define MKDIR(str) MkdirImpl(str)
 	#define ISDIRECTORY(str) PathIsDirectory(str)
 	#define ERROR_EXIT(str) ErrorExit(str)
+	#define DOESEXIST(str) DoesExistImpl(str)
 
 	#define SLASH "/"
 	#define EXTENSION ""
 
-	#define TRACY_PATH
+	#define TRACY_PATH "/home/chichi/tracy/public"
+	#define TRACYTRACY_PATH "/home/chichi/tracy/public/tracy"
 
-	#define GLFW_PATH
-	#define GLFWLIB_PATH
-	#define GLFWLIB
+	#define GLFW_PATH ""
+	#define GLFWLIB_PATH ""
+	#define GLFWLIB "glfw"
 
-	#define VULKAN_PATH
-	#define VULKANLIB_PATH
-	#define VULKANLIB
-	#define OPENGLLIB
+	#define VULKAN_PATH ""
+	#define VULKANLIB_PATH ""
+	#define VULKANLIB "vulkan"
+	#define OPENGLLIB "GL"
 
 #endif // WIN32
 
@@ -95,7 +144,6 @@
 #define START_ALLOC 10240
 #define MAX_SIZE_COMMAND 10000
 #define STACK_SIZE 1024
-
 
 /* NOTE: YES ! All on the heap. */
 typedef struct sFile
@@ -214,12 +262,13 @@ ChefRealloc(void *pPtr, size_t size)
 char *
 ChefStrAppendSpaceImpl(char *pDst, ...)
 {
-
 	va_list args;
 	va_start(args, pDst);
 	char *pArg = NULL;
 	while ((pArg = va_arg(args, char *)) != NULL)
 	{
+		if (strlen(pArg) <= 0)
+			continue;
 		size_t dstSize = strlen(pDst);
 		size_t srcSize = strlen(pArg);
 		pDst = ChefRealloc(pDst, dstSize + srcSize + 1 + SPACELEN);
@@ -252,13 +301,17 @@ ChefStrAppendImpl(char *pDst, ...)
 char *
 ChefStrAppendWithFlagsImpl(char *pDst, char *pFlag, ...)
 {
+	if (!pFlag)
+		return NULL;
 	va_list args;
-	va_start(args, pFlag);
 	char *pArg = NULL;
+	va_start(args, pFlag);
 	size_t flagSize = strlen(pFlag);
-	size_t dstSize = strlen(pDst);
+	/* size_t dstSize = strlen(pDst); */
 	while ((pArg = va_arg(args, char *)) != NULL)
 	{
+		if (strlen(pArg) <= 0)
+			continue;
 		size_t srcSize = strlen(pArg);
 		size_t dstSize = strlen(pDst);
 		pDst = ChefRealloc(pDst, dstSize + srcSize + 1 + flagSize + SPACELEN);
@@ -269,18 +322,21 @@ ChefStrAppendWithFlagsImpl(char *pDst, char *pFlag, ...)
 	}
 	va_end(args);
 	return pDst;
-	return pDst;
 }
 
 char *
 ChefStrPrependWithFlagsImpl(char *pDst, char *pFlag, ...)
 {
+	if (!pFlag)
+		return NULL;
 	va_list args;
-	va_start(args, pFlag);
 	char *pArg = NULL;
+	va_start(args, pFlag);
 	size_t flagSize = strlen(pFlag);
 	while ((pArg = va_arg(args, char *)) != NULL)
 	{
+		if (strlen(pArg) <= 0)
+			continue;
 		size_t srcSize = strlen(pArg);
 		size_t dstSize = strlen(pDst);
 		char *tmp = malloc(dstSize + 1);
@@ -299,20 +355,42 @@ ChefStrPrependWithFlagsImpl(char *pDst, char *pFlag, ...)
 	return pDst;
 }
 
-#define STR(a) ChefStrDup(a)
-#define APPEND(a, ...) a = ChefStrAppendImpl(a, __VA_ARGS__, NULL)
-#define APPEND_SPACE(a, ...) a = ChefStrAppendSpaceImpl(a, __VA_ARGS__, NULL)
+char *
+ChefStrSurroundImpl(char *pDst, char *pSurround)
+{
+	size_t dstSize = strlen(pDst);
+	size_t surroundSize = strlen(pSurround);
+	char *tmp = ChefStrDup(pDst);
+	tmp = ChefRealloc(tmp, dstSize + (surroundSize * 2) + 1);
+	memcpy(tmp, pSurround, surroundSize);
+	memcpy(&tmp[surroundSize], pDst, dstSize);
+	memcpy(&tmp[surroundSize + dstSize], pSurround, surroundSize);
+	tmp[(surroundSize * 2) + dstSize] = 0;
+	return tmp;
+}
 
-#define PREPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrPrependWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
-#define APPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrAppendWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+#define STR(a) ChefStrDup(a)
+#define SELF_APPEND(a, ...) a = ChefStrAppendImpl(a, __VA_ARGS__, NULL)
+#define SELF_APPEND_SPACE(a, ...) a = ChefStrAppendSpaceImpl(a, __VA_ARGS__, NULL)
+
+#define APPEND(a, ...) ChefStrAppendImpl(a, __VA_ARGS__, NULL)
+#define APPEND_SPACE(a, ...) ChefStrAppendSpaceImpl(a, __VA_ARGS__, NULL)
+
+#define PUTINQUOTE(a) ChefStrSurroundImpl(a, "\"")
+
+#define SELF_PREPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrPrependWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+#define SELF_APPEND_WITH_FLAGS(dst, flags, ...) dst = ChefStrAppendWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+
+#define PREPEND_WITH_FLAGS(dst, flags, ...) ChefStrPrependWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
+#define APPEND_WITH_FLAGS(dst, flags, ...) ChefStrAppendWithFlagsImpl(dst, flags, __VA_ARGS__, NULL)
 
 #define ADD_FLAGS(dst, flags, ...) \
 	do { \
-		if (strcmp(flags, "-l") == 0) { \
-			APPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
+		if (strcmp(flags, "-lib") == 0) { \
+			SELF_APPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
 		} \
-		if (strcmp(flags, ".lib") == 0) { \
-			PREPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
+		if (strcmp(flags, "-l") == 0) { \
+			SELF_PREPEND_WITH_FLAGS(dst, flags, __VA_ARGS__); \
 		} \
 	} while(0);
 
@@ -342,135 +420,30 @@ int FlushIt(char *pLine, FILE* pFd, size_t size);
 int ConstructCompileCommandsJson(FileList *pList, const char *pName);
 int ClangCompileCommandsJson(const char *pCompileCommands);
 
-char *
-Compile(Command* pCmd, FileList* pList)
-{
-	if (pList->nbElems <= 0) { fprintf(stderr, "No files to compile found ..\n"); return NULL; }
 
-	char *OUTFLAG;
-	char *MODEFLAG;
-	char *pObjs;
+bool gbDebug = true;
+bool gbRelease = false;
 
-	if ((strcmp("clang", pCmd->pCC) == 0) || (strcmp("gcc", pCmd->pCC) == 0))
-	{
-		OUTFLAG = STR("-o");
-		MODEFLAG = STR("-c");
-	}
-	Command a = *pCmd;
-	for (size_t i = 0; i < pList->nbElems; i++)
-	{
-		char *fname = pList->pFiles[i].pFullPath;
-		char *outname = pList->pFiles[i].pObjName;
-		char *pCmd = STR("");
-		APPEND_SPACE(pCmd, a.pCC, a.pCFLAGS, a.pDEFINES, MODEFLAG, fname, OUTFLAG, outname);
-        /*
-		 * char *command = malloc(sizeof(char) * MAX_SIZE_COMMAND);
-		 * size_t totalCount = strlen(cc) + strlen(flags) + strlen(fname) + strlen(outname);
-		 * snprintf(command, totalCount + 10, "%s %s -c %s -o %s", cc, flags, fname, outname);
-         */
-		printf("Command: %s\n", pCmd);
-		/* system(command); */
-	}
+bool gbTracy = false;
+bool gbAsan = true;
+bool gbTest = false;
 
-	size_t count = 0;
-	size_t total = 0;
+bool gbVulkan = true;
+bool gbOpenGL = true;
+bool gbD3D11 = false;
+bool gbD3D12 = false;
 
-	for (size_t i = 0; i < pList->nbElems; i++)
-		total += strlen(pList->pFiles[i].pObjName);
-
-	pObjs = malloc(sizeof(char) * total + (pList->nbElems) + 1);
-	for (size_t i = 0; i < pList->nbElems; i++)
-		count += sprintf(pObjs + count, "%s ", pList->pFiles[i].pObjName);
-	pObjs[--count] = 0;
-	if (!pObjs)
-	{
-		free(pObjs);
-		return "";
-	}
-	return pObjs;
-}
-
-int
-Link(Command* pCmd, const char *pObj, const char *pOutName)
-{
-	int error = 0;
-	/* char *pCommand = malloc(sizeof(char) * MAX_SIZE_COMMAND); */
-	char *pCommand = STR("");
-	Command a = *pCmd;
-
-	char *OUTFLAG = NULL;
-	char *MODEFLAG = NULL;
-
-	if ((strcmp("clang", pCmd->pCC) == 0) || (strcmp("gcc", pCmd->pCC) == 0))
-	{
-		OUTFLAG = STR("-o");
-		MODEFLAG = STR("-c");
-	}
-	APPEND_SPACE(pCommand, a.pCC, a.pCFLAGS, a.pDEFINES, pObj, OUTFLAG, pOutName);
-
-    /*
-	 * size_t totalCount = strlen(pCc) + strlen(pFlags) + strlen(pObj) + strlen(pOutName);
-	 * snprintf(pCommand, totalCount + 7, "%s %s %s -o %s", pCc, pFlags, pObj, pOutName);
-     */
-
-	printf("Command: %s\n", pCommand);
-	/* error = system(pCommand); */
-
-	return error;
-}
-
-char *
-GetFinalOutputCommand(const char* pOutput, const char* pBuildFolder)
-{
-	char *pFinalOutputCommand = NULL;
-	pFinalOutputCommand = malloc(sizeof(char) * strlen(pOutput) + strlen(pBuildFolder) + 2);
-	size_t count = sprintf(pFinalOutputCommand, "%s%s%s", pBuildFolder, SLASH, pOutput);
-	pFinalOutputCommand[count--] = 0;
-	return pFinalOutputCommand;
-}
-
-int
-Build(Command* pCmd, FileList* pListCfiles)
-{
-	char *pFinalOutputCommand = NULL;
-	char *pOutput = STR("");
-	APPEND(pOutput, pCmd->pBUILD_DIR, SLASH, pCmd->pNAME, pCmd->pEXTENSION);
-	char *pOutObjs = NULL;
-
-	pOutObjs = Compile(pCmd, pListCfiles);
-	/* pFinalOutputCommand = GetFinalOutputCommand(pOutput, pBuildFolder); */
-
-	int error = Link(pCmd, pOutObjs, pOutput);
-	/* free(pFinalOutputCommand); */
-	if (strlen(pOutObjs) > 0)
-		free(pOutObjs);
-	return error;
-}
-/*
- * TODO: 
- * - Multithreading -> CrossPlatform = boring for this lots of lines
- * - Incremental builds -> Most of the time useless / problematic
- */
-
-bool gbDebug = TRUE;
-bool gbRelease = FALSE;
-
-bool gbTracy = FALSE;
-bool gbAsan = FALSE;
-bool gbTest = FALSE;
-
-bool gbVulkan = FALSE;
-bool gbOpenGL = FALSE;
-bool gbD3D11 = FALSE;
-bool gbD3D12 = FALSE;
-bool gbGLFW3 = FALSE;
-
+#ifdef __linux__
+bool gbGLFW3 = true;
+#elif _WIN32
+bool gbGLFW3 = false;
+#endif
 
 Command
 CommandInit(void)
 {	
 	Command cmd = {
-		.pROOTFOLDER = STR("."),
+		.pROOTFOLDER = STR("src"),
 		.pNAME = STR("yuseong"),
 		.pEXTENSION = STR(EXTENSION),
 		.pBUILD_DIR = STR("build"),
@@ -488,80 +461,80 @@ CommandInit(void)
 	char *LIBFLAG = NULL;
 	char *LIBDEPEND = NULL;
 	char *OPTIFLAGS = NULL;
-	char *DEBUGFLAGS = NULL;
+	char *DEBUGMODEFLAGS = NULL;
 	char *DEFINEFLAG = NULL;
 
 #ifdef _WIN32 
 	if ((strcmp(cmd.pCC, "clang") == 0 || (strcmp(cmd.pCC, "gcc") == 0)))
 	{
 		OPTIFLAGS = STR("-O3");
-		DEBUGFLAGS = STR("-O0");
+		DEBUGMODEFLAGS = STR("-O0");
 		DEFINEFLAG = STR("-D");
 		INCLUDEFLAG = STR("-I");
 		LIBFLAG = STR("-L");
 		LIBDEPEND = STR("-l");
-		APPEND(cmd.pCFLAGS, "-Wall -Wextra -Werror");
-		APPEND(cmd.pCFLAGS, " -g3");
+		SELF_APPEND(cmd.pCFLAGS, "-Wall -Wextra -Werror");
+		SELF_APPEND(cmd.pCFLAGS, " -g3");
 	}
 	else
 	{
 		OPTIFLAGS = STR("/O2");
-		DEBUGFLAGS = STR("/O");
+		DEBUGMODEFLAGS = STR("/O");
 		DEFINEFLAG = STR("/D");
 		INCLUDEFLAG = STR("/I");
 		LIBFLAG = STR("/L");
 		LIBDEPEND = STR(".lib");
-		APPEND(cmd.pCFLAGS, "/Wall");
-		APPEND(cmd.pCFLAGS, " /Zi");
+		SELF_APPEND(cmd.pCFLAGS, "/Wall");
+		SELF_APPEND(cmd.pCFLAGS, " /Zi");
 	}
-	PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "PLATFORM_WINDOWS");
+	SELF_PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "PLATFORM_WINDOWS");
 	ADD_FLAGS(cmd.pLIBS, LIBDEPEND, "shlwapi", "shell32", "gdi32", "winmm", "user32");
-	PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, "src", "src/core", "src/renderer/opengl");
 
 #elif __linux__
 	INCLUDEFLAG = STR("-I");
 	LIBFLAG = STR("-L");
-	LIBPREPEND = STR("-l");
+	LIBDEPEND = STR("-l");
 	DEFINEFLAG = STR("-D");
 	OPTIFLAGS = STR("-O3");
-	DEBUGFLAGS = STR("-O0");
-	cmd.pDEFINES = STR("-DPLATFORM_LINUX");
-	cmd.pLIBS = STR("");
-	APPEND(cmd.pCFLAGS, " -ggdb3");
+	DEBUGMODEFLAGS = STR("-O0");
+	cmd.pDEFINES = STR("-DPLATFORM_LINUX -DYGLFW3 ");
+	SELF_APPEND(cmd.pCFLAGS, "-ggdb3");
+	SELF_APPEND(cmd.pLIBS, "-lwayland-client -lxkbcommon -lm ");
 #else
 	cmd.pDEFINES = STR("");
 	cmd.pLIBS = STR("");
 #endif
 
+	SELF_PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, "src", "src/core", "src/renderer/opengl");
 	cmd.pCPPFLAGS = STR("");
 
 	if ((strcmp(cmd.pCC, "clang") == 0 || (strcmp(cmd.pCC, "gcc") == 0)))
 	{
-		APPEND(cmd.pCFLAGS, " -fno-inline", " -fno-omit-frame-pointer");
-		APPEND(cmd.pCFLAGS, " -Wno-missing-field-initializers", " -Wno-unused-but-set-variable");
-		APPEND(cmd.pCFLAGS, " -Wno-uninitialized");
-		APPEND(cmd.pCFLAGS, " -Wvarargs");
+		SELF_APPEND(cmd.pCFLAGS, " -fno-inline", " -fno-omit-frame-pointer");
+		SELF_APPEND(cmd.pCFLAGS, " -Wno-missing-field-initializers", " -Wno-unused-but-set-variable");
+		SELF_APPEND(cmd.pCFLAGS, " -Wno-uninitialized");
+		SELF_APPEND(cmd.pCFLAGS, " -Wvarargs");
 	}
 	if (gbDebug)
 	{
-		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_DEBUG", "DEBUG", "YUDEBUG");
-		APPEND(cmd.pCFLAGS, " ", DEBUGFLAGS);
+		SELF_PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_DEBUG", "DEBUG", "YUDEBUG ");
+		SELF_APPEND(cmd.pCFLAGS, " ", DEBUGMODEFLAGS);
 	}
 	else if (gbRelease)
 	{
-		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_RELEASE", "RELEASE", "YURELEASE");
-		APPEND(cmd.pCFLAGS, " ", OPTIFLAGS);
+		SELF_PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "_RELEASE", "RELEASE", "YURELEASE ");
+		SELF_APPEND(cmd.pCFLAGS, " ", OPTIFLAGS);
 	}
 
-	if (gbTest) PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TESTING");
+	if (gbTest) SELF_PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TESTING ");
 
 	if (gbVulkan)
 	{
-		PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, VULKANLIB_PATH);
-		PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, VULKAN_PATH);
+		SELF_PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, VULKANLIB_PATH);
+		SELF_PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, VULKAN_PATH);
 		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, VULKANLIB);
 	}
-	else if (gbOpenGL)
+	if (gbOpenGL)
 	{
 		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, OPENGLLIB);
 	}
@@ -571,141 +544,89 @@ CommandInit(void)
 #endif
 	if (gbGLFW3)
 	{
-		PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, GLFW_PATH);
-		PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, GLFWLIB_PATH);
+		SELF_PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, GLFW_PATH);
+		SELF_PREPEND_WITH_FLAGS(cmd.pLIB_PATH, LIBFLAG, GLFWLIB_PATH);
 		ADD_FLAGS(cmd.pLIBS, LIBDEPEND, GLFWLIB);
 	}
 	if (gbTracy)
 	{
-		APPEND(cmd.pINCLUDE_DIRS, " ", TRACY_PATH);
-		PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TRACY_ENABLE");
+		SELF_PREPEND_WITH_FLAGS(cmd.pDEFINES, DEFINEFLAG, "TRACY_ENABLE");
 		/* CPPFLAGS =-Wno-format */
 		/* Also, compile cpp flags with different struct ? */
 	}
 	if (gbAsan)
 	{
-		APPEND(cmd.pCFLAGS, " ", "-fsanitize=address");
+		SELF_APPEND(cmd.pCFLAGS, " ", "-fsanitize=address");
 	}
+	SELF_PREPEND_WITH_FLAGS(cmd.pINCLUDE_DIRS, INCLUDEFLAG, TRACY_PATH, TRACYTRACY_PATH);
 	return cmd;
-}
-
-int ArgsCheck(int argc, char** ppArgv);
-
-int
-main(int argc, char **ppArgv)
-{
-	if (argc >= 2)
-	{
-		if (ArgsCheck(argc, ppArgv) == FALSE)
-			return 1;
-	}
-
-	ChefInit();
-	Command cmd = CommandInit();
-	if (ISDIRECTORY(cmd.pBUILD_DIR) == FALSE)
-	{
-		if (MKDIR(cmd.pBUILD_DIR) == FALSE )
-			ERROR_EXIT("Mkdir failed..");
-		if (MKDIR(cmd.pOBJ_DIR) == FALSE )
-			ERROR_EXIT("Mkdir failed..");
-	}
-
-	char *pCompileCommands = STR("compile_commands.json");
-
-	FileList *pListCfiles = GetFileListAndObjs(&cmd, "*.c");
-	if (!pListCfiles) { fprintf(stderr, "Something happened in c\n"); return 1; }
-
-	FileList *pListCppFiles = GetFileListAndObjs(&cmd, "*.cpp");
-	if (!pListCppFiles) { fprintf(stderr, "Something happened in cpp\n"); return 1; }
-
-	if (Build(&cmd, pListCfiles) == 1)
-	{ fprintf(stderr, "Something happened in cpp\n"); return 1; }
-
-    /*
-	 * if (ClangCompileCommandsJson(pCompileCommands))
-	 * 	goto exiting;
-     */
-
-	/* DestroyFileList(pListJson); */
-	ChefDestroy();
-	printf("number = %zu\n", gChef.nbElems);
-	return 0;
-
-exiting:
-	fprintf(stderr, "Error");
-	/* perror(pListJson->pFiles->pFullPath); */
-	/* DestroyFileList(pListJson); */
-
-	printf("number = %zu\n", gChef.nbElems);
-	ChefDestroy();
-	return 1;
 }
 
 int
 ArgsCheck(int argc, char** ppArgv)
 {
-
 	if (strcmp(ppArgv[1], "-h") == 0)
 	{
 		fprintf(stderr, "Usage: jasb\n");
-		return FALSE;
+		return false;
 	}
-	int i = 0;
-	while (i < argc)
+	int i = -1;
+	while (++i < argc)
 	{
 		if (strcmp(ppArgv[i], "vk") == 0 || strcmp(ppArgv[i], "vulkan") == 0 || strcmp(ppArgv[i], "VULKAN") == 0 
 				|| strcmp(ppArgv[i], "Vulkan") == 0)
 		{
-			gbVulkan = TRUE;
+			gbVulkan = true;
+			fprintf(stderr, "Vulkan backend chosen\n");
 			continue;
 		}
 		if (strcmp(ppArgv[i], "TRACY") == 0 || strcmp(ppArgv[i], "tracy") == 0)
 		{
-			gbTracy = TRUE;
+			gbTracy = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "gl") == 0 || strcmp(ppArgv[i], "opengl") == 0 || strcmp(ppArgv[i], "OpenGL") == 0)
 		{
-			gbOpenGL = TRUE;
+			gbOpenGL = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "D3D11"))
 		{
-			gbD3D11 = TRUE;
+			gbD3D11 = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "D3D12"))
 		{
-			gbD3D12 = TRUE;
+			gbD3D12 = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "GLFW3"))
 		{
-			gbGLFW3 = TRUE;
+			gbGLFW3 = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "TEST"))
 		{
-			gbTest = TRUE;
+			gbTest = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "DEBUG"))
 		{
-			gbDebug = TRUE;
+			gbDebug = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "RELEASE"))
 		{
-			gbRelease = TRUE;
+			gbRelease = true;
 			continue;
 		}
 		if (strcmp(ppArgv[i], "ASAN"))
 		{
-			gbAsan = TRUE;
+			gbAsan = true;
 			continue;
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 int
@@ -866,6 +787,7 @@ DestroyFileList(FileList *pFileList)
 		free(pFileList->pFiles[i].pDirName);
 		free(pFileList->pFiles[i].pFileName);
 		free(pFileList->pFiles[i].pFullPath);
+		free(pFileList->pFiles[i].pObjName);
 	}
 	free(pFileList->pFiles);
 	free(pFileList);
@@ -896,13 +818,6 @@ WildcardMatch(const char *pStr, const char *pPattern)
 		pPattern++;
 	return *pPattern == '\0';
 }
-
-
-
-
-
-
-
 
 /*****************************************************************************/
 								/*WINDOWS*/
@@ -944,7 +859,7 @@ GetFilesDirIter(const char *pBasePath)
 			fprintf(stderr, "Unable to open directory: Error(%lu)\n", GetLastError());
 		do
 		{
-			if (IsValidDir(fileInfo.cFileName, fileInfo.dwFileAttributes) == TRUE)
+			if (IsValidDir(fileInfo.cFileName, fileInfo.dwFileAttributes) == true)
 			{
 				j++;
 				memset(fullPath, 0, sizeof(fullPath) / sizeof(fullPath[0]));
@@ -1065,16 +980,16 @@ IsValidDirImpl(const char *pStr, unsigned long dwAttr, ...)
 		if (!strcmp(pArgStr, pStr))
 		{
 			va_end(args);
-			return FALSE;
+			return false;
 		}
 	}
 
 	if (strcmp(pStr, ".") && strcmp(pStr, ".."))
 	{
 		if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
-			return TRUE;
+			return true;
 	}
-	return FALSE;
+	return false;
 }
 
 void
@@ -1107,6 +1022,13 @@ ErrorExit(char* lpszFunction, unsigned long dw)
     LocalFree(lpDisplayBuf);
     ExitProcess(dw); 
 }
+
+bool
+MkdirImpl(char *pStr)
+{
+	return CreateProcess(pStr, NULL);
+}
+
 #endif
 
 /*****************************************************************************/
@@ -1138,7 +1060,7 @@ GetFilesDirIter(const char *pBasePath)
 		if ((pdStream = opendir(pSearchPath)) == NULL) { perror(pError); return NULL; }
 		while ((pdEntry = readdir(pdStream)) != NULL)
 		{
-			if (isValidDir(pdEntry->d_name, pdEntry->d_type, ".git") == TRUE)
+			if (IsValidDir(pdEntry->d_name, pdEntry->d_type, ".git") == true)
 			{
 				j++;
 				memset(pFullPath, 0, sizeof(pFullPath) / sizeof(pFullPath[0]));
@@ -1251,16 +1173,58 @@ IsValidDirImpl(const char *pStr, unsigned long attr, ...)
 		if (!strcmp(pArgStr, pStr))
 		{
 			va_end(args);
-			return FALSE;
+			return false;
 		}
 	}
 	va_end(args);
 	if (strcmp(pStr, ".") && strcmp(pStr, ".."))
 	{
 		if ((unsigned char)attr == DT_DIR)
-			return TRUE;
+			return true;
 	}
-	return FALSE;
+	return false;
+}
+
+bool
+DoesExist(const char *pPath)
+{
+	struct stat sb;
+	int result = stat(pPath, &sb);
+	if (result < 0)
+	{
+		PERROR_LOG("DoesExist()");
+		return false;
+	}
+	return true;
+}
+
+bool
+PathIsDirectory(const char *pPath)
+{
+	struct stat sb;
+	int result = stat(pPath, &sb);
+	if (result < 0)
+	{
+		PERROR_LOG("PathIsDirectoy()");
+		return false;
+	}
+	if (S_ISDIR(sb.st_mode))
+		return true;
+	return false;
+}
+
+void
+PerrorLog(char *pMsg, char *pFile, int line) 
+{
+	char pStr[2048];
+	if (strlen(pFile) >= (2048 - strlen(" at :%d:") + strlen(pMsg)))
+		perror(pMsg);
+	else
+	{
+		sprintf(&pStr[strlen(pMsg)], "%s at %s:%d: ", pMsg, pFile, line);
+		perror(pMsg);
+	}
+	perror(pMsg);
 }
 
 void
@@ -1270,3 +1234,199 @@ ErrorExit(char *pMsg)
 	exit(1);
 }
 #endif
+
+yError
+CompileCmdJson(char **ppCmds, size_t nbCmds)
+{
+	char *pName = "compile_commands.json";
+    /*
+	 * FILE *pFd = fopen(pName, "w");
+	 * if (!pFd)
+	 * {
+	 * 	PERROR_LOG("CompileCmdJson");
+	 * 	return Y_ERROR_JSON;
+	 * }
+	 * fprintf(pFd, "%s", CCJSON_BEGIN);
+     */
+	printf("%s", CCJSON_BEGIN);
+	size_t totalSize = 0;
+	size_t count = 0;
+	size_t i = 0;
+	size_t lastOne = nbCmds - 1; 
+	char *pEndComa = ",\n";
+	while (i < nbCmds)
+	{
+		printf("[%zu]: %s\n", i, ppCmds[i]);
+		
+		/* printf("%s%s%s,", Y_OPENCURLY, Y_DIRECTORY, PUTINQUOTE(YCWD), Y_FILE, PUTINQUOTE(ppCmds[i])) */
+		if (i == lastOne)
+			pEndComa = "\n";
+		i++;
+	}
+	printf("%s", CCJSON_END);
+    /*
+	 * fprintf(pFd, "%s", CCJSON_END);
+	 * fclose(pFd);
+     */
+	return Y_NO_ERROR;
+}
+
+yError
+Compile(Command* pCmd, FileList* pList, char **ppOut)
+{
+	yError result = Y_NO_ERROR;
+	if (pList->nbElems <= 0) { fprintf(stderr, "No files to compile found ..\n"); result = Y_ERROR_EMPTY; return result; }
+
+	char *OUTFLAG;
+	char *MODEFLAG;
+
+	if ((strcmp("clang", pCmd->pCC) == 0) || (strcmp("gcc", pCmd->pCC) == 0))
+	{
+		OUTFLAG = STR("-o");
+		MODEFLAG = STR("-c");
+	}
+	Command a = *pCmd;
+	char **ppJson = malloc(sizeof(char *) * pList->nbElems);
+
+	for (size_t i = 0; i < pList->nbElems; i++)
+	{
+		char *fname = pList->pFiles[i].pFullPath;
+		char *outname = pList->pFiles[i].pObjName;
+		ppJson[i] = STR("");
+		SELF_APPEND_SPACE(ppJson[i], a.pCC, a.pCFLAGS, a.pDEFINES, a.pINCLUDE_DIRS, MODEFLAG, fname, OUTFLAG, outname);
+		printf("%s\n", ppJson[i]);
+		result = system(ppJson[i]);
+		if (result != 0)
+		{
+			free(ppJson);
+			return Y_ERROR_BUILD;
+		}
+	}
+	/* CompileCmdJson(ppJson, pList->nbElems); */
+	free(ppJson);
+
+	// NOTE: Making the path .o files for linker
+	size_t count = 0;
+	size_t total = 0;
+
+	for (size_t i = 0; i < pList->nbElems; i++)
+		total += strlen(pList->pFiles[i].pObjName);
+
+	char *pTemp = malloc(sizeof(char) * total + (pList->nbElems) + 1);
+	for (size_t i = 0; i < pList->nbElems; i++)
+		count += sprintf(pTemp + count, "%s ", pList->pFiles[i].pObjName);
+	if (count > 0)
+		count--;
+	pTemp[count] = 0;
+	if (!pTemp)
+	{
+		free(pTemp);
+		result = Y_ERROR_EMPTY;
+	}
+	*ppOut = pTemp;
+	return result;
+}
+
+yError
+Link(Command* pCmd, const char *pObj, const char *pOutName)
+{
+	yError result = Y_NO_ERROR;
+	char *pCommand = STR("");
+	Command a = *pCmd;
+
+	char *OUTFLAG = NULL;
+	char *MODEFLAG = NULL;
+
+	if ((strcmp("clang", pCmd->pCC) == 0) || (strcmp("gcc", pCmd->pCC) == 0))
+	{
+		OUTFLAG = STR("-o");
+		MODEFLAG = STR("-c");
+	}
+	SELF_APPEND_SPACE(pCommand, a.pCC, a.pCFLAGS, a.pDEFINES, pObj, OUTFLAG, pOutName, pCmd->pLIB_PATH, pCmd->pLIBS);
+	printf("%s\n", pCommand);
+	result = system(pCommand);
+	if (result != 0)
+		return Y_ERROR_LINK;
+	return result;
+}
+
+yError
+Build(Command* pCmd, FileList* pListCfiles)
+{
+	char *pOutput = STR("");
+	SELF_APPEND(pOutput, pCmd->pBUILD_DIR, SLASH, pCmd->pNAME, pCmd->pEXTENSION);
+	char *pOutObjs = NULL;
+	yError result = Y_NO_ERROR;
+
+	result = Compile(pCmd, pListCfiles, &pOutObjs);
+	if (result != Y_NO_ERROR)
+		return result;
+	result = Link(pCmd, pOutObjs, pOutput);
+	if (result != Y_NO_ERROR)
+		return result;
+	free(pOutObjs);
+	return result;
+}
+
+bool
+MkdirImpl(char *pStr)
+{
+	if (mkdir(pStr, 0700) == 0)
+		return true;
+	return false;
+}
+
+/*
+ * TODO: 
+ * - Multithreading -> CrossPlatform = boring for this lots of lines
+ * - Incremental builds -> Most of the time useless / problematic
+ */
+int
+main(int argc, char **ppArgv)
+{
+	if (argc >= 2)
+	{
+		if (ArgsCheck(argc, ppArgv) == false)
+			return 1;
+	}
+	ChefInit();
+	Command cmd = CommandInit();
+	if (ISDIRECTORY(cmd.pOBJ_DIR) == false || DoesExist(cmd.pOBJ_DIR) == false)
+	{
+		if (MKDIR(cmd.pBUILD_DIR) == false )
+			ERROR_EXIT("Mkdir: ");
+		if (MKDIR(cmd.pOBJ_DIR) == false )
+			ERROR_EXIT("Mkdir: ");
+	}
+
+	YMB char *pCompileCommands = STR("compile_commands.json");
+
+	FileList *pListCfiles = GetFileListAndObjs(&cmd, "*.c");
+	if (!pListCfiles) { fprintf(stderr, "Something happened in c\n"); return 1; }
+
+	FileList *pListCppFiles = GetFileListAndObjs(&cmd, "*.cpp");
+	if (!pListCppFiles) { fprintf(stderr, "Something happened in cpp\n"); return 1; }
+	yError result = Build(&cmd, pListCfiles);
+	if ( result != Y_NO_ERROR)
+	{ fprintf(stderr, "%s\n", GetErrorMsg(result)); return 1; }
+
+    /*
+	 * if (ClangCompileCommandsJson(pCompileCommands))
+	 * 	goto exiting;
+     */
+
+	DestroyFileList(pListCfiles);
+	DestroyFileList(pListCppFiles);
+	ChefDestroy();
+	printf("number = %zu\n", gChef.nbElems);
+	return 0;
+
+/* exiting: */
+	fprintf(stderr, "Error");
+	/* perror(pListJson->pFiles->pFullPath); */
+	/* DestroyFileList(pListJson); */
+
+	printf("number = %zu\n", gChef.nbElems);
+	ChefDestroy();
+	return 1;
+}
