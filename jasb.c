@@ -6,11 +6,14 @@
  * a Makefile that will compile it and then use after each build. As sed could*
  * differ from os and shell's this one should actually be portable.           *
  ******************************************************************************/
+
+#define _CRT_SECURE_NO_WARNINGS
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 typedef enum yError {
 	Y_NO_ERROR = 0x00,
@@ -54,6 +57,18 @@ char *gpPrintHelper[] = {
 #define YCOMA ","
 
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+#define EXECUTE(x, y) ExecuteImpl(x, y)
+
+int
+ExecuteImpl(const char* pCommand, int dry)
+{
+	int code = 0;
+	if (dry == 1)
+		printf("%s\n", pCommand);
+	else
+		code = system(pCommand);
+	return code;
+}
 
 #define YMB [[maybe_unused]]
 
@@ -65,7 +80,7 @@ char *gpPrintHelper[] = {
 	#include <shlwapi.h>
 
 	void ErrorExit(char* lpszMsg, unsigned long dw);
-	bool MkdirImpl(str);
+	bool MkdirImpl(char* pStr);
 
 #pragma comment(lib, "shlwapi.lib")
 	#define YO_RDONLY _O_RDONLY
@@ -90,7 +105,10 @@ char *gpPrintHelper[] = {
 	#define VULKANLIB_PATH "C:/VulkanSDK/1.3.275.0/Lib"
 	#define VULKANLIB "vulkan-1"
 	#define OPENGLLIB "opengl32"
-	#define DOESEXIST(str) DoesExistImpl(str)
+
+	void PerrorLog(char *pMsg, char *pFile, int line);
+	#define PERROR_LOG(str) PerrorLog(str, __FILE__, __LINE__)
+	bool DoesExist(const char *pPath);
 
 #elif __linux__
 	#include <stdarg.h>
@@ -106,9 +124,7 @@ char *gpPrintHelper[] = {
 
 	void ErrorExit(char *pMsg);
 	bool PathIsDirectory(const char *pPath);
-	void PerrorLog(char *pMsg, char *pFile, int line);
 
-	#define PERROR_LOG(str) PerrorLog(str, __FILE__, __LINE__)
 	#define YO_RDONLY O_RDONLY
 	#define OPEN(a, b) open(a, b)
 	#define CLOSE(a) close(a)
@@ -117,7 +133,6 @@ char *gpPrintHelper[] = {
 	#define MKDIR(str) MkdirImpl(str)
 	#define ISDIRECTORY(str) PathIsDirectory(str)
 	#define ERROR_EXIT(str) ErrorExit(str)
-	#define DOESEXIST(str) DoesExistImpl(str)
 
 	#define SLASH "/"
 	#define EXTENSION ""
@@ -185,6 +200,9 @@ typedef struct Command
 	char *pCPPFLAGS;
 }Command;
 
+/*****************************************************************************/
+/*							string memory management						 */
+/*****************************************************************************/
 
 typedef struct MemChef
 {
@@ -562,10 +580,19 @@ CommandInit(void)
 	return cmd;
 }
 
-int
+bool
+StrIsEqual(const char* s1, const char* s2)
+{
+	if (strcmp(s1, s2) == 0)
+		return true;
+	else
+		return false;
+}
+
+bool
 ArgsCheck(int argc, char** ppArgv)
 {
-	if (strcmp(ppArgv[1], "-h") == 0)
+	if (StrIsEqual(ppArgv[1], "-h"))
 	{
 		fprintf(stderr, "Usage: jasb\n");
 		return false;
@@ -573,54 +600,54 @@ ArgsCheck(int argc, char** ppArgv)
 	int i = -1;
 	while (++i < argc)
 	{
-		if (strcmp(ppArgv[i], "vk") == 0 || strcmp(ppArgv[i], "vulkan") == 0 || strcmp(ppArgv[i], "VULKAN") == 0 
-				|| strcmp(ppArgv[i], "Vulkan") == 0)
+		if (StrIsEqual(ppArgv[i], "vk") || StrIsEqual(ppArgv[i], "vulkan") || StrIsEqual(ppArgv[i], "VULKAN")
+				|| StrIsEqual(ppArgv[i], "Vulkan"))
 		{
 			gbVulkan = true;
 			fprintf(stderr, "Vulkan backend chosen\n");
 			continue;
 		}
-		if (strcmp(ppArgv[i], "TRACY") == 0 || strcmp(ppArgv[i], "tracy") == 0)
+		if (StrIsEqual(ppArgv[i], "TRACY") || StrIsEqual(ppArgv[i], "tracy"))
 		{
 			gbTracy = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "gl") == 0 || strcmp(ppArgv[i], "opengl") == 0 || strcmp(ppArgv[i], "OpenGL") == 0)
+		if (StrIsEqual(ppArgv[i], "gl") || StrIsEqual(ppArgv[i], "opengl") || StrIsEqual(ppArgv[i], "OpenGL"))
 		{
 			gbOpenGL = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "D3D11"))
+		if (StrIsEqual(ppArgv[i], "D3D11"))
 		{
 			gbD3D11 = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "D3D12"))
+		if (StrIsEqual(ppArgv[i], "D3D12"))
 		{
 			gbD3D12 = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "GLFW3"))
+		if (StrIsEqual(ppArgv[i], "GLFW3"))
 		{
 			gbGLFW3 = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "TEST"))
+		if (StrIsEqual(ppArgv[i], "TEST"))
 		{
 			gbTest = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "DEBUG"))
+		if (StrIsEqual(ppArgv[i], "DEBUG"))
 		{
 			gbDebug = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "RELEASE"))
+		if (StrIsEqual(ppArgv[i], "RELEASE"))
 		{
 			gbRelease = true;
 			continue;
 		}
-		if (strcmp(ppArgv[i], "ASAN"))
+		if (StrIsEqual(ppArgv[i], "ASAN"))
 		{
 			gbAsan = true;
 			continue;
@@ -630,15 +657,30 @@ ArgsCheck(int argc, char** ppArgv)
 }
 
 int
-ClangCompileCommandsJson(const char *pCompileCommands)
+WildcardMatch(const char *pStr, const char *pPattern)
 {
-	FileList *pListJson = GetFileList(".", JSONREGEX);
-	PrintFileList(pListJson);
-	if (!pListJson)
-		return 1;
-	return ConstructCompileCommandsJson(pListJson, pCompileCommands);
+	const char *pStar = NULL;
+	while (*pStr)
+	{
+		if (*pPattern == *pStr)
+		{
+			pPattern++;
+			pStr++;
+		}
+		else if (*pPattern == '*')
+			pStar = pPattern++;
+		else if (pStar)
+		{
+			pPattern = pStar++;
+			pStr++;
+		}
+		else
+			return 0;
+	}
+	while (*pPattern == '*')
+		pPattern++;
+	return *pPattern == '\0';
 }
-
 /*
  * TODO:
  * - Add option: iterative or not
@@ -756,6 +798,16 @@ exiting:
 }
 
 int
+ClangCompileCommandsJson(const char *pCompileCommands)
+{
+	FileList *pListJson = GetFileList(".", JSONREGEX);
+	PrintFileList(pListJson);
+	if (!pListJson)
+		return 1;
+	return ConstructCompileCommandsJson(pListJson, pCompileCommands);
+}
+
+int
 InitFileList(FileList **ppFileList)
 {
 	int error = 0;
@@ -791,32 +843,6 @@ DestroyFileList(FileList *pFileList)
 	}
 	free(pFileList->pFiles);
 	free(pFileList);
-}
-
-int
-WildcardMatch(const char *pStr, const char *pPattern)
-{
-	const char *pStar = NULL;
-	while (*pStr)
-	{
-		if (*pPattern == *pStr)
-		{
-			pPattern++;
-			pStr++;
-		}
-		else if (*pPattern == '*')
-			pStar = pPattern++;
-		else if (pStar)
-		{
-			pPattern = pStar++;
-			pStr++;
-		}
-		else
-			return 0;
-	}
-	while (*pPattern == '*')
-		pPattern++;
-	return *pPattern == '\0';
 }
 
 /*****************************************************************************/
@@ -946,29 +972,6 @@ GetFilesAndObj(const char *pPath, const char *pRegex, sFile *pFiles, size_t *pNb
 	return 0;
 }
 
-void
-findDirWin([[maybe_unused]] const char *path)
-{
-	WIN32_FIND_DATA findData;
-	char newPath[MAX_PATH];
-	sprintf(newPath, "%s%s*", path, SLASH);
-	HANDLE hFind = FindFirstFile(newPath, &findData);
-	memset(newPath, 0, sizeof(newPath) / sizeof(newPath[0]));
-
-	if (hFind == INVALID_HANDLE_VALUE) { printf("FindFirstDir failed (%lu)\n", GetLastError()); return; } 
-	do
-	{
-		if (IsValidDir(findData.cFileName, findData.dwFileAttributes))
-		{
-			/* printf("Dir: %s\n", findData.cFileName); */
-			sprintf(newPath, "%s%s%s", path, SLASH, findData.cFileName);
-			printf("Dir: %s\n", newPath);
-			findDirWin(newPath);
-		}
-	}
-	while (FindNextFile(hFind, &findData) != 0);
-}
-
 int
 IsValidDirImpl(const char *pStr, unsigned long dwAttr, ...)
 {
@@ -984,7 +987,8 @@ IsValidDirImpl(const char *pStr, unsigned long dwAttr, ...)
 		}
 	}
 
-	if (strcmp(pStr, ".") && strcmp(pStr, ".."))
+	/* NOTE: Excluded directories */
+	if (!StrIsEqual(pStr, ".") && !StrIsEqual(pStr, ".."))
 	{
 		if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
 			return true;
@@ -1026,7 +1030,30 @@ ErrorExit(char* lpszFunction, unsigned long dw)
 bool
 MkdirImpl(char *pStr)
 {
-	return CreateProcess(pStr, NULL);
+	return CreateDirectory(pStr, NULL);
+}
+
+void
+findDirWin([[maybe_unused]] const char *path)
+{
+	WIN32_FIND_DATA findData;
+	char newPath[MAX_PATH];
+	sprintf(newPath, "%s%s*", path, SLASH);
+	HANDLE hFind = FindFirstFile(newPath, &findData);
+	memset(newPath, 0, sizeof(newPath) / sizeof(newPath[0]));
+
+	if (hFind == INVALID_HANDLE_VALUE) { printf("FindFirstDir failed (%lu)\n", GetLastError()); return; } 
+	do
+	{
+		if (IsValidDir(findData.cFileName, findData.dwFileAttributes))
+		{
+			/* printf("Dir: %s\n", findData.cFileName); */
+			sprintf(newPath, "%s%s%s", path, SLASH, findData.cFileName);
+			printf("Dir: %s\n", newPath);
+			findDirWin(newPath);
+		}
+	}
+	while (FindNextFile(hFind, &findData) != 0);
 }
 
 #endif
@@ -1186,19 +1213,6 @@ IsValidDirImpl(const char *pStr, unsigned long attr, ...)
 }
 
 bool
-DoesExist(const char *pPath)
-{
-	struct stat sb;
-	int result = stat(pPath, &sb);
-	if (result < 0)
-	{
-		PERROR_LOG("DoesExist()");
-		return false;
-	}
-	return true;
-}
-
-bool
 PathIsDirectory(const char *pPath)
 {
 	struct stat sb;
@@ -1212,6 +1226,22 @@ PathIsDirectory(const char *pPath)
 		return true;
 	return false;
 }
+
+bool
+MkdirImpl(char *pStr)
+{
+	if (mkdir(pStr, 0700) == 0)
+		return true;
+	return false;
+}
+
+void
+ErrorExit(char *pMsg) 
+{
+	perror(pMsg);
+	exit(1);
+}
+#endif
 
 void
 PerrorLog(char *pMsg, char *pFile, int line) 
@@ -1227,18 +1257,10 @@ PerrorLog(char *pMsg, char *pFile, int line)
 	perror(pMsg);
 }
 
-void
-ErrorExit(char *pMsg) 
-{
-	perror(pMsg);
-	exit(1);
-}
-#endif
-
 yError
 CompileCmdJson(char **ppCmds, size_t nbCmds)
 {
-	char *pName = "compile_commands.json";
+	YMB char *pName = "compile_commands.json";
     /*
 	 * FILE *pFd = fopen(pName, "w");
 	 * if (!pFd)
@@ -1249,8 +1271,8 @@ CompileCmdJson(char **ppCmds, size_t nbCmds)
 	 * fprintf(pFd, "%s", CCJSON_BEGIN);
      */
 	printf("%s", CCJSON_BEGIN);
-	size_t totalSize = 0;
-	size_t count = 0;
+	YMB size_t totalSize = 0;
+	YMB size_t count = 0;
 	size_t i = 0;
 	size_t lastOne = nbCmds - 1; 
 	char *pEndComa = ",\n";
@@ -1294,8 +1316,7 @@ Compile(Command* pCmd, FileList* pList, char **ppOut)
 		char *outname = pList->pFiles[i].pObjName;
 		ppJson[i] = STR("");
 		SELF_APPEND_SPACE(ppJson[i], a.pCC, a.pCFLAGS, a.pDEFINES, a.pINCLUDE_DIRS, MODEFLAG, fname, OUTFLAG, outname);
-		printf("%s\n", ppJson[i]);
-		result = system(ppJson[i]);
+		result = EXECUTE(ppJson[i], true);
 		if (result != 0)
 		{
 			free(ppJson);
@@ -1343,8 +1364,7 @@ Link(Command* pCmd, const char *pObj, const char *pOutName)
 		MODEFLAG = STR("-c");
 	}
 	SELF_APPEND_SPACE(pCommand, a.pCC, a.pCFLAGS, a.pDEFINES, pObj, OUTFLAG, pOutName, pCmd->pLIB_PATH, pCmd->pLIBS);
-	printf("%s\n", pCommand);
-	result = system(pCommand);
+	result = EXECUTE(pCommand, 1);
 	if (result != 0)
 		return Y_ERROR_LINK;
 	return result;
@@ -1369,11 +1389,16 @@ Build(Command* pCmd, FileList* pListCfiles)
 }
 
 bool
-MkdirImpl(char *pStr)
+DoesExist(const char *pPath)
 {
-	if (mkdir(pStr, 0700) == 0)
-		return true;
-	return false;
+	struct stat sb;
+	int result = stat(pPath, &sb);
+	if (result < 0)
+	{
+		PERROR_LOG("DoesExist()");
+		return false;
+	}
+	return true;
 }
 
 /*
