@@ -71,6 +71,7 @@ D11Init(OsState* pOsState, YMB BOOL vSync)
 
 	/* NOTE:Next initialize the back buffer of the swap chain and associate it to a render target view. */
 	ID3D11Texture2D* backBuffer;
+	D11_CHECK(gD11Ctx.pSwapchain->lpVtbl->GetBuffer(
 				gD11Ctx.pSwapchain, 0, &IID_ID3D11Texture2D, (LPVOID*)&backBuffer));
 
 	D11_CHECK(gD11Ctx.pDevice->lpVtbl->CreateRenderTargetView(

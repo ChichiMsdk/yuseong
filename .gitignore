@@ -1,6 +1,8 @@
 *.json
 *.txt
 build/
+test/
+*.vim
 .cache/
 .clangd/
 .clang-format

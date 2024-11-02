@@ -1,5 +1,21 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#include <stdio.h>
+
+/**
+ * Return 0 for success
+ */
+int OsFopen(
+		FILE**								pFile,
+		const char*							pFilePath,
+		const char*							pMode);
+
+int OsFread(
+		void*								pBuffer,
+		FILE*								pStream,
+		size_t								elementSize,
+		size_t								elementCount,
+		size_t								bufferSize);
 
 #endif // FILESYSTEM_H
