@@ -1,7 +1,6 @@
 TODO:
 
-- Filesystem's API layer
-- Build system using the Filesystem's api layer
+- Wrap VkResult errorcode
 - Config for building without backend
 - Better linker ? Improve compile times..
 - Change the input system
@@ -12,3 +11,5 @@ TODO:
 
 DONE:
 * Change backend easily
+* Filesystem's API layer
+* Build system using the Filesystem's api layer
