@@ -3,6 +3,7 @@
 #include "core/filesystem.h"
 
 #include <stdio.h>
+#include <string.h>
 
 int
 OsFopen(FILE** pFile, const char* pFilePath, const char* pMode)
@@ -22,4 +23,10 @@ int
 OsFclose(FILE* pStream)
 {
 	return fclose(pStream);
+}
+
+int
+OsStrError(char *pBuffer, size_t bufSize, int errnum)
+{
+	return strerror_s(pBuffer, bufSize, errnum);
 }
