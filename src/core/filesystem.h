@@ -21,4 +21,9 @@ int OsFread(
 int OsFclose(
 		FILE*								pStream);
 
+int OsStrError(
+		char*								pBuffer,
+		size_t								bufSize,
+		int									errnum);
+
 #endif // FILESYSTEM_H

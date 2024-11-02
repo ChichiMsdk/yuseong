@@ -19,7 +19,7 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	if (!errcode)
 	{
 		char buffer[1024];
-		strerror_s(buffer, 1024, errno);
+		OsStrError(buffer, 1024, errno);
 		YERROR("%s in %s:%d",buffer, __FILE__, __LINE__);
 		return VK_ERROR_UNKNOWN;
 	}
@@ -40,6 +40,13 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	};
 	VK_CHECK(vkCreateShaderModule(device, &shaderModuleCreateInfo, pCtx->pAllocator, pOutShaderModule));
 	DarrayDestroy(pBuffer);
+	return VK_SUCCESS;
+}
+
+VkResult
+vkPipelineInit(VkDevice device, const char* pFilePath)
+{
+	VkShaderModule computeDrawShader;
 	return VK_SUCCESS;
 }
 
