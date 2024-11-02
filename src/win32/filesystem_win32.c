@@ -17,3 +17,9 @@ OsFread(void* pBuffer, FILE* pStream, size_t elementSize, size_t elementCount, s
 	errno_t errcode = fread_s(pBuffer, bufferSize, elementSize, elementCount, pStream);
 	return errcode;
 }
+
+int
+OsFclose(FILE* pStream)
+{
+	return fclose(pStream);
+}

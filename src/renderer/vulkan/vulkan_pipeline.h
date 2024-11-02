@@ -30,7 +30,8 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	uint32_t* pBuffer = DarrayReserve(uint32_t, fileSize);
 	fseek(pStream, 0, SEEK_SET);
 	OsFread(pBuffer, pStream, 1, 1, fileSize);
-	fclose(pStream);
+	OsFclose(pStream);
+
 	VkShaderModuleCreateInfo shaderModuleCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,

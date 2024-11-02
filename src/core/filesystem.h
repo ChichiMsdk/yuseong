@@ -18,4 +18,7 @@ int OsFread(
 		size_t								elementCount,
 		size_t								bufferSize);
 
+int OsFclose(
+		FILE*								pStream);
+
 #endif // FILESYSTEM_H
