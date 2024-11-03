@@ -48,7 +48,7 @@ _OnResized(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventConte
 					YINFO("Window restored, resuming application.");
 					gAppConfig.bSuspended = FALSE;
 				}
-				YU_ASSERT(YuResizeWindow(&gOsState, gAppConfig.pRenderer, width, height) == YU_SUCCESS);
+				YU_ASSERT(YuResizeWindow(&gOsState, gAppConfig.pRenderer, width, height));
 			}
 		}
 	}
