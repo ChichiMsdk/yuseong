@@ -13,10 +13,10 @@ int OsFopen(
 
 int OsFread(
 		void*								pBuffer,
-		FILE*								pStream,
+		size_t								bufferSize,
 		size_t								elementSize,
 		size_t								elementCount,
-		size_t								bufferSize);
+		FILE*								pStream);
 
 int OsFclose(
 		FILE*								pStream);

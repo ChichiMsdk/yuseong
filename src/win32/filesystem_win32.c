@@ -13,7 +13,7 @@ OsFopen(FILE** pFile, const char* pFilePath, const char* pMode)
 }
 
 int
-OsFread(void* pBuffer, FILE* pStream, size_t elementSize, size_t elementCount, size_t bufferSize)
+OsFread(void* pBuffer, size_t bufferSize, size_t elementSize, size_t elementCount, FILE* pStream)
 {
 	errno_t errcode = fread_s(pBuffer, bufferSize, elementSize, elementCount, pStream);
 	return errcode;
