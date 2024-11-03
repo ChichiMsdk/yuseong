@@ -374,7 +374,7 @@ vkDrawImpl(void)
 	/* vkClearBackground(pCmd, drawImage.image.handle); */
 
 	/* NOTE: Compute shader invocation */
-	vkComputeShaderInvocation(&gVkCtx, pCmd);
+	/* vkComputeShaderInvocation(&gVkCtx, pCmd); */
 
 	/* NOTE: Make the swapchain image into presentable mode */
 	currentLayout = VK_IMAGE_LAYOUT_GENERAL;
