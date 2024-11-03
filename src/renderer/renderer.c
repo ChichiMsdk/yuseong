@@ -2,36 +2,45 @@
 
 const char *pRendererType[] = { "Vulkan", "OpenGL", "D3D11", "D3D12", "Metal", "Software" };
 
-YND YuRenderer*
-RendererInit(OsState* pOsState, RendererConfig rendererConfig)
+/**
+ * @brief	Allocates pOutREnderer Assign pointer to functions for the right backend
+ *
+ * @param	`pOsState` valid pointer to OsState struct
+ * @param	`pOutRenderer`
+ * @param	`rendererConfig` The configuration for the renderer
+ * @returns	`YU_SUCCESS` on success or anything else on failure;
+ *			`pOutRenderer` is set to `NULL` on failure.
+ */
+YND YuResult
+RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rendererConfig)
 {
-	YuRenderer *pRenderer = NULL;
+	(*ppOutRenderer) = NULL;
 	switch (rendererConfig.type)
 	{
 		case RENDERER_TYPE_VULKAN:
 			if (vkErrorToYuseong(vkInit(pOsState)) != YU_SUCCESS)
-				goto finish;
-			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
-			pRenderer->YuDraw = vkDraw;
-			pRenderer->YuShutdown = vkShutdown;
-			pRenderer->YuResize = vkResize;
+				goto error;
+			(*ppOutRenderer) = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
+			(*ppOutRenderer)->YuDraw = vkDraw;
+			(*ppOutRenderer)->YuShutdown = vkShutdown;
+			(*ppOutRenderer)->YuResize = vkResize;
 			goto finish;
 		case RENDERER_TYPE_OPENGL:
 			if (glErrorToYuseong(glInit(pOsState)) != YU_SUCCESS)
-				goto finish;
-			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
-			pRenderer->YuDraw = glDraw;
-			pRenderer->YuShutdown = glShutdown;
-			pRenderer->YuResize = glResize;
+				goto error;
+			(*ppOutRenderer) = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
+			(*ppOutRenderer)->YuDraw = glDraw;
+			(*ppOutRenderer)->YuShutdown = glShutdown;
+			(*ppOutRenderer)->YuResize = glResize;
 			goto finish;
 		case RENDERER_TYPE_D3D11:
 #ifdef PLATFORM_WINDOWS
 			if (D11ErrorToYuseong(D11Init(pOsState, rendererConfig.bVsync))!= YU_SUCCESS)
-				goto finish;
-			pRenderer = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
-			pRenderer->YuDraw = D11Draw;
-			pRenderer->YuShutdown = D11Shutdown;
-			pRenderer->YuResize = D11Resize;
+				goto error;
+			(*ppOutRenderer) = yAlloc(sizeof(YuRenderer), MEMORY_TAG_RENDERER);
+			(*ppOutRenderer)->YuDraw = D11Draw;
+			(*ppOutRenderer)->YuShutdown = D11Shutdown;
+			(*ppOutRenderer)->YuResize = D11Resize;
 			goto finish;
 #else
 			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
@@ -46,13 +55,15 @@ RendererInit(OsState* pOsState, RendererConfig rendererConfig)
 		case RENDERER_TYPE_METAL:
 		case RENDERER_TYPE_SOFTWARE:
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
-			goto finish;
+			goto error;
 		default:
 			YFATAL("No renderer found.");
-			goto finish;
+			goto error;
 	}
 finish:
-	return pRenderer;
+	return YU_SUCCESS;
+error:
+	return YU_FAILURE;
 }
 
 YND YuResult
@@ -74,9 +85,10 @@ YuDraw(OsState* pOsState, YuRenderer *pRenderer)
 {
 	return pRenderer->YuDraw(pOsState);
 }
-/*******************************************************************************************************************
- ***************************************** Renderer Specific functions *********************************************
- *******************************************************************************************************************/
+
+/****************************************************************************/
+/******************************* Vulkan *************************************/
+/****************************************************************************/
 YND YuResult
 vkDraw(YMB OsState* pOsState)
 {
@@ -90,17 +102,20 @@ vkResize(YMB OsState* pOsState, YMB uint32_t width, YMB uint32_t height)
 }
 
 YND YuResult
-glDraw(OsState* pOsState)
+vkErrorToYuseong(VkResult result)
 {
-	return glErrorToYuseong(glDrawImpl(pOsState));
+	switch (result)
+	{
+		case VK_SUCCESS:
+			return YU_SUCCESS;
+		default:
+			return YU_FAILURE;
+	}
 }
 
-YND YuResult
-glResize(OsState* pOsState, uint32_t width, uint32_t height)
-{
-	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
-}
-
+/****************************************************************************/
+/******************************* DirectX ************************************/
+/****************************************************************************/
 #ifdef PLATFORM_WINDOWS
 YND YuResult
 D11Draw(OsState* pOsState)
@@ -127,18 +142,20 @@ D11ErrorToYuseong(int result)
 }
 #endif //PLATFORM_WINDOWS
 
+/****************************************************************************/
+/******************************* OpenGL *************************************/
+/****************************************************************************/
 YND YuResult
-vkErrorToYuseong(VkResult result)
+glDraw(OsState* pOsState)
 {
-	switch (result)
-	{
-		case VK_SUCCESS:
-			return YU_SUCCESS;
-		default:
-			return YU_FAILURE;
-	}
+	return glErrorToYuseong(glDrawImpl(pOsState));
 }
 
+YND YuResult
+glResize(OsState* pOsState, uint32_t width, uint32_t height)
+{
+	return glErrorToYuseong(glResizeImpl(pOsState, width, height));
+}
 
 YND YuResult
 glErrorToYuseong(GlResult result)

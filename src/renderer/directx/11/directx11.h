@@ -1,3 +1,8 @@
+#define BACKEND_DIRECTX
+
+#ifdef BACKEND_DIRECTX
+#define D3D11
+
 #ifndef YDIRECTX11_H
 #define YDIRECTX11_H
 
@@ -79,4 +84,6 @@ b8 D11DrawImpl(
 void D11Shutdown(void);
 
 #endif // PLATFORM_WINDOWS
-#endif //YDIRECTX12_H
+#endif //YDIRECTX11_H
+
+#endif //DIRECTX11

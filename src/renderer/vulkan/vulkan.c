@@ -7,6 +7,8 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_command.h"
 #include "vulkan_fence.h"
+#include "vulkan_descriptor.h"
+#include "vulkan_pipeline.h"
 
 #include "core/darray.h"
 #include "core/logger.h"
@@ -23,7 +25,7 @@
 
 static VkContext gVkCtx;
 
-YND VkResult VulkanCreateDevice(VkContext *pVulkanContext, char *pGPUName);
+YND VkResult VulkanCreateDevice(VkContext *pVulkanContext, VkDevice *pOutDevice, char *pGPUName);
 YND int32_t MemoryFindIndex(uint32_t typeFilter, uint32_t propertyFlags);
 
 VKAPI_ATTR VkBool32 VKAPI_CALL 
@@ -44,6 +46,13 @@ vkShutdown(void)
 		KASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
 		pfnDestroyDebug(gVkCtx.instance, gVkCtx.debugMessenger, gVkCtx.pAllocator);
 #endif // DEBUG
+	
+	VK_ASSERT(vkDeviceWaitIdle(device));
+	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pCtx->pAllocator);
+	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pCtx->pAllocator);
+
+	vkDestroyDescriptorSetLayout(device, pCtx->drawImageDescriptorSetLayout, pCtx->pAllocator);
+	vkDestroyDescriptorPool(device, pCtx->descriptorPool.handle, pCtx->pAllocator);
 
 	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, 1));
@@ -208,6 +217,7 @@ vkInit(OsState *pOsState)
 		.enabledExtensionCount = requiredExtensionCount,
 		.ppEnabledExtensionNames = ppRequiredExtensions
 	};
+	/* NOTE: CreateInstance and vkSurface */
 	VK_ASSERT(vkCreateInstance(&pCreateInfo, gVkCtx.pAllocator, &gVkCtx.instance));
 	VK_CHECK(OsCreateVkSurface(pOsState, &gVkCtx));
 	YDEBUG("Vulkan surface created");
@@ -234,26 +244,19 @@ vkInit(OsState *pOsState)
 		VK_CHECK(func(gVkCtx.instance, &debugCreateInfo, gVkCtx.pAllocator, &gVkCtx.debugMessenger));
 		YDEBUG("Vulkan debugger created.");
 #endif // DEBUG
-	VK_CHECK(VulkanCreateDevice(&gVkCtx, pGPUName));
+	VK_CHECK(VulkanCreateDevice(&gVkCtx, &gVkCtx.device.logicalDev, pGPUName));
 
+	/* NOTE: Create Swapchain and commandpool/commandbuffer */
 	int32_t width = gVkCtx.framebufferWidth;
 	int32_t height = gVkCtx.framebufferHeight;
 	VK_CHECK(vkSwapchainCreate(&gVkCtx, width, height, &gVkCtx.swapchain));
 	VK_CHECK(vkCommandPoolCreate(&gVkCtx));
 	VK_CHECK(vkCommandBufferCreate(&gVkCtx));
 
-	YMB RgbaFloat color = {
-		.r = 30.0f,
-		.g = 30.0f,
-		.b = 200.0f,
-		.a = 1.0f,
-	};
-	YMB RectFloat rect = {
-		.x = 0.0f, .y = 0.0f,
-		.w = gVkCtx.framebufferWidth,
-		.h = gVkCtx.framebufferHeight,
-	};
-	YMB f32 depth = 1.0f; YMB f32 stencil = 0.0f;
+	YMB RgbaFloat color = { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
+	YMB RectFloat rect = { .x = 0.0f, .y = 0.0f, .w = gVkCtx.framebufferWidth, .h = gVkCtx.framebufferHeight, };
+	YMB f32 depth = 1.0f;
+	YMB f32 stencil = 0.0f;
 
 	vkRenderPassCreate(&gVkCtx, &gVkCtx.mainRenderpass, color, rect, depth, stencil);
 	gVkCtx.swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, gVkCtx.swapchain.imageCount);
@@ -265,6 +268,7 @@ vkInit(OsState *pOsState)
 
 	/* NOTE: Init semaphore and fences */
 	SyncInit();
+
 	/*
 	 * NOTE: In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
 	 * because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
@@ -275,9 +279,47 @@ vkInit(OsState *pOsState)
 	{
         gVkCtx.ppImagesInFlight[i] = 0;
     }
+
+	/* TODO: Make it a function that looks config file for the folder ?*/
+	const char *pShaderFilePath = "./build/obj/shaders/gradient.comp.spv";
+
+	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
+	VK_CHECK(vkDescriptorsInit(&gVkCtx, gVkCtx.device.logicalDev));
+	VK_CHECK(vkPipelineInit(&gVkCtx, gVkCtx.device.logicalDev, pShaderFilePath));
+
+	YINFO("Vulkan renderer initialized.");
+
+	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredValidationLayerNames);
 	DarrayDestroy(ppRequiredExtensions);
-	YINFO("Vulkan renderer initaliized.");
+	return VK_SUCCESS;
+}
+
+VkResult
+vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd)
+{
+	VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+	vkCmdBindPipeline(pCmd->handle, pipelineBindPoint, pCtx->gradientComputePipeline);
+
+	uint32_t firstSet = 0;
+	uint32_t descriptorSetCount = 1;
+	uint32_t dynamicOffsetCount = 0;
+	const uint32_t* pDynamicOffsets = VK_NULL_HANDLE;
+
+	vkCmdBindDescriptorSets(
+			pCmd->handle,
+			pipelineBindPoint,
+			pCtx->gradientComputePipelineLayout,
+			firstSet,
+			descriptorSetCount,
+			&pCtx->drawImageDescriptorSet,
+			dynamicOffsetCount,
+			pDynamicOffsets);
+
+	uint32_t groupCountX = ceil(pCtx->drawImage.extent.width / 16.0f);
+	uint32_t groupCountY = ceil(pCtx->drawImage.extent.height / 16.0f);
+	uint32_t groupCountZ = 1;
+	vkCmdDispatch(pCmd->handle, groupCountX, groupCountY, groupCountZ);
 	return VK_SUCCESS;
 }
 
@@ -299,12 +341,14 @@ vkDrawImpl(void)
 	YMB VkDevice device = gVkCtx.device.logicalDev;
 	uint64_t fenceWaitTimeoutNs = 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
 	VK_CHECK(vkFenceWait(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame], fenceWaitTimeoutNs));
+
 	/*
 	 * NOTE: Fences have to be reset between uses, you can’t use the same
 	 * fence on multiple GPU commands without resetting it in the middle.
 	 */
 	VK_CHECK(vkFenceReset(&gVkCtx, &gVkCtx.pFencesInFlight[gVkCtx.currentFrame]));
 
+	/* NOTE: Get next swapchain image */
 	VK_CHECK(vkSwapchainAcquireNextImageIndex(
 				&gVkCtx,
 				&gVkCtx.swapchain,
@@ -327,7 +371,10 @@ vkDrawImpl(void)
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 
 	/* NOTE: Clear the background */
-	vkClearBackground(pCmd, drawImage.image.handle);
+	/* vkClearBackground(pCmd, drawImage.image.handle); */
+
+	/* NOTE: Compute shader invocation */
+	vkComputeShaderInvocation(&gVkCtx, pCmd);
 
 	/* NOTE: Make the swapchain image into presentable mode */
 	currentLayout = VK_IMAGE_LAYOUT_GENERAL;

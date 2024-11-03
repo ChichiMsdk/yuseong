@@ -35,6 +35,6 @@ b8 _OnResized(
 		void*								pListenerInst,
 		EventContext						context);
 
-#define YU_ASSERT(expr) KASSERT(expr)
+#define YU_ASSERT(expr) KASSERT(expr == YU_SUCCESS)
 
 #endif // YUSEONG_H

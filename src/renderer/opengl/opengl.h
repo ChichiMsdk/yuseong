@@ -1,3 +1,6 @@
+#define BACKEND_OPENGL
+
+#ifdef BACKEND_OPENGL
 #ifndef YOPENGL_H
 #define YOPENGL_H
 
@@ -22,3 +25,4 @@ YND b8 glDrawImpl(
 void glShutdown(void);
 
 #endif // OPENGL_H
+#endif // BACKEND_OPENGL
