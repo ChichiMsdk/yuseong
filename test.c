@@ -1,3 +1,4 @@
+#if 0
 #ifdef WIN32
 	#define _CRT_SECURE_NO_WARNINGS
 	#define WIN32_LEAN_AND_MEAN
@@ -311,3 +312,4 @@ main(int argc, char **ppArgv)
 
 /*****************************************************************************/
 /*LINUX*/
+#endif
