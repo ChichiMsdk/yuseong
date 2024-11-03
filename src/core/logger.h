@@ -3,9 +3,7 @@
 
 #include "mydefines.h"
 
-
-//colors VIRTUALTERMINAL ONLY WINDOWS
-
+//NOTE: Colors for VIRTUALTERMINAL ONLY WINDOWS (?)
 #define YU_ALL_DEFAULT "\x1b[0m"
 #define YU_BOLD "\x1b[1m"
 #define YU_FG_BLACK "\x1b[30m"
@@ -38,13 +36,13 @@
 #define LS_DEBUG YU_FG_GREEN "[DEBUG]: "
 #define LS_TRACE YU_FG_MAGENTA "[TRACE]: "
 
-// Disable debug and trace logging for release builds.
+// NOTE: Disable debug and trace logging for release builds.
 #if YURELEASE == 1
- #define LOG_DEBUG_ENABLED 0
- #define LOG_TRACE_ENABLED 0
+	#define LOG_DEBUG_ENABLED 0
+	#define LOG_TRACE_ENABLED 0
 #else
- #define LOG_DEBUG_ENABLED 1
- #define LOG_TRACE_ENABLED 1
+	#define LOG_DEBUG_ENABLED 1
+	#define LOG_TRACE_ENABLED 1
 #endif // YURELEASE
 
 #define LOG_WARN_ENABLED 1
@@ -52,50 +50,66 @@
 
 typedef enum LogLevel
 {
-     LOG_LEVEL_FATAL = 0,
-	 LOG_LEVEL_ERROR = 1,
-	 LOG_LEVEL_WARN = 2,
-	 LOG_LEVEL_INFO = 3,
-	 LOG_LEVEL_DEBUG = 4,
-	 LOG_LEVEL_TRACE = 5
+     LOG_LEVEL_FATAL	= 0,
+	 LOG_LEVEL_ERROR	= 1,
+	 LOG_LEVEL_WARN		= 2,
+	 LOG_LEVEL_INFO		= 3,
+	 LOG_LEVEL_DEBUG	= 4,
+	 LOG_LEVEL_TRACE	= 5,
+	 MAX_LOG_LEVEL
 } LogLevel;
 
-b8 		LoggingInit(void);
+b8		LoggingInit(void);
 void	LoggingShutdown(void);
+
+void LogOutputLineAndFile(
+		LogLevel							level,
+		char*								pFilePath,
+		int									line,
+		const char*							message,
+		...									);
 
 void LogOutput(
 		LogLevel							level,
 		const char*							message,
 		...									);
 
-#define YFATAL(message, ...) LogOutput(LOG_LEVEL_FATAL, message, ##__VA_ARGS__);
-
-#ifndef YERROR
-#define YERROR(message, ...) LogOutput(LOG_LEVEL_ERROR, message, ##__VA_ARGS__);
-#endif
-
-#if LOG_WARN_ENABLED == 1
-#define YWARN(message, ...) LogOutput(LOG_LEVEL_WARN, message, ##__VA_ARGS__);
-#else
-#define YWARN(message, ...)
-#endif
-
 #if LOG_INFO_ENABLED == 1
-#define YINFO(message, ...) LogOutput(LOG_LEVEL_INFO, message, ##__VA_ARGS__);
+	#define YINFO(message, ...) LogOutput(LOG_LEVEL_INFO, message, ##__VA_ARGS__);
 #else
-#define YINFO(message, ...)
+	#define YINFO(message, ...)
 #endif
+
+#if YU_RELEASE == 1
+	#define YFATAL(message, ...) LogOutput(LOG_LEVEL_FATAL, message, ##__VA_ARGS__);
+	#define YERROR(message, ...) LogOutput(LOG_LEVEL_ERROR, message, ##__VA_ARGS__);
+
+	#if LOG_WARN_ENABLED == 1
+		#define YWARN(message, ...) LogOutput(LOG_LEVEL_WARN, message, ##__VA_ARGS__);
+	#else
+		#define YWARN(message, ...)
+	#endif
+#else
+	#define YFATAL(message, ...) LogOutputLineAndFile(LOG_LEVEL_FATAL, __FILE__, __LINE__, message, ##__VA_ARGS__);
+	#define YERROR(message, ...) LogOutputLineAndFile(LOG_LEVEL_ERROR, __FILE__, __LINE__, message, ##__VA_ARGS__);
+
+	#if LOG_WARN_ENABLED == 1
+		#define YWARN(message, ...) LogOutputLineAndFile(LOG_LEVEL_WARN, __FILE__, __LINE__, message, ##__VA_ARGS__);
+	#else
+		#define YWARN(message, ...)
+	#endif
+#endif //YURELEASE
 
 #if LOG_DEBUG_ENABLED == 1
-#define YDEBUG(message, ...) LogOutput(LOG_LEVEL_DEBUG, message, ##__VA_ARGS__);
+	#define YDEBUG(message, ...) LogOutputLineAndFile(LOG_LEVEL_DEBUG, __FILE__, __LINE__, message, ##__VA_ARGS__);
 #else
-#define YDEBUG(message, ...)
+	#define YDEBUG(message, ...)
 #endif
 
 #if LOG_TRACE_ENABLED == 1
-#define YTRACE(message, ...) LogOutput(LOG_LEVEL_TRACE, message, ##__VA_ARGS__);
+	#define YTRACE(message, ...) LogOutputLineAndFile(LOG_LEVEL_TRACE, __FILE__, __LINE__, message, ##__VA_ARGS__);
 #else
-#define YTRACE(message, ...)
+	#define YTRACE(message, ...)
 #endif
 
-#endif
+#endif // LOGGER_H

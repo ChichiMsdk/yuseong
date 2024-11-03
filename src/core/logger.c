@@ -51,24 +51,30 @@ LoggingShutdown(void)
 {
 }
 
+#define MSG_LENGTH 3200
+
+/**
+ * @brief			Prints `pMessage` in the `level` corresponding output 
+ *
+ * @param level		`LS_FATAL, LS_ERROR, LS_WARN, LS_INFO, LS_DEBUG, LS_TRACE`
+ * @param pMessage	Truncated if length exceeds 3200 
+ */
 void
 LogOutput(LogLevel level, const char *pMessage, ...)
 {
 	const char *pLevelStrings[6] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE};
 	b8 bError = level < LOG_LEVEL_WARN;
-	const int32_t msgLength = 3200;
 
 	/* NOTE: care here */
-	char pOutMessage[msgLength];
-	memset(pOutMessage, 0, sizeof(pOutMessage));
+	char pOutMessage[MSG_LENGTH];
 
 	/* NOTE: microsoft bullshit so if using clang __builtin_va_list */
 	va_list argPtr;
 	va_start(argPtr, pMessage);
-	vsnprintf(pOutMessage, msgLength, pMessage, argPtr);
+	vsnprintf(pOutMessage, MSG_LENGTH, pMessage, argPtr);
 	va_end(argPtr);
 
-	char pOutMessage2[msgLength];
+	char pOutMessage2[MSG_LENGTH];
 	if (level == LOG_LEVEL_FATAL)
 	{
 		int count = sprintf(pOutMessage2, "%s%s", pLevelStrings[level], pOutMessage);
@@ -76,6 +82,41 @@ LogOutput(LogLevel level, const char *pMessage, ...)
 	}
 	else
 		sprintf(pOutMessage2, "%s%s%s\n", pLevelStrings[level], pOutMessage, YU_ALL_DEFAULT);
+	if (bError)
+		OsWrite(pOutMessage2, FDERROR);
+	else
+		OsWrite(pOutMessage2, FDOUTPUT);
+}
+/**
+ * @brief			Prints `pMessage` in the `level` corresponding output with
+ *					file and line added
+ *
+ * @param level		`LS_FATAL, LS_ERROR, LS_WARN, LS_INFO, LS_DEBUG, LS_TRACE`
+ * @param pMessage	Truncated if length exceeds 3200 
+ */
+void
+LogOutputLineAndFile(LogLevel level, char *pFilePath, int line, const char *pMessage, ...)
+{
+	const char *pLevelStrings[6] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE};
+	b8 bError = level < LOG_LEVEL_WARN;
+
+	/* NOTE: care here */
+	char pOutMessage[MSG_LENGTH];
+
+	/* NOTE: microsoft bullshit so if using clang __builtin_va_list */
+	va_list argPtr;
+	va_start(argPtr, pMessage);
+	vsnprintf(pOutMessage, MSG_LENGTH, pMessage, argPtr);
+	va_end(argPtr);
+
+	char pOutMessage2[MSG_LENGTH];
+	if (level == LOG_LEVEL_FATAL)
+	{
+		int count = sprintf(pOutMessage2, "%s%s in %s:%d", pLevelStrings[level], pOutMessage, pFilePath, line);
+		sprintf(pOutMessage2 + count, "%s\n", YU_ALL_DEFAULT);
+	}
+	else
+		sprintf(pOutMessage2, "%s%s in %s:%d %s\n", pLevelStrings[level], pOutMessage, pFilePath, line, YU_ALL_DEFAULT);
 	if (bError)
 		OsWrite(pOutMessage2, FDERROR);
 	else
