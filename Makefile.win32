@@ -1,9 +1,13 @@
 NAME =yuseong
 EXTENSION =.exe
 OUTPUT =$(NAME)$(EXTENSION)
+
+SRC_DIR =src
 BUILD_DIR =build
-OBJ_DIR =build/obj
-TESTDIR =obj
+OBJ_DIR =$(BUILD_DIR)/obj
+OBJ =obj
+
+GLSLC =glslc
 CC =clang
 CPP =clang++
 
@@ -17,8 +21,6 @@ JASB_LIB =-luser32
 GLFW3 =
 TESTING =
 
-SRC_DIR =src
-
 INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include
 INCLUDE_DIRS +=-IC:\Lib\tracy-0.11.1\public -IC:\Lib\tracy-0.11.1\public\tracy
 INCLUDE_DIRS +=-IC:\Lib\glfw\include
@@ -31,8 +33,13 @@ LIBS +=-ld3dcompiler -ld3d11 -ldxgi -ldxguid
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
 LIB_PATH +=-LC:\Lib\glfw\lib-vc2022
 
-CFLAGS =-Wall -Wextra -Werror
+ifdef CPP_USE
+	CFLAGS =
+endif
 # CFLAGS +=-std=c23
+ifndef CPP_USE
+	CFLAGS =-Wall -Wextra -Werror
+endif
 
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
@@ -66,12 +73,21 @@ ifdef TRACY_USE
 	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 endif
 
+ifdef CPP_USE
+	CC =clang++
+	CPP += CFLAGS
+endif
+
 MYFIND =C:\msys64\usr\bin\find.exe
 
 FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON)
+SHADER_DIR =$(SRC_DIR)/shaders
+SHADER_FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
+SHADER_OBJS =$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
+
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON) $(SHADER_OBJS)
 
 $(BUILD_DIR)/$(JASB): $(JASB_FILE)
 	@$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
@@ -79,15 +95,20 @@ $(BUILD_DIR)/$(JASB): $(JASB_FILE)
 $(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
 
+$(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
+	@mkdir -p $(dir $@)
+	@$(GLSLC) $< -o $@
+	@echo Compiled shaders
+
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	$(CPP) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
 
-$(BUILD_DIR)/$(TESTDIR):
+$(BUILD_DIR)/$(OBJ):
 	@mkdir -p build/obj
 
 $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB)
@@ -112,4 +133,4 @@ fclean: clean
 re: clean
 	@make --no-print-directory -f Makefile.win32 -j24 all
 
-.PHONY: all clean re bat
+.PHONY: all clean re
