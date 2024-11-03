@@ -10,7 +10,7 @@
 static VkResult VulkanDeviceSelect(VkContext *pCtx);
 
 YND VkResult
-VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
+VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 {
 	uint32_t queueCreateInfoCount = 1;
 	uint8_t index = 0;
@@ -114,7 +114,7 @@ VulkanCreateDevice(VkContext *pCtx, YMB char *pGPUName)
 		.ppEnabledExtensionNames = ppExtensionNames,
 		.pNext = &enabledFeatures2,
 	};
-	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, &pCtx->device.logicalDev));
+	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, pOutDevice));
 	YINFO("Logical device created.");
 
 	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
