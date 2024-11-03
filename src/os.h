@@ -24,35 +24,33 @@ typedef struct RendererConfig RendererConfig;
 // TODO: Change the name to reflect the state 
 typedef struct AppConfig
 {
-	const char *pAppName;
-	int32_t x; int32_t y;
-	int32_t w; int32_t h;
-	b8 bSuspended;
-	YuRenderer *pRenderer;
-	RendererConfig *pRendererConfig;
-}AppConfig;
+	const char*		pAppName;
+	int32_t			x, y, w, h;
+	b8				bSuspended;
+	YuRenderer*		pRenderer;
+	RendererConfig*	pRendererConfig;
+} AppConfig;
 
 #ifdef PLATFORM_WINDOWS
-#	ifndef _WINDEF_
+	#ifndef _WINDEF_
 		typedef unsigned long DWORD;
-#	endif
+	#endif
 
 	typedef DWORD REDIR;
-#	define VK_KHR_SURFACE_OS "VK_KHR_win32_surface"
+	#define VK_KHR_SURFACE_OS "VK_KHR_win32_surface"
 
 #elif PLATFORM_LINUX
-#	include <stdio.h>
+	#include <stdio.h>
 	typedef FILE* STDREDIR;
 	typedef int REDIR;
 
-#	ifdef COMP_WAYLAND
-#		define VK_KHR_SURFACE_OS "VK_KHR_wayland_surface"
-#	elif COMP_X11
-#		define VK_KHR_SURFACE_OS "VK_KHR_xlib_surface"
-#	elif YGLFW3
-#		define VK_KHR_SURFACE_OS "VK_KHR_xcb_surface"
-#	endif
-
+	#ifdef COMP_WAYLAND
+		#define VK_KHR_SURFACE_OS "VK_KHR_wayland_surface"
+	#elif COMP_X11
+		#define VK_KHR_SURFACE_OS "VK_KHR_xlib_surface"
+	#elif YGLFW3
+		#define VK_KHR_SURFACE_OS "VK_KHR_xcb_surface"
+	#endif
 #endif // PLATFORM_WINDOWS
 
 extern b8 gRunning;

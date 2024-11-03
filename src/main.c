@@ -31,24 +31,28 @@ main(int argc, char **ppArgv)
 	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
 	EventRegister(EVENT_CODE_RESIZED, 0, _OnResized);
 
-	gAppConfig.pRenderer = RendererInit(&gOsState, config);
-	YU_ASSERT(gAppConfig.pRenderer);
+	YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
+	KASSERT(gAppConfig.pRenderer);
 
 	f64 deltaFrameTime = 0.0f;
 	f64 startFrameTime = 0.0f;
 	f64 endFrameTime = 0.0f;
+
 	while (gRunning)
 	{
 		deltaFrameTime = endFrameTime - startFrameTime;
 		startFrameTime = OsGetAbsoluteTime(NANOSECONDS);
+
 		OsPumpMessages(&gOsState);
 		if (!gAppConfig.bSuspended)
 		{
 			InputUpdate(deltaFrameTime);
-			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer) == YU_SUCCESS);
+			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer));
 		}
+
 		endFrameTime = OsGetAbsoluteTime(MICROSECONDS);
 	}
+
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();
 	OsShutdown(&gOsState);

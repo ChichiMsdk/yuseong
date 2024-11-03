@@ -5,6 +5,7 @@
 
 #include "core/logger.h"
 #include "core/ymemory.h"
+#include "core/yerror.h"
 
 #include "renderer/vulkan/yvulkan.h"
 #include "renderer/opengl/opengl.h"
@@ -14,16 +15,46 @@
 typedef b8 GlResult;
 typedef b8 D11Result;
 
-YND YuResult vkErrorToYuseong(VkResult result);
-YND YuResult glErrorToYuseong(GlResult result);
-YND YuResult D11ErrorToYuseong(int32_t result);
+/****************************************************************************/
+/******************************* Vulkan *************************************/
+/****************************************************************************/
+YND YuResult vkDraw(
+		YMB OsState*							pOsState);
 
-YND YuResult vkDraw(YMB OsState* pOsState);
-YND YuResult glDraw(OsState* pOsState);
-YND YuResult D11Draw(OsState* pOsState);
+YND YuResult vkResize(
+		YMB OsState*							pOsState,
+		YMB uint32_t							width,
+		YMB uint32_t							height);
 
-YND YuResult vkResize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height);
-YND YuResult glResize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height);
-YND YuResult D11Resize(YMB OsState* pOsState, YMB uint32_t width,YMB  uint32_t height);
+YND YuResult vkErrorToYuseong(
+		VkResult								result);
+
+/****************************************************************************/
+/******************************* DirectX ************************************/
+/****************************************************************************/
+YND YuResult D11Draw(
+		OsState*							pOsState);
+
+YND YuResult D11Resize(
+		YMB OsState*						pOsState,
+		YMB uint32_t						width,
+		YMB uint32_t						height);
+
+YND YuResult D11ErrorToYuseong(
+		int32_t								result);
+
+/****************************************************************************/
+/******************************* OpenGL *************************************/
+/****************************************************************************/
+YND YuResult glDraw(
+		OsState*							pOsState);
+
+YND YuResult glResize(
+		YMB OsState*						pOsState,
+		YMB uint32_t						width,
+		YMB uint32_t						height);
+
+YND YuResult glErrorToYuseong(
+		GlResult							result);
 
 #endif //RENDERERIMPL_H
