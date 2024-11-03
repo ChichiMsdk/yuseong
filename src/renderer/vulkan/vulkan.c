@@ -329,6 +329,13 @@ PrintColor(RgbaFloat c)
 	YINFO("r: %f, g: %f, b: %f, a:%f", c.r, c.g, c.b, c.a);
 }
 
+/* FIXME: Resizing -> 
+ * - Recreation of swapchain
+ * - Recreation of bindings
+ * - Get the new and correct framebuffer size
+ * - Check Images actual state (Transition etc in yDrawImpl)
+ */
+
 /* WARN: Leaking currently, needs to free at the beginning or at the end */
 /* 
  * TODO: Profile ImageCopy&Co's
@@ -374,7 +381,7 @@ vkDrawImpl(void)
 	/* vkClearBackground(pCmd, drawImage.image.handle); */
 
 	/* NOTE: Compute shader invocation */
-	/* vkComputeShaderInvocation(&gVkCtx, pCmd); */
+	vkComputeShaderInvocation(&gVkCtx, pCmd);
 
 	/* NOTE: Make the swapchain image into presentable mode */
 	currentLayout = VK_IMAGE_LAYOUT_GENERAL;

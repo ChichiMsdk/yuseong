@@ -322,6 +322,8 @@ vkSwapchainRecreate(VkContext *pCtx, uint32_t width, uint32_t height, VkSwapchai
 	VkDevice device = pCtx->device.logicalDev;
 
 	VK_RESULT(vkSwapchainDestroy(pCtx, pSwapchain));
+
+	VK_CHECK(vkDeviceWaitIdle(device));
 	vkDestroyImage(device, pCtx->drawImage.image.handle, pCtx->pAllocator);
 	vkDestroyImageView(device, pCtx->drawImage.image.view, pCtx->pAllocator);
 	vkFreeMemory(device, pCtx->drawImage.image.memory, pCtx->pAllocator);
@@ -348,7 +350,7 @@ vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint6
 	 * (VK_SUBOPTIMAL_KHR happens only on X11/XCB or/and xWayland)
 	 * https://community.khronos.org/t/vk-suboptimal-khr-is-it-safe-to-use-it-as-window-resize-detection/107848/5
 	 */
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
 		// Trigger pSwapchain recreation, then boot out of the render loop.
 		VK_RESULT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
