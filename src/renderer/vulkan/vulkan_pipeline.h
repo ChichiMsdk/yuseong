@@ -11,6 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 
+
+/*
+ * TODO: Change error handling here
+ * Needs to take into account fopen failures
+ */
 VkResult
 vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkShaderModule* pOutShaderModule)
 {
@@ -20,7 +25,7 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	{
 		char buffer[1024];
 		OsStrError(buffer, 1024, errno);
-		YERROR("%s in %s:%d",buffer, __FILE__, __LINE__);
+		YERROR("%s in %s:%d", buffer, __FILE__, __LINE__);
 		return VK_ERROR_UNKNOWN;
 	}
 	fseek(pStream, 0, SEEK_END);
@@ -44,9 +49,36 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 }
 
 VkResult
-vkPipelineInit(VkDevice device, const char* pFilePath)
+vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 {
 	VkShaderModule computeDrawShader;
+	VK_CHECK(vkLoadShaderModule(pCtx, pFilePath, device, &computeDrawShader));
+
+	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.stage = VK_SHADER_STAGE_COMPUTE_BIT,
+		.module = computeDrawShader,
+		.pName = "main",
+	};
+	VkComputePipelineCreateInfo computePipelineCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		// .layout = _gradientPipelineLayout,
+		.stage = pipelineShaderStageInfo,
+	};
+	uint32_t createInfoCount = 1;
+	VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+	VkPipeline *pPipelines = VK_NULL_HANDLE;
+
+	VK_CHECK(vkCreateComputePipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&computePipelineCreateInfo,
+				pCtx->pAllocator,
+				pPipelines));
+
 	return VK_SUCCESS;
 }
 
