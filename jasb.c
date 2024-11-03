@@ -267,7 +267,7 @@ int
 ClangCompileCommandsJson(const char *pCompileCommands)
 {
 	gpListJson = GetFileList(".", JSONREGEX);
-	PrintFileList(gpListJson);
+	/* PrintFileList(gpListJson); */
 	if (!gpListJson)
 		return false;
 	return ConstructCompileCommandsJson(gpListJson, pCompileCommands);
