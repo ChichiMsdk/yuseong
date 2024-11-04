@@ -1,4 +1,6 @@
 #include "darray.h"
+
+#ifndef DARRAY_LOG
 #include "ymemory.h"
 #include "logger.h"
 
@@ -135,3 +137,5 @@ _DarrayInsertAt(void* pArray, uint64_t index, void* pValue)
     _DarrayFieldSet(pArray, DARRAY_LENGTH, length + 1);
     return pArray;
 }
+
+#endif
