@@ -16,6 +16,7 @@ typedef struct PointerArray
 {
 	void*			ptr;
 	char*			pLocation;
+	size_t			size;
 	int				line;
 }PointerArray;
 
@@ -134,19 +135,17 @@ void
 GetLeaks(void)
 {
 	size_t i = 0;
-	size_t j = 0;
 	YMB b8 bFound = FALSE;
+	if (gTracker.elemCount == 0)
+	{
+		YTRACE("No leaks tracked. (There might be some)");
+		return ;
+	}
+	PointerArray* pTmp = gTracker.pAllocs;
+	YLEAKS("%zu bytes leaked", gTracker.elemCount);
 	while (i < gTracker.elemCount)
 	{
-		if (gTracker.elemCount != 0)
-		{
-			j = 0;
-			while (j < gTracker.elemCount)
-			{
-				YTRACE("Leaks %p located at: %s", gTracker.pAllocs[i].ptr, gTracker.pAllocs[i].pLocation);
-				j++;
-			}
-		}
+		YLEAKS("%zu bytes at adress %p located in: %s:%d", pTmp[i].size, pTmp[i].ptr, pTmp[i].pLocation, pTmp[i].line);
 		i++;
 	}
 }
@@ -164,7 +163,6 @@ _DarrayCreate(uint64_t length, uint64_t stride, YMB const char* pFile, YMB int l
     pNewArray[DARRAY_STRIDE] = stride;
 
 	AddToTracker(pNewArray, pFile, line);
-	PrintFullTrackerList();
     return pNewArray + DARRAY_FIELD_LENGTH;
 }
 
