@@ -59,7 +59,11 @@ vkImageCreate(VkContext* pContext, VkImageType imageType, uint32_t width, uint32
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(pContext->device.logicalDev, pOutImage->handle, &memoryRequirements);
 
-    int32_t memoryType = pContext->MemoryFindIndex(memoryRequirements.memoryTypeBits, memoryFlags);
+    int32_t memoryType = pContext->MemoryFindIndex(
+			pContext->device.physicalDev,
+			memoryRequirements.memoryTypeBits,
+			memoryFlags);
+
     if (memoryType == -1)
         YERROR("Required memory type not found. Image not valid.");
 

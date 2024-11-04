@@ -240,7 +240,7 @@ typedef struct VkContext
 	uint32_t						imageIndex;
 	b8								bRecreatingSwapchain;
 
-	int32_t							(*MemoryFindIndex)(uint32_t typeFilter, uint32_t propertyFlags);
+	int32_t							(*MemoryFindIndex)(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t propertyFlags);
 	uint64_t						nbFrames;
 
 	VkDescriptorSetLayoutBinding*	pBindings;
@@ -267,6 +267,7 @@ typedef struct VkContext
 typedef struct GlobalContext
 {
 	uint32_t	contextCount;
+	uint32_t	currentContext;
 	VkContext*	ppCtx[MAX_CONTEXT];
 } GlobalContext;
 
