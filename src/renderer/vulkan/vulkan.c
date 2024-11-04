@@ -12,6 +12,7 @@
 #include "vulkan_pipeline.h"
 
 #include "core/darray.h"
+#include "core/darray_debug.h"
 #include "core/logger.h"
 #include "core/assert.h"
 #include "core/ymemory.h"

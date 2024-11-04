@@ -112,11 +112,11 @@ LogOutputLineAndFile(LogLevel level, char *pFilePath, int line, const char *pMes
 	char pOutMessage2[MSG_LENGTH];
 	if (level == LOG_LEVEL_FATAL)
 	{
-		int count = sprintf(pOutMessage2, "%s%s in %s:%d", pLevelStrings[level], pOutMessage, pFilePath, line);
+		int count = sprintf(pOutMessage2, "%s\"%s\" in %s:%d", pLevelStrings[level], pOutMessage, pFilePath, line);
 		sprintf(pOutMessage2 + count, "%s\n", YU_ALL_DEFAULT);
 	}
 	else
-		sprintf(pOutMessage2, "%s%s in %s:%d %s\n", pLevelStrings[level], pOutMessage, pFilePath, line, YU_ALL_DEFAULT);
+		sprintf(pOutMessage2, "%s\"%s\" in %s:%d %s\n", pLevelStrings[level], pOutMessage, pFilePath, line, YU_ALL_DEFAULT);
 	if (bError)
 		OsWrite(pOutMessage2, FDERROR);
 	else

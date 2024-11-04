@@ -1,6 +1,7 @@
 #include "vulkan_descriptor.h"
 
 #include "core/darray.h"
+#include "core/darray_debug.h"
 #include "core/logger.h"
 #include "core/assert.h"
 

@@ -3,6 +3,8 @@
 
 #include "yuseong.h"
 
+#include "core/darray_debug.h"
+
 b8 gRunning = TRUE;
 
 const char* __asan_default_options() { return "detect_leaks=0"; }
@@ -56,7 +58,8 @@ main(int argc, char **ppArgv)
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();
 	OsShutdown(&gOsState);
-	SystemMemoryUsagePrint();
+	/* SystemMemoryUsagePrint(); */
+	GetLeaks();
 	return 0;
 }
 #endif // TESTING

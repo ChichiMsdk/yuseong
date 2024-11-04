@@ -3,6 +3,7 @@
 #include "core/ymemory.h"
 #include "core/logger.h"
 #include "core/darray.h"
+#include "core/darray_debug.h"
 
 #include <string.h>
 #include <stdlib.h>

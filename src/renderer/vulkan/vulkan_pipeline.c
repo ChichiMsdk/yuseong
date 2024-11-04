@@ -4,6 +4,7 @@
 
 #include "core/filesystem.h"
 #include "core/darray.h"
+#include "core/darray_debug.h"
 #include "core/logger.h"
 #include "core/assert.h"
 #include "core/yerror.h"
@@ -36,8 +37,13 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	fseek(pStream, 0, SEEK_SET);
 
 	size_t elemCount = 1;
-	int count = OsFread(pBuffer, fileSize, fileSize, elemCount, pStream);
-	YDEBUG("count read %d", count);
+	size_t count = OsFread(pBuffer, fileSize, fileSize, elemCount, pStream);
+	if (count != elemCount)
+	{
+		char msg[100];
+		sprintf(msg, "OsFread: %zu", count);
+		perror(msg);
+	}
 
 	errcode = OsFclose(pStream);
 	if (errcode != 0)

@@ -1,6 +1,7 @@
 #include "vulkan_command.h"
 #include "core/logger.h"
 #include "core/darray.h"
+#include "core/darray_debug.h"
 
 #include <string.h>
 #include <vulkan/vk_enum_string_helper.h>

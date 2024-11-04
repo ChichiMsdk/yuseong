@@ -1,4 +1,5 @@
 #include "darray.h"
+#include "darray_debug.h"
 #include "event.h"
 
 #include "core/logger.h"

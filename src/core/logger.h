@@ -80,36 +80,54 @@ void LogOutput(
 	#define YINFO(message, ...)
 #endif
 
-#if YU_RELEASE == 1
-	#define YFATAL(message, ...) LogOutput(LOG_LEVEL_FATAL, message, ##__VA_ARGS__);
-	#define YERROR(message, ...) LogOutput(LOG_LEVEL_ERROR, message, ##__VA_ARGS__);
+#define YFATAL(message, ...) LogOutput(LOG_LEVEL_FATAL, message, ##__VA_ARGS__);
+#define YERROR(message, ...) LogOutput(LOG_LEVEL_ERROR, message, ##__VA_ARGS__);
 
-	#if LOG_WARN_ENABLED == 1
-		#define YWARN(message, ...) LogOutput(LOG_LEVEL_WARN, message, ##__VA_ARGS__);
-	#else
-		#define YWARN(message, ...)
-	#endif
+#if LOG_WARN_ENABLED == 1
+#define YWARN(message, ...) LogOutput(LOG_LEVEL_WARN, message, ##__VA_ARGS__);
 #else
-	#define YFATAL(message, ...) LogOutputLineAndFile(LOG_LEVEL_FATAL, __FILE__, __LINE__, message, ##__VA_ARGS__);
-	#define YERROR(message, ...) LogOutputLineAndFile(LOG_LEVEL_ERROR, __FILE__, __LINE__, message, ##__VA_ARGS__);
-
-	#if LOG_WARN_ENABLED == 1
-		#define YWARN(message, ...) LogOutputLineAndFile(LOG_LEVEL_WARN, __FILE__, __LINE__, message, ##__VA_ARGS__);
-	#else
-		#define YWARN(message, ...)
-	#endif
-#endif //YURELEASE
+#define YWARN(message, ...)
+#endif
 
 #if LOG_DEBUG_ENABLED == 1
-	#define YDEBUG(message, ...) LogOutputLineAndFile(LOG_LEVEL_DEBUG, __FILE__, __LINE__, message, ##__VA_ARGS__);
+	#define YDEBUG(message, ...) LogOutput(LOG_LEVEL_DEBUG, message, ##__VA_ARGS__);
 #else
 	#define YDEBUG(message, ...)
 #endif
 
 #if LOG_TRACE_ENABLED == 1
-	#define YTRACE(message, ...) LogOutputLineAndFile(LOG_LEVEL_TRACE, __FILE__, __LINE__, message, ##__VA_ARGS__);
+	#define YTRACE(message, ...) LogOutput(LOG_LEVEL_TRACE, message, ##__VA_ARGS__);
 #else
 	#define YTRACE(message, ...)
+#endif
+
+///2///
+
+#if LOG_INFO_ENABLED == 1
+	#define YINFO2(message, ...) LogOutputLineAndFile(LOG_LEVEL_INFO, __FILE__, __LINE__, message, ##__VA_ARGS__);
+#else
+	#define YINFO2(message, ...)
+#endif
+
+#define YFATAL2(message, ...) LogOutputLineAndFile(LOG_LEVEL_FATAL, __FILE__, __LINE__, message, ##__VA_ARGS__);
+#define YERROR2(message, ...) LogOutputLineAndFile(LOG_LEVEL_ERROR, __FILE__, __LINE__, message, ##__VA_ARGS__);
+
+#if LOG_WARN_ENABLED == 1
+#define YWARN2(message, ...) LogOutputLineAndFile(LOG_LEVEL_WARN, __FILE__, __LINE__, message, ##__VA_ARGS__);
+#else
+#define YWARN2(message, ...)
+#endif
+
+#if LOG_DEBUG_ENABLED == 1
+	#define YDEBUG2(message, ...) LogOutputLineAndFile(LOG_LEVEL_DEBUG, __FILE__, __LINE__, message, ##__VA_ARGS__);
+#else
+	#define YDEBUG2(message, ...)
+#endif
+
+#if LOG_TRACE_ENABLED == 1
+	#define YTRACE2(message, ...) LogOutputLineAndFile(LOG_LEVEL_TRACE, __FILE__, __LINE__, message, ##__VA_ARGS__);
+#else
+	#define YTRACE2(message, ...)
 #endif
 
 #endif // LOGGER_H
