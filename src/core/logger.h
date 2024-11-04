@@ -4,8 +4,6 @@
 #include "mydefines.h"
 
 //NOTE: Colors for VIRTUALTERMINAL ONLY WINDOWS (?)
-#define YU_ALL_DEFAULT "\x1b[0m"
-#define YU_BOLD "\x1b[1m"
 #define YU_FG_BLACK "\x1b[30m"
 #define YU_FG_RED "\x1b[31m"
 #define YU_FG_GREEN "\x1b[32m"
@@ -26,15 +24,30 @@
 #define YU_BG_WHITE "\x1b[47m"
 #define YU_BG_EXTENDED "\x1b[48m"
 #define YU_BG_DEFAULT "\x1b[49m"
+#define YU_ALL_DEFAULT "\x1b[0m"
 
-#define SET_COLOR(i, r, g, b) "\x1b]4;" #i ";rgb:" #r "/" #g "/" #b "\x1b\\"
+#define YU_BOLD "\x1b[1m"
+#define YU_NO_BOLD "\x1b[22m"
 
-#define LS_FATAL YU_BOLD YU_BG_RED YU_FG_BLACK "[FATAL]: "
-#define LS_ERROR YU_FG_RED "[ERROR]: "
-#define LS_WARN YU_FG_YELLOW "[WARN]: "
-#define LS_INFO YU_FG_BLUE "[INFO]: "
-#define LS_DEBUG YU_FG_GREEN "[DEBUG]: "
+#define YU_BLINK "\x1b[5m"
+#define YU_NO_BLINK "\x1b[25m"
+
+#define YU_UNDERLINE "\x1b[4m"
+#define YU_NO_UNDERLINE "\x1b[24m"
+
+#define YU_NEGATIVE "\x1b[7m"
+#define YU_POSITIVE "\x1b[27m"
+
+#define SET_FG(r, g, b) "\x1b[38;2;" #r ";" #g ";" #b "m"
+#define SET_BG(r, g, b) "\x1b[48;2;" #r ";" #g ";" #b "m"
+
+#define LS_FATAL YU_BOLD SET_BG(180, 40, 40) SET_FG(255, 255, 255) "[FATAL]: "
+#define LS_ERROR YU_BOLD SET_FG(180, 40, 40) "[ERROR]: "
+#define LS_DEBUG SET_FG(80, 255, 80) "[DEBUG]: "
+#define LS_WARN YU_BOLD SET_BG(255, 191, 40) SET_FG(0, 0, 0) "[WARN]: "
+#define LS_INFO SET_FG(180, 180, 100) "[INFO]: "
 #define LS_TRACE YU_FG_MAGENTA "[TRACE]: "
+#define LS_LEAKS YU_BOLD SET_FG(230, 230, 230) "[LEAKS]: " 
 
 // NOTE: Disable debug and trace logging for release builds.
 #if YURELEASE == 1
@@ -42,6 +55,7 @@
 	#define LOG_TRACE_ENABLED 0
 #else
 	#define LOG_DEBUG_ENABLED 1
+	#define LOG_LEAKS_ENABLED 1
 	#define LOG_TRACE_ENABLED 1
 #endif // YURELEASE
 
@@ -56,6 +70,7 @@ typedef enum LogLevel
 	 LOG_LEVEL_INFO		= 3,
 	 LOG_LEVEL_DEBUG	= 4,
 	 LOG_LEVEL_TRACE	= 5,
+	 LOG_LEVEL_LEAKS	= 6,
 	 MAX_LOG_LEVEL
 } LogLevel;
 
@@ -99,6 +114,12 @@ void LogOutput(
 	#define YTRACE(message, ...) LogOutput(LOG_LEVEL_TRACE, message, ##__VA_ARGS__);
 #else
 	#define YTRACE(message, ...)
+#endif
+
+#if LOG_LEAKS_ENABLED == 1
+	#define YLEAKS(message, ...) LogOutput(LOG_LEVEL_LEAKS, message, ##__VA_ARGS__);
+#else
+	#define YLEAKS(message, ...)
 #endif
 
 ///2///

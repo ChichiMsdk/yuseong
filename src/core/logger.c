@@ -62,7 +62,7 @@ LoggingShutdown(void)
 void
 LogOutput(LogLevel level, const char *pMessage, ...)
 {
-	const char *pLevelStrings[6] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE};
+	const char *pLevelStrings[] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE, LS_LEAKS};
 	b8 bError = level < LOG_LEVEL_WARN;
 
 	/* NOTE: care here */
@@ -97,7 +97,7 @@ LogOutput(LogLevel level, const char *pMessage, ...)
 void
 LogOutputLineAndFile(LogLevel level, char *pFilePath, int line, const char *pMessage, ...)
 {
-	const char *pLevelStrings[6] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE};
+	const char *pLevelStrings[] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE, LS_LEAKS};
 	b8 bError = level < LOG_LEVEL_WARN;
 
 	/* NOTE: care here */
