@@ -31,7 +31,6 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	}
 	fseek(pStream, 0, SEEK_END);
 	size_t fileSize = ftell(pStream);
-	YDEBUG("file size: %llu", fileSize);
 
 	uint32_t* pBuffer = DarrayReserve(uint32_t, fileSize / sizeof(uint32_t));
 	fseek(pStream, 0, SEEK_SET);

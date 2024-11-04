@@ -132,29 +132,45 @@ RemoveFromTracker(void* pPtr, YMB const char* pFile, YMB int line)
 	}
 }
 
+char *pBytes[] = {"bytes", "byte"};
+char *pPrefix[] = {"giga", "mega", "kilo", ""};
+
 void
 GetLeaks(void)
 {
-	size_t i = 0;
-	YMB b8 bFound = FALSE;
+	const uint64_t gib = 1024 * 1024 * 1024;
+	const uint64_t mib = 1024 * 1024;
+	const uint64_t kib = 1024;
+	uint32_t prefix = 3;
+	uint32_t plural = 1;
+
 	if (gTracker.elemCount == 0)
 	{
 		YTRACE("No leaks tracked. (There might be some)");
 		return ;
 	}
 	PointerArray* pTmp = gTracker.pAllocs;
-
 	size_t totalLeaks = 0;
-	while (i < gTracker.elemCount)
-		totalLeaks += pTmp[i++].size;
 
-	printf("======================================================================\n");
-	YLEAKS("%zu pointers and total of %zu bytes leaked", gTracker.elemCount, totalLeaks);
-	i = 0;
-	while (i < gTracker.elemCount)
+	for (size_t i = 0; i < gTracker.elemCount; i++)
+		totalLeaks += pTmp[i].size;
+
+	if (totalLeaks >= gib)
+		prefix = 0;
+	else if (totalLeaks >= mib)
+		prefix = 1;
+	else if (totalLeaks >= kib)
+		prefix = 2;
+
+	if (totalLeaks > 1)
+		plural = 0;
+
+	printf("=============================================================================\n");
+	YLEAKS("%zu pointers and total of %zu %s%s leaked", gTracker.elemCount, totalLeaks, pPrefix[prefix], pBytes[plural]);
+
+	for (size_t i = 0; i < gTracker.elemCount; i++)
 	{
-		YOUT("\t%zu bytes at adress %p located in: %s:%d", pTmp[i].size, pTmp[i].ptr, pTmp[i].pLocation, pTmp[i].line);
-		i++;
+		YOUT("\t%zu bytes at adress %p in file: %s:%d", pTmp[i].size, pTmp[i].ptr, pTmp[i].pLocation, pTmp[i].line);
 	}
 }
 #include <stdlib.h>

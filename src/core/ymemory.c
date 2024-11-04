@@ -94,6 +94,8 @@ StrGetMemoryUsage(void)
 	uint64_t offset = strlen(pBuffer);
 	for (uint32_t i = 0; i < MEMORY_TAG_MAX_TAGS; ++i)
 	{
+		if (gStats.pTaggedAllocations[i] <= 0)
+			continue;
 		char pUnit[4] = "XiB";
 		float fAmount = 1.0f;
 		if (gStats.pTaggedAllocations[i] >= gib) 
