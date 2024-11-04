@@ -1,5 +1,6 @@
 TODO:
 
+- Os's specific compile-time defines
 - Wrap VkResult errorcode
 - Config for building without backend
 - Better linker ? Improve compile times..
