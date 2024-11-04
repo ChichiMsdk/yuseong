@@ -319,15 +319,9 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 YND VkResult
 vkSwapchainRecreate(VkContext *pCtx, uint32_t width, uint32_t height, VkSwapchain *pSwapchain)
 {
-	VkDevice device = pCtx->device.logicalDev;
+	YMB VkDevice device = pCtx->device.logicalDev;
 
 	VK_RESULT(vkSwapchainDestroy(pCtx, pSwapchain));
-
-	VK_CHECK(vkDeviceWaitIdle(device));
-	vkDestroyImage(device, pCtx->drawImage.image.handle, pCtx->pAllocator);
-	vkDestroyImageView(device, pCtx->drawImage.image.view, pCtx->pAllocator);
-	vkFreeMemory(device, pCtx->drawImage.image.memory, pCtx->pAllocator);
-
 	VK_RESULT(vkSwapchainCreate(pCtx, width, height, pSwapchain));
 	return VK_SUCCESS;
 }
