@@ -49,7 +49,7 @@ ReallocCheck(void)
 }
 
 void
-AddToTracker(void* pPtr, const char *pFile, int line)
+AddToTracker(void* pPtr, const char *pFile, int line, size_t size)
 {
 	ReallocCheck();
 	size_t i = 0;
@@ -65,6 +65,7 @@ AddToTracker(void* pPtr, const char *pFile, int line)
 	gTracker.pAllocs[gTracker.elemCount].pLocation = StrDup(pFile);
 	gTracker.pAllocs[gTracker.elemCount].line = line;
 	gTracker.pAllocs[gTracker.elemCount].ptr = pPtr;
+	gTracker.pAllocs[gTracker.elemCount].size = size;
 	gTracker.elemCount++;
 }
 
@@ -142,10 +143,17 @@ GetLeaks(void)
 		return ;
 	}
 	PointerArray* pTmp = gTracker.pAllocs;
-	YLEAKS("%zu bytes leaked", gTracker.elemCount);
+
+	size_t totalLeaks = 0;
+	while (i < gTracker.elemCount)
+		totalLeaks += pTmp[i++].size;
+
+	printf("======================================================================\n");
+	YLEAKS("%zu pointers and total of %zu bytes leaked", gTracker.elemCount, totalLeaks);
+	i = 0;
 	while (i < gTracker.elemCount)
 	{
-		YLEAKS("%zu bytes at adress %p located in: %s:%d", pTmp[i].size, pTmp[i].ptr, pTmp[i].pLocation, pTmp[i].line);
+		YOUT("\t%zu bytes at adress %p located in: %s:%d", pTmp[i].size, pTmp[i].ptr, pTmp[i].pLocation, pTmp[i].line);
 		i++;
 	}
 }
@@ -162,7 +170,7 @@ _DarrayCreate(uint64_t length, uint64_t stride, YMB const char* pFile, YMB int l
     pNewArray[DARRAY_LENGTH] = 0;
     pNewArray[DARRAY_STRIDE] = stride;
 
-	AddToTracker(pNewArray, pFile, line);
+	AddToTracker(pNewArray, pFile, line, headerSize + arraySize);
     return pNewArray + DARRAY_FIELD_LENGTH;
 }
 

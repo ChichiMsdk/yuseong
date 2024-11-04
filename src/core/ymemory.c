@@ -18,6 +18,7 @@ struct MemoryStats
 
 static const char *MemoryTagStrings[MEMORY_TAG_MAX_TAGS] = {
 	"UNKNOWN    ",
+	"TRACKER    ",
 	"ARRAY      ",
 	"DARRAY     ",
 	"DICT       ",
@@ -29,6 +30,7 @@ static const char *MemoryTagStrings[MEMORY_TAG_MAX_TAGS] = {
 	"TEXTURE    ",
 	"MAT_INST   ",
 	"RENDERER   ",
+	"CONTEXT    ",
 	"GAME       ",
 	"TRANSFORM  ",
 	"ENTITY     ",

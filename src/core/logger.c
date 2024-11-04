@@ -62,7 +62,7 @@ LoggingShutdown(void)
 void
 LogOutput(LogLevel level, const char *pMessage, ...)
 {
-	const char *pLevelStrings[] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE, LS_LEAKS};
+	const char *pLevelStrings[] = {LS_FATAL, LS_ERROR, LS_WARN, LS_INFO , LS_DEBUG , LS_TRACE, LS_LEAKS, LS_NONE};
 	b8 bError = level < LOG_LEVEL_WARN;
 
 	/* NOTE: care here */

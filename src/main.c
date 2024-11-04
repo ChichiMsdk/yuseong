@@ -58,8 +58,8 @@ main(int argc, char **ppArgv)
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();
 	OsShutdown(&gOsState);
-	/* SystemMemoryUsagePrint(); */
 	GetLeaks();
+	SystemMemoryUsagePrint();
 	return 0;
 }
 #endif // TESTING
