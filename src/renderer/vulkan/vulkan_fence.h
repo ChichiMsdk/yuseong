@@ -4,8 +4,9 @@
 #include "yvulkan.h"
 
 YND VkResult vkFenceCreate(
-		VkContext*							pCtx,
+		VkDevice							device,
 		b8									bSignaled,
+		VkAllocationCallbacks*				pAllocator,
 		VulkanFence*						pOutFence);
 
 void vkFenceDestroy(

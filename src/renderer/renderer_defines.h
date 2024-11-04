@@ -8,7 +8,7 @@ typedef struct ColorInt
 	int32_t r; int32_t g; int32_t b; int32_t a;
 }ColorInt;
 
-typedef struct ColorFloat
+typedef struct RgbaFloat
 {
 	f32 r; f32 g; f32 b; f32 a;
 }RgbaFloat;

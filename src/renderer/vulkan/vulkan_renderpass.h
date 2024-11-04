@@ -6,8 +6,8 @@
 void vkRenderPassCreate(
 		VkContext*							pCtx, 
 		VulkanRenderPass*					pOutRenderPass,
-		struct ColorFloat					color,
-		struct RectFloat					rect,
+		RgbaFloat							color,
+		RectFloat							rect,
 		f32									depth,
 		uint32_t							stencil);
 

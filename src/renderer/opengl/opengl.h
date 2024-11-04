@@ -22,7 +22,8 @@ YND b8 glResizeImpl(
 YND b8 glDrawImpl(
 		OsState*							pOsState);
 
-void glShutdown(void);
+void glShutdown(
+		void*							pCtx);
 
 #endif // OPENGL_H
 #endif // BACKEND_OPENGL

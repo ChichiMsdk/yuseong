@@ -13,7 +13,8 @@ void vkFramebufferCreate(
 		VulkanFramebuffer*					pOutFramebuffer);
 
 void vkFramebufferDestroy(
-		VkContext*							pCtx,
+		VkDevice							device,
+		VkAllocationCallbacks*				pAllocator,
 		VulkanFramebuffer*					pFramebuffer);
 
 #endif // VULKAN_FRAMEBUFFER_H

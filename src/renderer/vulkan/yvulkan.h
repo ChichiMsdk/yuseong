@@ -5,12 +5,11 @@
 #ifndef YVULKAN_H
 #define YVULKAN_H
 
-
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-#include "renderer/renderer_defines.h"
 #include "core/assert.h"
+#include "renderer/renderer_defines.h"
 
 #ifdef PLATFORM_LINUX
 #	ifdef YGLFW3
@@ -194,6 +193,13 @@ typedef struct DescriptorAllocator
 	PoolSizeRatio			poolSizeRatio;
 } DescriptorAllocator;
 
+typedef struct VulkanImmediateSubmit
+{
+	VulkanFence			fence;
+	VulkanCommandBuffer	commandBuffer;
+	VkCommandPool		commandPool;
+}VulkanImmediateSubmit;
+
 typedef struct VkContext
 {
 	VkInstance						instance;
@@ -248,27 +254,29 @@ typedef struct VkContext
 	VkDescriptorSet					drawImageDescriptorSet;
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
 
+	VulkanImmediateSubmit			immediateSubmit;
+
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;
 #endif
 
 } VkContext;
 
+#define MAX_CONTEXT 100
+
+typedef struct GlobalContext
+{
+	uint32_t	contextCount;
+	VkContext*	ppCtx[MAX_CONTEXT];
+} GlobalContext;
+
 YND VkResult vkInit(
-		OsState*							pState);
+		OsState*							pState,
+		void**								ppOutContext);
 
-YND VkResult vkCommandPoolCreate(
-		VkContext*							pContext);
+void		 vkShutdown(
+		void*								pCtx);
 
-YND VkResult vkQueueSubmitAndSwapchainPresent(
-		VulkanCommandBuffer*				pCmd);
-
-void vkClearBackground(
-		VulkanCommandBuffer*				pCmd,
-		VkImage								pImage);
-
-void vkShutdown(void);
-
-YND VkResult vkDrawImpl(void);
 #endif // YVULKAN_H
+
 #endif // BACKEND_VULKAN

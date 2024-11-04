@@ -148,14 +148,14 @@ b8 D11ResizeImpl(YMB OsState* pOsState, YMB uint32_t width, YMB uint32_t height)
 	return TRUE;
 }
 
-b8 D11DrawImpl(YMB OsState* pOsState)
+b8 D11DrawImpl(YMB OsState* pOsState, YMB void* pCtx)
 {
 	/* YINFO("Dx11 drawing."); */
 	return TRUE;
 }
 
 void
-D11Shutdown(void)
+D11Shutdown(YMB void* pCtx)
 {
 }
 

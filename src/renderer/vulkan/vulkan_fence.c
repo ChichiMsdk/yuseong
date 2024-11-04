@@ -3,7 +3,7 @@
 #include "core/logger.h"
 
 YND VkResult
-vkFenceCreate(VkContext *pCtx, b8 bSignaled, VulkanFence *pOutFence)
+vkFenceCreate(VkDevice device, b8 bSignaled, VkAllocationCallbacks* pAllocator, VulkanFence *pOutFence)
 {
     // Make sure to signal the fence if required.
     pOutFence->bSignaled = bSignaled;
@@ -14,7 +14,7 @@ vkFenceCreate(VkContext *pCtx, b8 bSignaled, VulkanFence *pOutFence)
     if (pOutFence->bSignaled)
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    VK_CHECK(vkCreateFence(pCtx->device.logicalDev, &fenceCreateInfo, pCtx->pAllocator, &pOutFence->handle));
+    VK_CHECK(vkCreateFence(device, &fenceCreateInfo, pAllocator, &pOutFence->handle));
 	return VK_SUCCESS;
 }
 

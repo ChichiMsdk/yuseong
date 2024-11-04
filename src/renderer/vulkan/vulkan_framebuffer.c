@@ -34,9 +34,9 @@ vkFramebufferCreate(VkContext* pCtx, VulkanRenderPass* pRenderpass, uint32_t wid
 }
 
 void
-vkFramebufferDestroy(VkContext* pCtx, VulkanFramebuffer* pFramebuffer) 
+vkFramebufferDestroy(VkDevice device, VkAllocationCallbacks* pAllocator, VulkanFramebuffer* pFramebuffer) 
 {
-    vkDestroyFramebuffer(pCtx->device.logicalDev, pFramebuffer->handle, pCtx->pAllocator);
+    vkDestroyFramebuffer(device, pFramebuffer->handle, pAllocator);
     if (pFramebuffer->pAttachments) 
 	{
         yFree(pFramebuffer->pAttachments, pFramebuffer->attachmentCount, MEMORY_TAG_RENDERER);

@@ -70,6 +70,6 @@ glDrawImpl(YMB OsState *pOsState)
 }
 
 void
-glShutdown(void)
+glShutdown(YMB void* pCtx)
 {
 }

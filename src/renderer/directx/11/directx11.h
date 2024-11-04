@@ -65,7 +65,8 @@ b8 D11ResizeImpl(
 		uint32_t							height);
 
 b8 D11DrawImpl(
-		YMB OsState*						pOsState);
+		YMB OsState*						pOsState,
+		YMB void*							pCtx);
 
 b8 PrintHresult(
 		HRESULT								hr);
@@ -78,10 +79,8 @@ b8 D11ResizeImpl(
 		uint32_t							width,
 		uint32_t							height);
 
-b8 D11DrawImpl(
-		YMB OsState*						pOsState);
-
-void D11Shutdown(void);
+void D11Shutdown(
+		YMB void*						pCtx);
 
 #endif // PLATFORM_WINDOWS
 #endif //YDIRECTX11_H

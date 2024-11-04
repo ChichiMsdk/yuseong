@@ -8,6 +8,7 @@
 #include "core/yerror.h"
 
 #include "renderer/vulkan/yvulkan.h"
+#include "renderer/vulkan/vulkan_draw.h"
 #include "renderer/opengl/opengl.h"
 #include "renderer/directx/11/directx11.h"
 #include "renderer/metal/metal.h"
@@ -19,7 +20,8 @@ typedef b8 D11Result;
 /******************************* Vulkan *************************************/
 /****************************************************************************/
 YND YuResult vkDraw(
-		YMB OsState*							pOsState);
+		YMB OsState*							pOsState,
+		void*									pCtx);
 
 YND YuResult vkResize(
 		YMB OsState*							pOsState,
@@ -33,7 +35,8 @@ YND YuResult vkErrorToYuseong(
 /******************************* DirectX ************************************/
 /****************************************************************************/
 YND YuResult D11Draw(
-		OsState*							pOsState);
+		OsState*							pOsState,
+		void*								pCtx);
 
 YND YuResult D11Resize(
 		YMB OsState*						pOsState,
@@ -47,7 +50,8 @@ YND YuResult D11ErrorToYuseong(
 /******************************* OpenGL *************************************/
 /****************************************************************************/
 YND YuResult glDraw(
-		OsState*							pOsState);
+		OsState*							pOsState,
+		void*								pCtx);
 
 YND YuResult glResize(
 		YMB OsState*						pOsState,

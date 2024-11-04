@@ -27,9 +27,10 @@ typedef struct RendererConfig
 
 typedef struct YuRenderer
 {
-	YuResult	(*YuDraw)(OsState *pOsState);
-	YuResult	(*YuResize)(OsState *pOsState, uint32_t width, uint32_t height);
-	void		(*YuShutdown)(void);
+	YuResult	(*YuDraw)(OsState* pOsState, void* pCtx);
+	YuResult	(*YuResize)(OsState* pOsState, uint32_t width, uint32_t height);
+	void		(*YuShutdown)(void* pCtx);
+	void*		internalContext;
 } YuRenderer;
 
 
@@ -57,7 +58,7 @@ YND YuResult YuResizeWindow(
 		uint32_t							width,
 		uint32_t							height);
 
-void YuShutdown(
+void		 YuShutdown(
 		YuRenderer*							pRenderer);
 
 #endif //RENDERER_H
