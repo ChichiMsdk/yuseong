@@ -1,5 +1,6 @@
 #include "mydefines.h"
 
+#ifdef YPLATFORM_WINDOWS
 #include "core/filesystem.h"
 
 #include <stdio.h>
@@ -12,7 +13,7 @@ OsFopen(FILE** pFile, const char* pFilePath, const char* pMode)
 	return errcode;
 }
 
-int
+size_t
 OsFread(void* pBuffer, size_t bufferSize, size_t elementSize, size_t elementCount, FILE* pStream)
 {
 	errno_t errcode = fread_s(pBuffer, bufferSize, elementSize, elementCount, pStream);
@@ -30,3 +31,4 @@ OsStrError(char *pBuffer, size_t bufSize, int errnum)
 {
 	return strerror_s(pBuffer, bufSize, errnum);
 }
+#endif // YPLATFORM_WINDOWS

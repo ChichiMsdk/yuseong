@@ -36,6 +36,7 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	fseek(pStream, 0, SEEK_SET);
 
 	size_t elemCount = 1;
+	/* WARN: What should happen when this fails ? */
 	size_t count = OsFread(pBuffer, fileSize, fileSize, elemCount, pStream);
 	if (count != elemCount)
 	{

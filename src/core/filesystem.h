@@ -11,7 +11,7 @@ int OsFopen(
 		const char*							pFilePath,
 		const char*							pMode);
 
-int OsFread(
+size_t OsFread(
 		void*								pBuffer,
 		size_t								bufferSize,
 		size_t								elementSize,

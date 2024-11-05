@@ -60,6 +60,9 @@
 	void ErrorExit(char *pMsg);
 	bool PathIsDirectory(const char *pPath);
 
+	void PerrorLog(char *pMsg, const char *pFile, int line);
+	#define PERROR_LOG(str) PerrorLog(str, __FILE__, __LINE__)
+
 	#define YO_RDONLY O_RDONLY
 	#define OPEN(a, b) open(a, b)
 	#define CLOSE(a) close(a)
@@ -604,6 +607,12 @@ DestroyFileList(FileList *pFileList)
 	{
 		perror(pMsg);
 		exit(1);
+	}
+	void
+	PerrorLog(char* pStr, const char* pFile, int line)
+	{
+		char buff[1024];
+		sprintf(buff, "%s in %s:%d", pStr, pFile, line);
 	}
 #endif
 /*
