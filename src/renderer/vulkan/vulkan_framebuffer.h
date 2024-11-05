@@ -17,4 +17,9 @@ void vkFramebufferDestroy(
 		VkAllocationCallbacks*				pAllocator,
 		VulkanFramebuffer*					pFramebuffer);
 
+void vkFramebuffersRegenerate(
+		VkContext*							pCtx,
+		VkSwapchain*						pSwapchain,
+		VulkanRenderPass*					pRenderpass);
+
 #endif // VULKAN_FRAMEBUFFER_H

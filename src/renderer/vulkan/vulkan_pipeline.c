@@ -55,15 +55,14 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	}
 
 	VkShaderModuleCreateInfo shaderModuleCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.codeSize = fileSize,
-		.pCode = pBuffer,
+		.sType		= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.pNext		= VK_NULL_HANDLE,
+		.codeSize	= fileSize,
+		.pCode		= pBuffer,
 	};
-	VkShaderModule shaderModule;
-	VK_CHECK(vkCreateShaderModule(device, &shaderModuleCreateInfo, pCtx->pAllocator, &shaderModule));
+	VK_CHECK(vkCreateShaderModule(device, &shaderModuleCreateInfo, pCtx->pAllocator, pOutShaderModule));
+
 	DarrayDestroy(pBuffer);
-	*pOutShaderModule = shaderModule;
 	return VK_SUCCESS;
 }
 
@@ -71,10 +70,10 @@ VkResult
 vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 {
 	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.pSetLayouts = &pCtx->drawImageDescriptorSetLayout,
-		.setLayoutCount = 1,
+		.sType			= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.pNext			= VK_NULL_HANDLE,
+		.pSetLayouts	= &pCtx->drawImageDescriptorSetLayout,
+		.setLayoutCount	= 1,
 	};
 	VK_CHECK(vkCreatePipelineLayout(
 				device,
@@ -86,17 +85,17 @@ vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 	VK_CHECK(vkLoadShaderModule(pCtx, pFilePath, device, &computeDrawShader));
 
 	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.stage = VK_SHADER_STAGE_COMPUTE_BIT,
-		.module = computeDrawShader,
-		.pName = "main",
+		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
+		.module	= computeDrawShader,
+		.pName	= "main",
 	};
 	VkComputePipelineCreateInfo computePipelineCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.layout = pCtx->gradientComputePipelineLayout,
-		.stage = pipelineShaderStageInfo,
+		.sType	= VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.layout	= pCtx->gradientComputePipelineLayout,
+		.stage	= pipelineShaderStageInfo,
 	};
 
 	uint32_t createInfoCount = 1;

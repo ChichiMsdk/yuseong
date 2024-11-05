@@ -6,25 +6,30 @@
 
 #include <TracyC.h>
 
-/* TODO: Resize  !!!!!!!!!!! */
+/* TODO: Resize !!!!!!!!!!! */
 YND VkResult 
 vkImageViewCreate(VkContext* pContext, VkFormat format, VulkanImage* pImage, VkImageAspectFlags aspectFlags)
 {
     VkImageViewCreateInfo viewCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.image = pImage->handle,
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,  // TODO: Make configurable.
-		.format = format,
+		.sType								= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.image								= pImage->handle,
+		.viewType							= VK_IMAGE_VIEW_TYPE_2D,  // TODO: Make configurable.
+		.format								= format,
 
-		// TODO: Make configurable
-		.subresourceRange.baseMipLevel = 0,
-		.subresourceRange.levelCount = 1,
-		.subresourceRange.baseArrayLayer = 0,
-		.subresourceRange.layerCount = 1,
-		.subresourceRange.aspectMask = aspectFlags,
+		/* TODO: Make it configurable */
+		.subresourceRange.baseMipLevel		= 0,
+		.subresourceRange.levelCount		= 1,
+		.subresourceRange.baseArrayLayer	= 0,
+		.subresourceRange.layerCount		= 1,
+		.subresourceRange.aspectMask		= aspectFlags,
 	};
 
-	VK_CHECK(vkCreateImageView(pContext->device.logicalDev, &viewCreateInfo, pContext->pAllocator, &pImage->view));
+	VK_CHECK(vkCreateImageView(
+				pContext->device.logicalDev,
+				&viewCreateInfo,
+				pContext->pAllocator,
+				&pImage->view));
+
 	return VK_SUCCESS;
 }
 /*
@@ -33,29 +38,41 @@ vkImageViewCreate(VkContext* pContext, VkFormat format, VulkanImage* pImage, VkI
  * - Params
  */
 YND VkResult 
-vkImageCreate(VkContext* pContext, VkImageType imageType, uint32_t width, uint32_t height, VkFormat format,
-		VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryFlags, b32 bCreateView,
-		VkImageAspectFlags viewAspectFlags, VulkanImage* pOutImage, YMB VkExtent3D extent, uint32_t mipLevels)
+vkImageCreate(
+		VkContext*							pContext,
+		VkImageType							imageType,
+		uint32_t							width,
+		uint32_t							height,
+		VkFormat							format,
+		VkImageTiling						tiling,
+		VkImageUsageFlags					usage,
+		VkMemoryPropertyFlags				memoryFlags,
+		b32									bCreateView,
+		VkImageAspectFlags					viewAspectFlags,
+		VulkanImage*						pOutImage,
+		YMB VkExtent3D						extent,
+		uint32_t							mipLevels)
 {
     pOutImage->width = width;
     pOutImage->height = height;
 
     VkImageCreateInfo imageCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.imageType = imageType,
-		.extent = extent,
-		.mipLevels = mipLevels,     // TODO: Support mip mapping
-		.arrayLayers = 1,   // TODO: Support number of layers in the image.
-		.format = format,
-		.tiling = tiling,
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		.usage = usage,
-		.samples = VK_SAMPLE_COUNT_1_BIT,          // TODO: Configurable sample count.
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE  // TODO: Configurable sharing mode.
+		.sType			= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType		= imageType,
+		.extent			= extent,
+		.mipLevels		= mipLevels,				// TODO: Support mip mapping
+		.arrayLayers	= 1,						// TODO: Support number of layers in the image.
+		.format			= format,
+		.tiling			= tiling,
+		.initialLayout	= VK_IMAGE_LAYOUT_UNDEFINED,
+		.usage			= usage,
+		.samples		= VK_SAMPLE_COUNT_1_BIT,	// TODO: Configurable sample count.
+		.sharingMode	= VK_SHARING_MODE_EXCLUSIVE	// TODO: Configurable sharing mode.
 	};
+
     VK_CHECK(vkCreateImage(pContext->device.logicalDev, &imageCreateInfo, pContext->pAllocator, &pOutImage->handle));
 
-    // Query memory requirements.
+    /* NOTE: Query memory requirements. */
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(pContext->device.logicalDev, pOutImage->handle, &memoryRequirements);
 
@@ -68,9 +85,9 @@ vkImageCreate(VkContext* pContext, VkImageType imageType, uint32_t width, uint32
         YERROR("Required memory type not found. Image not valid.");
 
     VkMemoryAllocateInfo memAllocInfo = {
-		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.allocationSize = memoryRequirements.size,
-		.memoryTypeIndex = memoryType,
+		.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.allocationSize		= memoryRequirements.size,
+		.memoryTypeIndex	= memoryType,
 	};
 	VK_ASSERT(vkAllocateMemory(pContext->device.logicalDev, &memAllocInfo, pContext->pAllocator, &pOutImage->memory));
 
@@ -88,13 +105,14 @@ vkImageCreate(VkContext* pContext, VkImageType imageType, uint32_t width, uint32
 b8
 vkDeviceDetectDepthFormat(VulkanDevice *pDevice)
 {
-	const uint64_t candidateCount = 3;
 	VkFormat pCandidates[3] = {
 		VK_FORMAT_D32_SFLOAT,
 		VK_FORMAT_D32_SFLOAT_S8_UINT,
-		VK_FORMAT_D24_UNORM_S8_UINT};
-
+		VK_FORMAT_D24_UNORM_S8_UINT
+	};
+	const uint64_t candidateCount = 3;
 	uint32_t flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
 	for (uint64_t i = 0; i < candidateCount; i++)
 	{
 		VkFormatProperties properties;
@@ -117,8 +135,8 @@ YND VkResult
 vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapchain* pSwapchain)
 {
     VkExtent2D swapchainExtent = {
-		.width = width, 
-		.height = height
+		.width	= width, 
+		.height	= height,
 	};
     pSwapchain->maxFrameInFlight = 2;
 
@@ -127,9 +145,10 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     for (uint32_t i = 0; i < pContext->device.swapchainSupport.formatCount; ++i)
 	{
         VkSurfaceFormatKHR format = pContext->device.swapchainSupport.pFormats[i];
+
         /* NOTE: Preferred formats */
-        if (format.format == VK_FORMAT_B8G8R8A8_UNORM &&
-            format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM 
+				&& format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
             pSwapchain->imageFormat = format;
             bFound = TRUE;
@@ -138,32 +157,39 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     }
     if (!bFound)
         pSwapchain->imageFormat = pContext->device.swapchainSupport.pFormats[0];
+
     /* VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR; */
-    VkPresentModeKHR present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     for (uint32_t i = 0; i < pContext->device.swapchainSupport.presentModeCount; ++i)
 	{
         VkPresentModeKHR mode = pContext->device.swapchainSupport.pPresentModes[i];
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
 		{
-            present_mode = mode;
+            presentMode = mode;
             break;
         }
     }
     /* NOTE: Requery swapchain support. */
     VK_CHECK(vkDeviceQuerySwapchainSupport(
-				pContext->device.physicalDev, pContext->surface, &pContext->device.swapchainSupport));
+				pContext->device.physicalDev,
+				pContext->surface,
+				&pContext->device.swapchainSupport));
 
     /* NOTE: Swapchain extent */
     if (pContext->device.swapchainSupport.capabilities.currentExtent.width != UINT32_MAX)
-        swapchainExtent = pContext->device.swapchainSupport.capabilities.currentExtent;
+	{
+		swapchainExtent = pContext->device.swapchainSupport.capabilities.currentExtent;
+	}
 
     /* NOTE: Clamp to the value allowed by the GPU. */
     VkExtent2D min = pContext->device.swapchainSupport.capabilities.minImageExtent;
     VkExtent2D max = pContext->device.swapchainSupport.capabilities.maxImageExtent;
+
     swapchainExtent.width = YCLAMP(swapchainExtent.width, min.width, max.width);
     swapchainExtent.height = YCLAMP(swapchainExtent.height, min.height, max.height);
 
     uint32_t imageCount = pContext->device.swapchainSupport.capabilities.minImageCount + 1;
+
     if (pContext->device.swapchainSupport.capabilities.maxImageCount > 0 
 			&& imageCount > pContext->device.swapchainSupport.capabilities.maxImageCount)
 	{
@@ -172,15 +198,15 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
     /* NOTE: Swapchain create info */
     VkSwapchainCreateInfoKHR swapchainCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-    	.surface = pContext->surface,
-    	.minImageCount = imageCount,
-    	.imageFormat = pSwapchain->imageFormat.format,
-    	.imageColorSpace = pSwapchain->imageFormat.colorSpace,
-    	.imageExtent = swapchainExtent,
-		.imageArrayLayers = 1,
-		.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		/* .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT */
+		.sType				= VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+    	.surface			= pContext->surface,
+    	.minImageCount		= imageCount,
+    	.imageFormat		= pSwapchain->imageFormat.format,
+    	.imageColorSpace	= pSwapchain->imageFormat.colorSpace,
+    	.imageExtent		= swapchainExtent,
+		.imageArrayLayers	= 1,
+		.imageUsage			= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		/* .imageUsage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT */
 	};
 
 	/* NOTE: Setup the queue family indices */
@@ -190,24 +216,27 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 	};
 	if (pContext->device.graphicsQueueIndex != pContext->device.presentQueueIndex)
 	{
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		swapchainCreateInfo.queueFamilyIndexCount = 2;
-		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		swapchainCreateInfo.imageSharingMode		= VK_SHARING_MODE_CONCURRENT;
+		swapchainCreateInfo.queueFamilyIndexCount	= 2;
+		swapchainCreateInfo.pQueueFamilyIndices		= queueFamilyIndices;
 	}
 	else
 	{
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		swapchainCreateInfo.queueFamilyIndexCount = 0;
-		swapchainCreateInfo.pQueueFamilyIndices = 0;
+		swapchainCreateInfo.imageSharingMode		= VK_SHARING_MODE_EXCLUSIVE;
+		swapchainCreateInfo.queueFamilyIndexCount	= 0;
+		swapchainCreateInfo.pQueueFamilyIndices 	= 0;
 	}
 
-    swapchainCreateInfo.preTransform = pContext->device.swapchainSupport.capabilities.currentTransform;
-    swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchainCreateInfo.presentMode = present_mode;
-    swapchainCreateInfo.clipped = VK_TRUE;
-    swapchainCreateInfo.oldSwapchain = 0;
+    swapchainCreateInfo.preTransform	= pContext->device.swapchainSupport.capabilities.currentTransform;
+    swapchainCreateInfo.compositeAlpha	= VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchainCreateInfo.presentMode		= presentMode;
+    swapchainCreateInfo.clipped			= VK_TRUE;
+    swapchainCreateInfo.oldSwapchain	= 0;
 
-    VK_CHECK(vkCreateSwapchainKHR(pContext->device.logicalDev, &swapchainCreateInfo, pContext->pAllocator,
+    VK_CHECK(vkCreateSwapchainKHR(
+				pContext->device.logicalDev,
+				&swapchainCreateInfo,
+				pContext->pAllocator,
 				&pSwapchain->handle));
 
     /* NOTE: Start with a zero frame index. */
@@ -216,38 +245,36 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     /* NOTE: Images */
     pSwapchain->imageCount = 0;
     VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount, 0));
-    /*
-     * if (!pSwapchain->pImages)
-	 * {
-     *     pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
-     * }
-     * if (!pSwapchain->pViews)
-	 * {
-     *     pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
-     * }
-     */
+
 	pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
 	pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
-	VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount,
-				pSwapchain->pImages));
-	VkImageViewCreateInfo viewInfo = {0};
 
+	VK_CHECK(vkGetSwapchainImagesKHR(
+				pContext->device.logicalDev,
+				pSwapchain->handle,
+				&pSwapchain->imageCount,
+				pSwapchain->pImages));
+
+	VkImageViewCreateInfo viewInfo = {0};
     /* NOTE: Views */
     for (uint32_t i = 0; i < pSwapchain->imageCount; ++i)
 	{
 		/* YINFO("i: %u/%u", i + 1, pSwapchain->imageCount); */
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = pSwapchain->pImages[i];
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = pSwapchain->imageFormat.format;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.sType								= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image								= pSwapchain->pImages[i];
+        viewInfo.viewType							= VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format								= pSwapchain->imageFormat.format;
+        viewInfo.subresourceRange.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel		= 0;
+        viewInfo.subresourceRange.levelCount		= 1;
+        viewInfo.subresourceRange.baseArrayLayer	= 0;
+        viewInfo.subresourceRange.layerCount		= 1;
 
-        VK_CHECK(vkCreateImageView(pContext->device.logicalDev, &viewInfo, pContext->pAllocator, 
-				&pSwapchain->pViews[i]));
+        VK_CHECK(vkCreateImageView(
+					pContext->device.logicalDev,
+					&viewInfo,
+					pContext->pAllocator,
+					&pSwapchain->pViews[i]));
     }
 
     /* NOTE: Depth resources */
@@ -259,9 +286,9 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     }
     /* NOTE: Create depth image and its view. */
 	VkExtent3D extent = {
-		.width = swapchainExtent.width,
-		.height = swapchainExtent.height,
-		.depth = 1,
+		.width	= swapchainExtent.width,
+		.height	= swapchainExtent.height,
+		.depth	= 1,
 	};
 	pSwapchain->extent = extent;
 	VkImageUsageFlags swapchainImageUsageFlag = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -284,12 +311,14 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
 	/* NOTE: Create the drawable image */
 	DrawImage drawImage = {
-		.format = VK_FORMAT_R16G16B16A16_SFLOAT,
-		.extent = {
-			.width = width,
-			.height = height,
-			.depth = 1,
+		.format	= VK_FORMAT_R16G16B16A16_SFLOAT,
+
+		.extent	= {
+			.width	= width,
+			.height	= height,
+			.depth	= 1,
 		},
+
 	};
 	VkImageUsageFlags drawImageUsageFlag =
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
@@ -312,8 +341,8 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				&drawImage.image,
 				drawImage.extent,
-				mipLevels
-				));
+				mipLevels));
+
 	pContext->drawImage = drawImage;
 
     YINFO("Swapchain created successfully.");
@@ -331,16 +360,21 @@ vkSwapchainRecreate(VkContext *pCtx, uint32_t width, uint32_t height, VkSwapchai
 }
 
 YND VkResult 
-vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint64_t timeoutNS,
-		VkSemaphore semaphoreImageAvailable, VkFence fence, uint32_t* pOutImageIndex)
+vkSwapchainAcquireNextImageIndex(
+		VkContext*							pCtx,
+		VkSwapchain*						pSwapchain,
+		uint64_t							timeoutNS,
+		VkSemaphore							semaphoreImageAvailable,
+		VkFence								fence,
+		uint32_t*							pOutImageIndex)
 {
     VkResult result = vkAcquireNextImageKHR(
-        pCtx->device.logicalDev,
-        pSwapchain->handle,
-        timeoutNS,
-        semaphoreImageAvailable,
-        fence,
-        pOutImageIndex);
+			pCtx->device.logicalDev,
+			pSwapchain->handle,
+			timeoutNS,
+			semaphoreImageAvailable,
+			fence,
+			pOutImageIndex);
 	/*
 	 * NOTE: on AMD you can resize window and like you say “just wait” it never throw VK_ERROR_OUT_OF_DATE_KHR, 
 	 * but on Nvidia its always VK_ERROR_OUT_OF_DATE_KHR no matter what
@@ -350,7 +384,7 @@ vkSwapchainAcquireNextImageIndex(VkContext* pCtx, VkSwapchain* pSwapchain, uint6
 	 */
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
-		// Trigger pSwapchain recreation, then boot out of the render loop.
+		/* NOTE: Trigger pSwapchain recreation, then boot out of the render loop. */
 		VK_RESULT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
 	}
 	/* WARN: Is this fatal ?! */
@@ -368,13 +402,13 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 {
 	// Return the image to the swapchain for presentation.
 	VkPresentInfoKHR presentInfo = {
-		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &semaphoreRenderComplete,
-		.swapchainCount = 1,
-		.pSwapchains = &pSwapchain->handle,
-		.pImageIndices = &presentImageIndex,
-		.pResults = 0,
+		.sType				= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.waitSemaphoreCount	= 1,
+		.pWaitSemaphores	= &semaphoreRenderComplete,
+		.swapchainCount		= 1,
+		.pSwapchains		= &pSwapchain->handle,
+		.pImageIndices		= &presentImageIndex,
+		.pResults			= VK_NULL_HANDLE,
 	};
 
 	TracyCFrameMark;
@@ -382,7 +416,10 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
 		YDEBUG("%s", string_VkResult(result));
-		// Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
+		/* 
+		 * NOTE: Swapchain is out of date, suboptimal or a framebuffer resize has occurred.
+		 * Trigger swapchain recreation.
+		 */
 		VK_ASSERT(vkSwapchainRecreate(pCtx, pCtx->framebufferWidth, pCtx->framebufferHeight, pSwapchain));
 	}
 	else if (result != VK_SUCCESS)
@@ -390,7 +427,7 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 		YFATAL("Failed to present swap chain image!");
 		return result;
 	}
-	/* Increment (and loop) the index. */
+	/* NOTE: Increment (and loop) the index. */
 	pCtx->currentFrame = (pCtx->currentFrame + 1) % pSwapchain->maxFrameInFlight;
 	pCtx->nbFrames++;
 	return VK_SUCCESS;
@@ -435,10 +472,11 @@ vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
 YND VkResult
 vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,VkSwapchainSupportInfo* pOutSupportInfo)
 {
-    // Surface capabilities
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR( physDevice, surface, &pOutSupportInfo->capabilities));
-    // Surface formats
-    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR( physDevice, surface, &pOutSupportInfo->formatCount, 0));
+	/* NOTE: Surface capabilities */
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice, surface, &pOutSupportInfo->capabilities));
+
+    /* NOTE: Surface formats */
+    VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physDevice, surface, &pOutSupportInfo->formatCount, VK_NULL_HANDLE));
 
     if (pOutSupportInfo->formatCount != 0)
 	{
@@ -448,10 +486,18 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
 				yAlloc(sizeof(VkSurfaceFormatKHR) * pOutSupportInfo->formatCount, MEMORY_TAG_RENDERER);
         }
 		VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-					physDevice, surface, &pOutSupportInfo->formatCount, pOutSupportInfo->pFormats));
+					physDevice,
+					surface,
+					&pOutSupportInfo->formatCount,
+					pOutSupportInfo->pFormats));
     }
-    // Present modes
-    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &pOutSupportInfo->presentModeCount, 0));
+    /* NOTE: Present modes */
+    VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
+				physDevice,
+				surface,
+				&pOutSupportInfo->presentModeCount,
+				VK_NULL_HANDLE));
+
     if (pOutSupportInfo->presentModeCount != 0)
 	{
         if (!pOutSupportInfo->pPresentModes)
@@ -459,8 +505,12 @@ vkDeviceQuerySwapchainSupport(VkPhysicalDevice physDevice, VkSurfaceKHR surface,
             pOutSupportInfo->pPresentModes = 
 				yAlloc(sizeof(VkPresentModeKHR) * pOutSupportInfo->presentModeCount, MEMORY_TAG_RENDERER);
         }
+
         VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-					physDevice, surface, &pOutSupportInfo->presentModeCount, pOutSupportInfo->pPresentModes));
+					physDevice,
+					surface,
+					&pOutSupportInfo->presentModeCount,
+					pOutSupportInfo->pPresentModes));
     }
 	return VK_SUCCESS;
 }

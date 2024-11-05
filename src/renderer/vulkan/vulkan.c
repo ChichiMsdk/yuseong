@@ -34,27 +34,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL
 vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
 
-static void
-vkFramebuffersRegenerate(VkContext* pCtx, VkSwapchain* pSwapchain, VulkanRenderPass* pRenderpass)
-{
-	for (uint32_t i = 0; i < pSwapchain->imageCount; i++)
-	{
-		/*
-		 * TODO: make this dynamic and based on the currently configured attachments 
-		 * if using manual Renderpasses
-		 */
-		uint32_t attachmentCount = 2;
-		VkImageView pAttachments[] = { pSwapchain->pViews[i], pSwapchain->depthAttachment.view };
-		vkFramebufferCreate(
-				pCtx,
-				pRenderpass,
-				pCtx->framebufferWidth,
-				pCtx->framebufferHeight,
-				attachmentCount,
-				pAttachments,
-				&pSwapchain->pFramebuffers[i]);
-	}
-}
+
 
 static inline void
 SyncInit(VkContext* pCtx, VulkanDevice device)
@@ -69,25 +49,110 @@ SyncInit(VkContext* pCtx, VulkanDevice device)
      */
 	for (uint8_t i = 0; i < pCtx->swapchain.maxFrameInFlight; i++)
 	{
-		VkSemaphoreCreateInfo semaphoreCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+		VkSemaphoreCreateInfo semaphoreCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
+		};
 		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresAvailableImage[i]);
 		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresQueueComplete[i]);
 
 		/* NOTE: Assuming that the app CANNOT run without fences therefore we abort() in case of failure */
 		VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
 	}
+	/* NOTE: Fence for the immediate submit commands */
 	VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence))
+}
+
+static inline VkResult
+DebugCallbackSetup(VkContext* pCtx)
+{
+	YDEBUG("Creating Vulkan debugger...");
+	uint32_t logSeverity = 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+	// | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+	//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+
+	VkDebugUtilsMessageTypeFlagsEXT messageType = 
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
+		.sType				= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		.messageSeverity	= logSeverity,
+		.pfnUserCallback	= vkDebugCallback,
+		.messageType		= messageType,
+	};
+
+	PFN_vkCreateDebugUtilsMessengerEXT pfnDebug =
+		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(pCtx->instance, "vkCreateDebugUtilsMessengerEXT");
+	KASSERT_MSG(pfnDebug, "Failed to create debug messenger!");
+	VK_CHECK(pfnDebug(pCtx->instance, &debugCreateInfo, pCtx->pAllocator, &pCtx->debugMessenger));
+	YDEBUG("Vulkan debugger created.");
+
+	return VK_SUCCESS;
+}
+
+static inline VkResult
+DebugRequiredExtensionValidationLayers(
+		const char***						pppRequiredExtensions,
+		const char***						pppRequiredValidationLayerNames,
+		uint32_t*							pRequiredValidationLayerCount)
+{
+	DarrayPush(*pppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	YDEBUG("Required extensions:");
+	uint32_t length = DarrayLength(*pppRequiredExtensions);
+	for (uint32_t i = 0; i < length; ++i)
+		YDEBUG((*pppRequiredExtensions)[i]);
+
+	/* NOTE: The list of validation layers required. */
+	YINFO("Validation layers enabled. Enumerating...");
+	*pppRequiredValidationLayerNames = DarrayCreate(const char*);
+	DarrayPush(*pppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
+	*pRequiredValidationLayerCount = DarrayLength(*pppRequiredValidationLayerNames);
+
+	// Obtain list of available validation layers.
+	uint32_t availableLayerCount = 0;
+	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
+
+	VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
+	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
+
+	//  Verify all required layers are available.
+	for (uint32_t i = 0; i < *pRequiredValidationLayerCount; ++i)
+	{
+		YINFO("Searching for layer: %s...", (*pppRequiredValidationLayerNames)[i]);
+		b8 bFound = FALSE;
+		for (uint32_t j = 0; j < availableLayerCount; ++j)
+		{
+			if (!strcmp((*pppRequiredValidationLayerNames)[i], pAvailableLayers[j].layerName))
+			{ 
+				bFound = TRUE; 
+				YINFO("Found."); 
+				break; 
+			}
+		}
+		if (!bFound) 
+		{ 
+			YFATAL("Required validation layer is missing: %s", (*pppRequiredValidationLayerNames)[i]); 
+			exit(1); 
+		}
+	}
+	DarrayDestroy(pAvailableLayers);
+	YINFO("All required validation layers are present.");
+	return VK_SUCCESS;
 }
 
 YND VkResult
 vkInit(OsState *pOsState, void** ppOutCtx)
 {
-	char*			pGPUName = "NVIDIA GeForce RTX 3080";
-	const char**	ppRequiredValidationLayerNames = NULL;
-	uint32_t		requiredValidationLayerCount = 0;
-	const char**	ppRequiredExtensions = NULL;
-	uint32_t		requiredExtensionCount = 0;
-	VkContext*		pCurrentCtx = NULL;
+	char*			pGPUName						= "NVIDIA GeForce RTX 3080";
+	const char**	ppRequiredValidationLayerNames	= NULL;
+	uint32_t		requiredValidationLayerCount	= 0;
+	const char**	ppRequiredExtensions			= NULL;
+	uint32_t		requiredExtensionCount			= 0;
+	VkContext*		pCurrentCtx						= NULL;
 
 	/* 
 	 * NOTE: This is just for fun, multiple context is complex
@@ -107,89 +172,43 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	OsFramebufferGetDimensions(pOsState, &pCurrentCtx->framebufferWidth, &pCurrentCtx->framebufferHeight);
 
 #ifdef DEBUG
-		DarrayPush(ppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		YDEBUG("Required extensions:");
-		uint32_t length = DarrayLength(ppRequiredExtensions);
-		for (uint32_t i = 0; i < length; ++i)
-			YDEBUG(ppRequiredExtensions[i]);
-
-		// The list of validation layers required.
-		YINFO("Validation layers enabled. Enumerating...");
-		ppRequiredValidationLayerNames = DarrayCreate(const char*);
-		DarrayPush(ppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
-		requiredValidationLayerCount = DarrayLength(ppRequiredValidationLayerNames);
-		
-		// Obtain list of available validation layers.
-		uint32_t availableLayerCount = 0;
-		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
-
-		VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
-		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
-
-		//  Verify all required layers are available.
-		for (uint32_t i = 0; i < requiredValidationLayerCount; ++i)
-		{
-			YINFO("Searching for layer: %s...", ppRequiredValidationLayerNames[i]);
-			b8 bFound = FALSE;
-			for (uint32_t j = 0; j < availableLayerCount; ++j)
-			{
-				if (!strcmp(ppRequiredValidationLayerNames[i], pAvailableLayers[j].layerName))
-				{ bFound = TRUE; YINFO("Found."); break; }
-			}
-			if (!bFound) { YFATAL("Required validation layer is missing: %s", ppRequiredValidationLayerNames[i]); exit(1); }
-		}
-		DarrayDestroy(pAvailableLayers);
-		YINFO("All required validation layers are present.");
+	DebugRequiredExtensionValidationLayers(
+			&ppRequiredExtensions,
+			&ppRequiredValidationLayerNames,
+			&requiredValidationLayerCount);
 #endif // DEBUG
 
 	requiredExtensionCount = DarrayLength(ppRequiredExtensions);
 	VkApplicationInfo pAppInfo = {
-		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		.pApplicationName = "yuseong",
-		.pEngineName = "yuseongEngine",
-		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
-		.apiVersion = VK_API_VERSION_1_3
+		.sType						= VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pApplicationName			= "yuseong",
+		.pEngineName				= "yuseongEngine",
+		.applicationVersion			= VK_MAKE_VERSION(1, 0, 0),
+		.engineVersion				= VK_MAKE_VERSION(1, 0, 0),
+		.apiVersion					= VK_API_VERSION_1_3
 	};
 	VkInstanceCreateInfo pCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.flags = 0,
-		.pApplicationInfo = &pAppInfo,
-		.enabledLayerCount = requiredValidationLayerCount,
-		.ppEnabledLayerNames = ppRequiredValidationLayerNames,
-		/* .enabledExtensionCount = darray_length(ppRequired_extensions), */
-		.enabledExtensionCount = requiredExtensionCount,
-		.ppEnabledExtensionNames = ppRequiredExtensions
+		.sType						= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pNext						= VK_NULL_HANDLE,
+		.flags						= 0,
+		.pApplicationInfo			= &pAppInfo,
+		.enabledLayerCount			= requiredValidationLayerCount,
+		.ppEnabledLayerNames		= ppRequiredValidationLayerNames,
+		.ppEnabledExtensionNames	= ppRequiredExtensions,
+		.enabledExtensionCount		= requiredExtensionCount,
+		/* .enabledExtensionCount		= darray_length(ppRequired_extensions), */
 	};
 
-	/* NOTE: CreateInstance and vkSurface */
+	/* NOTE: Create vkInstance */
 	VK_ASSERT(vkCreateInstance(&pCreateInfo, pCurrentCtx->pAllocator, &pCurrentCtx->instance));
+
+	/* NOTE: Create vkSurface  */
 	VK_CHECK(OsCreateVkSurface(pOsState, pCurrentCtx));
+
 	YDEBUG("Vulkan surface created");
 
 #ifdef DEBUG
-		YDEBUG("Creating Vulkan debugger...");
-		uint32_t logSeverity = 
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-			// | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-			//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
-		debugCreateInfo.messageSeverity = logSeverity;
-		debugCreateInfo.messageType = 
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | 
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | 
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
-		debugCreateInfo.pfnUserCallback = vkDebugCallback;
-
-		PFN_vkCreateDebugUtilsMessengerEXT func =
-			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(pCurrentCtx->instance, "vkCreateDebugUtilsMessengerEXT");
-		KASSERT_MSG(func, "Failed to create debug messenger!");
-		VK_CHECK(func(pCurrentCtx->instance, &debugCreateInfo, pCurrentCtx->pAllocator, &pCurrentCtx->debugMessenger));
-		YDEBUG("Vulkan debugger created.");
+	DebugCallbackSetup(pCurrentCtx);
 #endif // DEBUG
 
 	/* NOTE: Creating the device */
@@ -203,10 +222,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	VK_CHECK(vkCommandBufferCreate(pCurrentCtx));
 
 	YMB RgbaFloat color = { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
-	YMB RectFloat rect = { 
-		.x = 0.0f, .y = 0.0f, 
-		.w = pCurrentCtx->framebufferWidth, .h = pCurrentCtx->framebufferHeight,
-	};
+	YMB RectFloat rect = { .x = 0.0f, .y = 0.0f, .w = width, .h = height, };
 	YMB f32 depth = 1.0f;
 	YMB f32 stencil = 0.0f;
 
@@ -239,12 +255,13 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 	VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, pShaderFilePath));
 
-	YINFO("Vulkan renderer initialized.");
-
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredValidationLayerNames);
 	DarrayDestroy(ppRequiredExtensions);
+
 	(*ppOutCtx) = pCurrentCtx;
+
+	YINFO("Vulkan renderer initialized.");
 	return VK_SUCCESS;
 }
 
@@ -363,7 +380,6 @@ vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDeb
 	}
 	return VK_FALSE;
 }
-
 /*
  * #<{(| TODO: Add some sort of config file |)}>#
  * YND VkResult
@@ -524,5 +540,3 @@ vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDeb
  * 	return VK_SUCCESS;
  * }
  */
-
-

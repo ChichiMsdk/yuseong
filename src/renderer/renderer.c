@@ -37,7 +37,7 @@ RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rende
 			YFATAL("Renderer type %s is not available for this build", pRendererType[rendererConfig.type]);
 #endif
 		case RENDERER_TYPE_D3D11:
-#ifdef PLATFORM_WINDOWS
+#if defined (PLATFORM_WINDOWS) && defined (YDIRECTX)
 			if (D11ErrorToYuseong(D11Init(pOsState, rendererConfig.bVsync))!= YU_SUCCESS)
 				goto error;
 			(*ppOutRenderer)->YuDraw = D11Draw;
@@ -49,7 +49,7 @@ RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rende
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
 			goto error;
 #else
-			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
+			YFATAL("Renderer type %s is not available for this build", pRendererType[rendererConfig.type]);
 			goto finish;
 #endif
 		case RENDERER_TYPE_METAL:
@@ -57,7 +57,7 @@ RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rende
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
 			goto error;
 #else
-			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
+			YFATAL("Renderer type %s is not available for this build", pRendererType[rendererConfig.type]);
 			goto finish;
 #endif
 		case RENDERER_TYPE_SOFTWARE:
@@ -126,7 +126,7 @@ vkErrorToYuseong(VkResult result)
 /****************************************************************************/
 /******************************* DirectX ************************************/
 /****************************************************************************/
-#ifdef PLATFORM_WINDOWS
+#if defined (PLATFORM_WINDOWS) && defined (YDIRECTX)
 YND YuResult
 D11Draw(OsState* pOsState, void* pCtx)
 {
@@ -155,7 +155,6 @@ D11ErrorToYuseong(int result)
 /****************************************************************************/
 /******************************* OpenGL *************************************/
 /****************************************************************************/
-
 #ifdef YOPENGL
 YND YuResult
 glDraw(OsState* pOsState, YMB void* pCtx)

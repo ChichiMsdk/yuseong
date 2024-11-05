@@ -3,7 +3,7 @@ EXTENSION =
 OUTPUT =$(NAME)$(EXTENSION)
 BUILD_DIR =build
 OBJ_DIR =build/obj
-TESTDIR =obj
+OBJ =obj
 GLSLC =glslc
 CC =clang-19
 CPP =clang++
@@ -83,38 +83,37 @@ ifdef TRACY_USE
 	LIBS +=-lc++
 endif
 
-FILES =$(shell find $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
+MYFIND =find
+
+FILES =$(shell $(MYFIND) $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
-CORE_FILES =$(shell find $(CORE_DIR) -type f -name '*.c')
+CORE_FILES =$(shell $(MYFIND) $(CORE_DIR) -type f -name '*.c')
 CORE_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_FILES))
 
-# WIN32_FILES =$(shell find $(WIN32_DIR) -type f -name '*.c')
-# WIN32_OBJS =$(patsubst $(WIN32_DIR)/%.c, $(OBJ_DIR)/%.o, $(WIN32_FILES))
-
-LINUX_FILES =$(shell find $(LINUX_DIR) -type f -name '*.c')
+LINUX_FILES =$(shell $(MYFIND) $(LINUX_DIR) -type f -name '*.c')
 LINUX_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(LINUX_FILES))
 
-VULKAN_FILES =$(shell find $(VULKAN_DIR) -type f -name '*.c')
+VULKAN_FILES =$(shell $(MYFIND) $(VULKAN_DIR) -type f -name '*.c')
 VULKAN_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(VULKAN_FILES))
 
-# METAL_FILES =$(shell find $(METAL_DIR) -type f -name '*.c')
+# METAL_FILES =$(shell $(MYFIND) $(METAL_DIR) -type f -name '*.c')
 # METAL_OBJS =$(patsubst $(METAL_DIR)/%.c, $(OBJ_DIR)/%.o, $(METAL_FILES))
 
-# DIRECTX_FILES =$(shell find $(DIRECTX_DIR) -type f -name '*.c')
+# DIRECTX_FILES =$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
 # DIRECTX_OBJS =$(patsubst $(DIRECTX_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
 
-# OPENGL_FILES =$(shell find $(OPENGL_DIR) -type f -name '*.c')
+# OPENGL_FILES =$(shell $(MYFIND) $(OPENGL_DIR) -type f -name '*.c')
 # OPENGL_OBJS =$(patsubst $(OPENGL_DIR)/%.c, $(OBJ_DIR)/%.o, $(OPENGL_FILES))
 
-RENDERER_FILES =$(shell find $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
+RENDERER_FILES =$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
 RENDERER_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
 
-IMGUI_FILES =$(shell find $(IMGUI_DIR) -type f -name '*.cpp')
+IMGUI_FILES =$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
 IMGUI_OBJS =$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
 
 SHADER_DIR =$(SRC_DIR)/shaders
-SHADER_FILES =$(shell find $(SRC_DIR) -type f -name '*.comp')
+SHADER_FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
 SHADER_OBJS =$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
 
 ############################## COLORS ###################################
@@ -169,7 +168,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 ############################ MAKE_DIR ###################################
 
-$(BUILD_DIR)/$(TESTDIR):
+$(BUILD_DIR)/$(OBJ):
 	@mkdir -p build/obj
 
 ############################ COMPILE_FLAGS ##############################
@@ -189,6 +188,6 @@ fclean: clean
 	rm -f compile_commands.json
 
 re: clean
-	make --no-print-directory -f Makefile.linux -j24 all
+	@make --no-print-directory -f Makefile.linux -j24 all
 
-.PHONY: all clean re bat
+.PHONY: all clean re

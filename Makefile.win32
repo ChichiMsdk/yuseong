@@ -2,7 +2,6 @@ NAME =yuseong
 EXTENSION =.exe
 OUTPUT =$(NAME)$(EXTENSION)
 
-SRC_DIR =src
 BUILD_DIR =build
 OBJ_DIR =$(BUILD_DIR)/obj
 OBJ =obj
@@ -13,7 +12,7 @@ CPP =clang++
 
 CCJSON =compile_commands.json
 
-JASB =jasb.exe
+JASB =jasb$(EXTENSION)
 JASB_FILE =jasb.c
 JASB_CMD = *.o.json
 JASB_LIB =-luser32
@@ -21,9 +20,19 @@ JASB_LIB =-luser32
 GLFW3 =
 TESTING =
 
+SRC_DIR =src
+WIN32_DIR =$(SRC_DIR)/win32
+CORE_DIR =$(SRC_DIR)/core
+RENDERER_DIR =$(SRC_DIR)/renderer
+VULKAN_DIR =$(RENDERER_DIR)/vulkan
+
+OPENGL_DIR =$(RENDERER_DIR)/opengl
+DIRECTX_DIR =$(RENDERER_DIR)/directx
+IMGUI_DIR =$(SRC_DIR)/imgui
+
 INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include
-INCLUDE_DIRS +=-IC:\Lib\tracy-0.11.1\public -IC:\Lib\tracy-0.11.1\public\tracy
-INCLUDE_DIRS +=-IC:\Lib\glfw\include
+INCLUDE_DIRS +=-IC:/Lib/tracy-0.11.1/public -IC:/Lib/tracy-0.11.1/public/tracy
+INCLUDE_DIRS +=-IC:/Lib/glfw/include
 INCLUDE_DIRS +=-Isrc/renderer/opengl
 
 LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 -lopengl32
@@ -31,39 +40,34 @@ LIBS +=-lglfw3_mt
 LIBS +=-ld3dcompiler -ld3d11 -ldxgi -ldxguid
 
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
-LIB_PATH +=-LC:\Lib\glfw\lib-vc2022
+LIB_PATH +=-LC:/Lib/glfw/lib-vc2022
 
-ifdef CPP_USE
-	CFLAGS =
-endif
-# CFLAGS +=-std=c23
 ifndef CPP_USE
-	CFLAGS =-Wall -Wextra -Werror
+	CFLAGS +=-Wall -Wextra -Werror
 endif
-
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
 CFLAGS +=-Wno-uninitialized
 CFLAGS +=-DPLATFORM_WINDOWS
+# CFLAGS +=-std=c23
 
+ifdef CPP_USE
+	CFLAGS +=
+endif
 ifdef TESTING
 	CFLAGS +=-DTESTING
 endif
-
 ifdef RELEASE_USE
 	CFLAGS +=-Wvarargs -O3
 	CFLAGS +=-D_RELEASE -DRELEASE -DYURELEASE
 endif
-
 ifndef RELEASE_USE
 	CFLAGS +=-g3 -Wvarargs -O0
 	CFLAGS +=-D_DEBUG -DDEBUG
 endif
-
 ifdef ASAN_USE
 	CFLAGS +=-fsanitize=address
 endif
-
 ifdef TRACY_USE
 	CFLAGS +=-DTRACY_ENABLE
 
@@ -72,51 +76,121 @@ ifdef TRACY_USE
 	CPP_FILES =$(wildcard $(SRC_DIR)/*.cpp)
 	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 endif
-
 ifdef CPP_USE
-	CC =clang++
 	CPP += CFLAGS
 endif
+# CC =clang++
+#
+MYFIND =C:/msys64/usr/bin/find.exe
 
-MYFIND =C:\msys64\usr\bin\find.exe
-
-FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.c')
+FILES =$(shell $(MYFIND) $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
+
+CORE_FILES =$(shell $(MYFIND) $(CORE_DIR) -type f -name '*.c')
+CORE_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_FILES))
+
+WIN32_FILES =$(shell $(MYFIND) $(WIN32_DIR) -type f -name '*.c')
+WIN32_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(WIN32_FILES))
+
+VULKAN_FILES =$(shell $(MYFIND) $(VULKAN_DIR) -type f -name '*.c')
+VULKAN_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(VULKAN_FILES))
+
+RENDERER_FILES =$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
+RENDERER_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
+
+IMGUI_FILES =$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
+IMGUI_OBJS =$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
+
+# DIRECTX_FILES =$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
+# DIRECTX_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
+
+# OPENGL_FILES =$(shell $(MYFIND) $(OPENGL_DIR) -type f -name '*.c')
+# OPENGL_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(OPENGL_FILES))
 
 SHADER_DIR =$(SRC_DIR)/shaders
 SHADER_FILES =$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
 SHADER_OBJS =$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
 
+############################## COLORS ###################################
+
+NC=\e[0m
+BOLD=\e[1m
+UNDER=\e[4m
+REV=\e[7m
+
+GREY=\e[;30m
+RED=\e[;31m
+GREEN=\e[;32m
+YELLOW=\e[1;33m
+BLUE=\e[1;34m
+PURPLE=\e[;35m
+CYAN=\e[1;36m
+WHITE=\e[;37m
+
+NC=
+BOLD=
+UNDER=
+REV=
+
+GREY=
+RED=
+GREEN=
+YELLOW=
+BLUE=
+PURPLE=
+CYAN=
+WHITE=
+
+
+############################## ALL ######################################
+
 all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON) $(SHADER_OBJS)
+
+############################ BUILDER ####################################
 
 $(BUILD_DIR)/$(JASB): $(JASB_FILE)
 	@$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
 
-$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+############################ SHADERS ####################################
 
 $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
+	@echo -e "$(PURPLE)Compiling shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
-	@echo Compiled shaders
+
+############################ SRC_FILES ##################################
+
+$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS) $(IMGUI_OBJS) $(VULKAN_OBJS) $(WIN32_OBJS) \
+						$(CORE_OBJS) $(RENDERER_OBJS)
+
+	@$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+	@echo -e "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC)"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CPP) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@echo -e "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CPPFLAGS) $(INCLUDE_DIRS)"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@echo -e "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CFLAGS)  $(INCLUDE_DIRS)"
+
+############################ MAKE_DIR ###################################
 
 $(BUILD_DIR)/$(OBJ):
 	@mkdir -p build/obj
 
+############################ COMPILE_FLAGS ##############################
+
 $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB)
-	@echo Updating compile_commands.json
+	@echo -e "$(PURPLE)Updating compile_commands.json..$(NC)"
 	@$(BUILD_DIR)/$(JASB) $(JASB_CMD)
 
+############################ CLEAN ######################################
+
 clean:
-	@echo Deleting files..
+	@echo -e "$(RED)Deleting files..$(NC)"
 	@rm -rf $(OBJ_DIR)
 	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
 	@rm -f $(BUILD_DIR)/$(NAME).pdb
