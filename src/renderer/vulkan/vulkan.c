@@ -10,11 +10,12 @@
 #include "vulkan_fence.h"
 #include "vulkan_descriptor.h"
 #include "vulkan_pipeline.h"
+#include "vulkan_imgui.h"
 
 #include "core/darray.h"
 #include "core/darray_debug.h"
 #include "core/logger.h"
-#include "core/assert.h"
+#include "core/myassert.h"
 #include "core/ymemory.h"
 
 #include <math.h>
@@ -33,8 +34,6 @@ YND static int32_t MemoryFindIndex(VkPhysicalDevice physicalDevice, uint32_t typ
 VKAPI_ATTR VkBool32 VKAPI_CALL 
 vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
-
-
 
 static inline void
 SyncInit(VkContext* pCtx, VulkanDevice device)
@@ -254,6 +253,8 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 	VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, pShaderFilePath));
+
+	VK_CHECK(ImguiInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredValidationLayerNames);

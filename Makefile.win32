@@ -7,6 +7,7 @@ OBJ_DIR =$(BUILD_DIR)/obj
 OBJ =obj
 
 GLSLC =glslc
+LINKER =clang
 CC =clang
 CPP =clang++
 
@@ -28,19 +29,23 @@ VULKAN_DIR =$(RENDERER_DIR)/vulkan
 
 OPENGL_DIR =$(RENDERER_DIR)/opengl
 DIRECTX_DIR =$(RENDERER_DIR)/directx
-IMGUI_DIR =$(SRC_DIR)/imgui
+IMGUI_DIR =$(SRC_DIR)/cimgui
+CIMGUI_DIR =$(SRC_DIR)/cimgui
 
 INCLUDE_DIRS =-Isrc -Isrc/core -IC:/VulkanSDK/1.3.275.0/Include
 INCLUDE_DIRS +=-IC:/Lib/tracy-0.11.1/public -IC:/Lib/tracy-0.11.1/public/tracy
 INCLUDE_DIRS +=-IC:/Lib/glfw/include
 INCLUDE_DIRS +=-Isrc/renderer/opengl
+INCLUDE_DIRS +=-Isrc/cimgui -Isrc/cimgui/imgui -Isrc/cimgui/generator/output
 
 LIBS =-lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 -lopengl32
 LIBS +=-lglfw3_mt
 LIBS +=-ld3dcompiler -ld3d11 -ldxgi -ldxguid
+LIBS +=-lcimgui -lcimgui
 
 LIB_PATH =-LC:/VulkanSDK/1.3.275.0/Lib
 LIB_PATH +=-LC:/Lib/glfw/lib-vc2022
+LIB_PATH +=-Lsrc/cimgui
 
 ifndef CPP_USE
 	CFLAGS +=-Wall -Wextra -Werror
@@ -77,7 +82,8 @@ ifdef TRACY_USE
 	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 endif
 ifdef CPP_USE
-	CPP += CFLAGS
+	CPP += $(CFLAGS)
+	CPPFLAGS +=-stdlib=libc++
 endif
 # CC =clang++
 #
@@ -98,8 +104,16 @@ VULKAN_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(VULKAN_FILES))
 RENDERER_FILES =$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
 RENDERER_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
 
-IMGUI_FILES =$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
-IMGUI_OBJS =$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
+CIMGUI_FILES =$(shell $(MYFIND) $(CIMGUI_DIR) -maxdepth 1 -type f -name '*.c')
+CIMGUI_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CIMGUI_FILES))
+
+IMGUI_FILES =$(shell $(MYFIND) $(IMGUI_DIR) -maxdepth 1 -type f -name '*.cpp')
+# IMGUI_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
+#
+DIR_OBJS =C:/yuseong/src/cimgui/imgui
+IMGUI_OBJS :=$(DIR_OBJS)/imgui.o $(DIR_OBJS)/imgui_widgets.o \
+			 $(DIR_OBJS)/imgui_tables.o $(DIR_OBJS)/imgui_demo.o \
+			 $(DIR_OBJS)/imgui_draw.o
 
 # DIRECTX_FILES =$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
 # DIRECTX_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
@@ -160,21 +174,21 @@ $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
 
 ############################ SRC_FILES ##################################
 
-$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS) $(IMGUI_OBJS) $(VULKAN_OBJS) $(WIN32_OBJS) \
+$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS) $(CIMGUI_OBJS) $(IMGUI_OBJS) $(MYIMGUI_OBJS) $(VULKAN_OBJS) $(WIN32_OBJS) \
 						$(CORE_OBJS) $(RENDERER_OBJS)
 
-	@$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
-	@echo -e "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC)"
+	@echo -e "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC) $(LIB_PATH) $(LIBS)"
+	@$(LINKER) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 	@echo -e "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CPPFLAGS) $(INCLUDE_DIRS)"
+	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 	@echo -e "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CFLAGS)  $(INCLUDE_DIRS)"
+	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 
 ############################ MAKE_DIR ###################################
 

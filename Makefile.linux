@@ -39,7 +39,7 @@ LIBS =-lGL -lglfw -lvulkan -lwayland-client -lxkbcommon -lm
 LIB_PATH =
 
 CFLAGS =-Wall -Wextra -Werror
-# CFLAGS +=-std=c23
+CFLAGS +=-std=c23
 
 CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable

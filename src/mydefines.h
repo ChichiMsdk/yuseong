@@ -98,6 +98,8 @@ STATIC_ASSERT(sizeof(f64) == 8, "Expected f64 to be 8 bytes.");
 #endif
 #endif
 
+
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 #define YCLAMP(value, min, max) (value <= min) ? min : (value >= max) ? max : value;
 
 #endif // MYDEFINES_H

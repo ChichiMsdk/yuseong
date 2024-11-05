@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-#include "core/assert.h"
+#include "core/myassert.h"
 #include "renderer/renderer_defines.h"
 
 #ifdef PLATFORM_LINUX

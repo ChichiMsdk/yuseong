@@ -4,7 +4,7 @@
 #	include "core/event.h"
 #	include "core/input.h"
 #	include "core/logger.h"
-#	include "core/assert.h"
+#	include "core/myassert.h"
 
 #	include <stdio.h>
 

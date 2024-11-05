@@ -1,5 +1,6 @@
 xdg-shell-*
 
+src/cimgui/*
 tags
 *.pdb
 *.exe

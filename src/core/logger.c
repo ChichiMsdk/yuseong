@@ -1,5 +1,5 @@
 #include "core/logger.h"
-#include "core/assert.h"
+#include "core/myassert.h"
 #include "os.h"
 
 #if PLATFORM_WINDOWS
