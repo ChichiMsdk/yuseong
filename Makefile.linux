@@ -4,13 +4,14 @@ OUTPUT =$(NAME)$(EXTENSION)
 BUILD_DIR =build
 OBJ_DIR =build/obj
 TESTDIR =obj
+GLSLC =glslc
 CC =clang-19
 CPP =clang++
 LINKER =mold
 
 CCJSON =compile_commands.json
 
-JASB =jasb.exe
+JASB =jasb$(EXTENSION)
 JASB_FILE =jasb.c
 JASB_CMD = *.o.json
 JASB_LIB =
@@ -19,6 +20,17 @@ GLFW3 =1
 TESTING =
 
 SRC_DIR =src
+LINUX_DIR =$(SRC_DIR)/linux
+WIN32_DIR =$(SRC_DIR)/win32
+
+IMGUI_DIR =$(SRC_DIR)/imgui
+CORE_DIR =$(SRC_DIR)/core
+RENDERER_DIR =$(SRC_DIR)/renderer
+
+VULKAN_DIR =$(RENDERER_DIR)/vulkan
+OPENGL_DIR =$(RENDERER_DIR)/opengl
+DIRECTX_DIR =$(RENDERER_DIR)/directx
+METAL_DIR =$(RENDERER_DIR)/metal
 
 INCLUDE_DIRS =-Isrc -Isrc/core -I$(HOME)/tracy/public -I$(HOME)/tracy/public/tracy
 INCLUDE_DIRS +=-Isrc/renderer/opengl
@@ -33,29 +45,28 @@ CFLAGS +=-fno-inline -fno-omit-frame-pointer
 CFLAGS +=-Wno-missing-field-initializers -Wno-unused-but-set-variable
 CFLAGS +=-Wno-uninitialized
 CFLAGS +=-DPLATFORM_LINUX
+MOLDFLAGS =
 
 ifdef GLFW3
 	CFLAGS +=-DYGLFW3
 endif
-
 ifdef TESTING
 	CFLAGS +=-DTESTING
 endif
-
 ifdef RELEASE_USE
 	CFLAGS +=-ggdb3 -Wvarargs -O3
 	CFLAGS +=-D_RELEASE -DRELEASE -DYURELEASE
+	MOLDFLAGS +=-ggdb3 -O3
 endif
-
 ifndef RELEASE_USE
 	CFLAGS +=-ggdb3 -Wvarargs -O0
 	CFLAGS +=-D_DEBUG -DDEBUG
+	MOLDFLAGS +=-ggdb3 -O0
 endif
-
 ifdef ASAN_USE
 	CFLAGS +=-fsanitize=address
+	MOLDFLAGS +=-fsanitize=address
 endif
-
 ifdef TRACY_USE
 	CFLAGS +=-DTRACY_ENABLE
 
@@ -65,43 +76,114 @@ ifdef TRACY_USE
 	CPP_FILES =$(wildcard $(SRC_DIR)/*.cpp)
 	CPP_OBJS =$(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 
+	MOLDFLAGS +=-stdlib=libc++
+
 	INCLUDE_DIRS +=-I/usr/include/x86_64-unknown-linux-gnu/c++/v1
 	LIB_PATH +=-L/usr/lib/x86_64-unknown-linux-gnu
 	LIBS +=-lc++
 endif
 
-FILES =$(shell find $(SRC_DIR) -type f -name '*.c')
+FILES =$(shell find $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
 OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(FILES))
 
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON)
+CORE_FILES =$(shell find $(CORE_DIR) -type f -name '*.c')
+CORE_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_FILES))
+
+# WIN32_FILES =$(shell find $(WIN32_DIR) -type f -name '*.c')
+# WIN32_OBJS =$(patsubst $(WIN32_DIR)/%.c, $(OBJ_DIR)/%.o, $(WIN32_FILES))
+
+LINUX_FILES =$(shell find $(LINUX_DIR) -type f -name '*.c')
+LINUX_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(LINUX_FILES))
+
+VULKAN_FILES =$(shell find $(VULKAN_DIR) -type f -name '*.c')
+VULKAN_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(VULKAN_FILES))
+
+# METAL_FILES =$(shell find $(METAL_DIR) -type f -name '*.c')
+# METAL_OBJS =$(patsubst $(METAL_DIR)/%.c, $(OBJ_DIR)/%.o, $(METAL_FILES))
+
+# DIRECTX_FILES =$(shell find $(DIRECTX_DIR) -type f -name '*.c')
+# DIRECTX_OBJS =$(patsubst $(DIRECTX_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
+
+# OPENGL_FILES =$(shell find $(OPENGL_DIR) -type f -name '*.c')
+# OPENGL_OBJS =$(patsubst $(OPENGL_DIR)/%.c, $(OBJ_DIR)/%.o, $(OPENGL_FILES))
+
+RENDERER_FILES =$(shell find $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
+RENDERER_OBJS =$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
+
+IMGUI_FILES =$(shell find $(IMGUI_DIR) -type f -name '*.cpp')
+IMGUI_OBJS =$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
+
+SHADER_DIR =$(SRC_DIR)/shaders
+SHADER_FILES =$(shell find $(SRC_DIR) -type f -name '*.comp')
+SHADER_OBJS =$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
+
+############################## COLORS ###################################
+
+NC=\033[0m
+BOLD=\033[1m
+UNDER=\033[4m
+REV=\033[7m
+
+GREY=\033[0;30m
+RED=\033[0;31m
+GREEN=\033[0;32m
+YELLOW=\033[0;33m
+BLUE=\033[0;34m
+PURPLE=\033[0;35m
+CYAN=\033[0;36m
+WHITE=\033[0;37m
+
+############################## ALL ######################################
+
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON) $(SHADER_OBJS)
+
+############################ BUILDER ####################################
 
 $(BUILD_DIR)/$(JASB): $(JASB_FILE)
-	$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
-	# $(LINKER) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
+	@$(CC) $(JASBFLAGS) -o $@ $^ $(JASB_LIB)
 
-$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
-	# $(LINKER) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+############################ SHADERS ####################################
+
+$(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
+	@echo "$(Purple)Compiling shaders..$(NC)"
+	@mkdir -p $(dir $@)
+	@$(GLSLC) $< -o $@
+
+############################ SRC_FILES ##################################
+
+$(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS) $(IMGUI_OBJS) $(VULKAN_OBJS) $(LINUX_OBJS) \
+						$(CORE_OBJS) $(RENDERER_OBJS)
+
+	@$(CC) -fuse-ld=mold $(MOLDFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+	@echo "$(PURPLE)$(CC)$(NC) -fuse-ld=mold $(MOLDFLAGS) -o $(GREEN)$@$(NC) $(YELLOW)$^$(YELLOW)"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@echo "$(PURPLE)$(CPP)$(NC) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@echo "$(PURPLE)$(CC)$(NC) $(CFLAGS) -c $(RED)$<$(NC) -o $(GREEN)$@$(NC) $(INCLUDE_DIRS)"
+
+############################ MAKE_DIR ###################################
 
 $(BUILD_DIR)/$(TESTDIR):
 	@mkdir -p build/obj
 
+############################ COMPILE_FLAGS ##############################
+
 $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB)
-	@echo Updating compile_commands.json
+	@echo "$(PURPLE)Updating compile_commands.json..$(NC)"
 	@$(BUILD_DIR)/$(JASB) $(JASB_CMD)
 
+############################ CLEAN ######################################
+
 clean:
-	@echo Deleting files..
+	@echo "$(RED)Deleting files..$(NC)"
 	rm -rf $(OBJ_DIR)
-	@rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
+	rm -f $(BUILD_DIR)/$(NAME)$(EXTENSION)
 
 fclean: clean
 	rm -f compile_commands.json
