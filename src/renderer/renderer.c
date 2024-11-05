@@ -26,13 +26,16 @@ RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rende
 			goto finish;
 
 		case RENDERER_TYPE_OPENGL:
+#ifdef YOPENGL
 			if (glErrorToYuseong(glInit(pOsState)) != YU_SUCCESS)
 				goto error;
 			(*ppOutRenderer)->YuDraw = glDraw;
 			(*ppOutRenderer)->YuShutdown = glShutdown;
 			(*ppOutRenderer)->YuResize = glResize;
 			goto finish;
-
+#else
+			YFATAL("Renderer type %s is not available for this build", pRendererType[rendererConfig.type]);
+#endif
 		case RENDERER_TYPE_D3D11:
 #ifdef PLATFORM_WINDOWS
 			if (D11ErrorToYuseong(D11Init(pOsState, rendererConfig.bVsync))!= YU_SUCCESS)
@@ -41,22 +44,22 @@ RendererInit(OsState* pOsState, YuRenderer** ppOutRenderer, RendererConfig rende
 			(*ppOutRenderer)->YuShutdown = D11Shutdown;
 			(*ppOutRenderer)->YuResize = D11Resize;
 			goto finish;
-#else
-			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
-			goto finish;
-#endif
 
 		case RENDERER_TYPE_D3D12:
-#ifdef PLATFORM_WINDOWS
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
 			goto error;
 #else
 			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
 			goto finish;
 #endif
-
 		case RENDERER_TYPE_METAL:
-
+#ifdef PLATFORM_APPLE
+			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
+			goto error;
+#else
+			YFATAL("Renderer type %s is not available on this platform", pRendererType[rendererConfig.type]);
+			goto finish;
+#endif
 		case RENDERER_TYPE_SOFTWARE:
 			YERROR("Renderer type %s has yet to be implemented", pRendererType[rendererConfig.type]);
 			goto error;
@@ -152,6 +155,8 @@ D11ErrorToYuseong(int result)
 /****************************************************************************/
 /******************************* OpenGL *************************************/
 /****************************************************************************/
+
+#ifdef YOPENGL
 YND YuResult
 glDraw(OsState* pOsState, YMB void* pCtx)
 {
@@ -175,3 +180,4 @@ glErrorToYuseong(GlResult result)
 			return YU_FAILURE;
 	}
 }
+#endif // YOPENGL
