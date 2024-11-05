@@ -10,8 +10,10 @@ b8 gRunning = TRUE;
 const char* __asan_default_options() { return "detect_leaks=0"; }
 #include "test.h"
 
-AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 500, .h = 500, };
+AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 1500, .h = 900, };
 OsState gOsState = {0};
+
+/* FIXME: Bug in DarrayLength - DarrayGetCapacity !! */
 
 #ifndef TESTING
 int
@@ -52,11 +54,12 @@ main(int argc, char **ppArgv)
 			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer));
 		}
 
-		endFrameTime = OsGetAbsoluteTime(MICROSECONDS);
+		endFrameTime = OsGetAbsoluteTime(NANOSECONDS);
 	}
 
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();
+	EventShutdown();
 	OsShutdown(&gOsState);
 	GetLeaks();
 	SystemMemoryUsagePrint();

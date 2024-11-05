@@ -25,15 +25,21 @@ OsFread(void* pBuffer, size_t bufferSize, size_t elementSize, size_t elementCoun
 {
 	/* TODO: Change error handling here */
 	size_t count = 0;
-	while (count < bufferSize)
+	size_t returnValue = 0;
+	while (1)
 	{
-		count += fread(pBuffer, elementSize, elementCount, pStream);
+		returnValue = fread(pBuffer, elementSize, elementCount, pStream);
+		count += returnValue;
+		if (returnValue < bufferSize)
+			break;
 		if (ferror(pStream))
 		{
 			YERROR2("Write error");
 			clearerr(pStream);
 			exit(1);
 		}
+		else if (feof(pStream))
+			return count;
 	}
 	return count;
 }

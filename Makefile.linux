@@ -159,12 +159,12 @@ $(BUILD_DIR)/$(OUTPUT): $(OBJS) $(CPP_OBJS) $(IMGUI_OBJS) $(VULKAN_OBJS) $(LINUX
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	@$(CPP) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 	@echo "$(PURPLE)$(CPP)$(NC) $(CPPFLAGS) -c $< -o $@ $(INCLUDE_DIRS)"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 	@echo "$(PURPLE)$(CC)$(NC) $(CFLAGS) -c $(RED)$<$(NC) -o $(GREEN)$@$(NC) $(INCLUDE_DIRS)"
 
 ############################ MAKE_DIR ###################################

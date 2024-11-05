@@ -21,7 +21,7 @@ vkDescriptorSetLayoutCreate(VkDescriptorSetLayoutBinding* pBindings, VkDevice de
 		VkShaderStageFlags shaderStageFlags, void* pNext, VkDescriptorSetLayoutCreateFlags flags,
 		VkDescriptorSetLayout* pOutDescriptorSetLayout)
 {
-	uint64_t bindingCount = DarrayLength(pBindings);
+	uint64_t bindingCount = DarrayCapacity(pBindings);
 	for (uint64_t i = 0; i < bindingCount; i++)
 		pBindings[i].stageFlags = shaderStageFlags;
 
@@ -57,8 +57,9 @@ VkResult
 vkDescriptorAllocatorPoolInit(VkContext* pCtx, VkDescriptorPool* pOutPool, VkDevice device, uint32_t maxSets,
 		PoolSizeRatio* pPoolRatios)
 {
+	/* VkDescriptorPoolSize *pPoolSizes = DarrayCreate(VkDescriptorPoolSize); */
 	VkDescriptorPoolSize *pPoolSizes = DarrayCreate(VkDescriptorPoolSize);
-	uint64_t poolRatioCount = DarrayLength(pPoolRatios);
+	uint64_t poolRatioCount = DarrayCapacity(pPoolRatios);
 
 	for (uint64_t i = 0; i < poolRatioCount; i++)
 	{
@@ -66,6 +67,7 @@ vkDescriptorAllocatorPoolInit(VkContext* pCtx, VkDescriptorPool* pOutPool, VkDev
 			.type = pPoolRatios[i].type,
 			.descriptorCount = pPoolRatios[i].ratio * maxSets,
 		};
+		YDEBUG("Descriptor type: %s", string_VkDescriptorType(pPoolRatios[i].type));
 		DarrayPush(pPoolSizes, new);
 	}
 
@@ -108,7 +110,8 @@ vkDescriptorsInit(VkContext* pCtx, VkDevice device)
 	VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	VkShaderStageFlags shaderStageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-	VK_RESULT(vkDescriptorAllocatorPoolInit(pCtx, &pCtx->descriptorPool.handle, device, 10, pSizeRatios));
+	uint32_t maxSets = 10;
+	VK_RESULT(vkDescriptorAllocatorPoolInit(pCtx, &pCtx->descriptorPool.handle, device, maxSets, pSizeRatios));
 
 	pCtx->pBindings = DarrayCreate(VkDescriptorSetLayoutBinding);
 	vkDescriptorSetLayoutAddBinding(pCtx->pBindings, binding, descriptorType);
@@ -151,5 +154,6 @@ vkDescriptorsInit(VkContext* pCtx, VkDevice device)
 
 	vkUpdateDescriptorSets(device, descriptorWriteCount, &writeDescriptorSet, descriptorCopyCount, pDescriptorCopies);
 	DarrayDestroy(pSizeRatios);
+	DarrayDestroy(pCtx->pBindings);
 	return VK_SUCCESS;
 }

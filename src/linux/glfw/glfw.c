@@ -56,11 +56,11 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 	{
 		case RENDERER_TYPE_VULKAN:
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			YDEBUG("GLFW_VULKAN_API");
+			YDEBUG("GLFW_VULKAN_API chosen");
 			break;
 		case RENDERER_TYPE_OPENGL:
 			/* glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); */
-			YDEBUG("GLFW_OPENGL_API");
+			YDEBUG("GLFW_OPENGL_API chosen");
 		default:
 			break;
 	}
@@ -80,7 +80,7 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 		YFATAL("Error window creation in %s at %d: %s", __FILE__, __LINE__, pDesc);
 		return FALSE;
 	}
-	glfwMakeContextCurrent(pState->pWindow);
+	/* glfwMakeContextCurrent(pState->pWindow); */
 	pState->windowWidth = appConfig.w;
 	pState->windowHeight = appConfig.h;
     glfwSetKeyCallback(pState->pWindow, _KeyCallback);
@@ -189,7 +189,6 @@ OsGetAbsoluteTime(SECOND_UNIT unit)
 			YERROR("Unkown unit %d defaults to milliseconds", unit);
 			break;
 	}
-
 	return tp.tv_sec * unitScale + tp.tv_nsec;
 	/* return tp.tv_sec * 1000000000LL + tp.tv_nsec; */
 }

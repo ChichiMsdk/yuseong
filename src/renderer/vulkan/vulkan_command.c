@@ -6,19 +6,32 @@
 #include <string.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-/**
- * Each thread needs to have its very own CommandPool AND
- * CommandBuffer (minimum) -> https://vkguide.dev/docs/new_chapter_1/vulkan_command_flow/ 
- */
-YND VkResult
-vkCommandPoolCreate(VkContext *pContext)
+VkResult
+vkImmediateCommandCreate(YMB VkContext* pCtx, VulkanDevice device, VkAllocationCallbacks* pAllocator,
+		VkCommandPool* pOutCommandPool, VulkanCommandBuffer* pOutCommandBuffer)
 {
 	VkCommandPoolCreateInfo poolCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
 	};
-	VK_CHECK(vkCreateCommandPool(pContext->device.logicalDev, &poolCreateInfo, pContext->pAllocator, 
-				&pContext->device.graphicsCommandPool));
+	VK_CHECK(vkCreateCommandPool(device.logicalDev, &poolCreateInfo, pAllocator, pOutCommandPool));
+	VkCommandBufferLevel cmdBufferLvl = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	VK_CHECK(vkCommandBufferAllocate(device.logicalDev, cmdBufferLvl, *pOutCommandPool, pOutCommandBuffer));
+	return VK_SUCCESS;
+}
+
+/**
+ * Each thread needs to have its very own CommandPool AND
+ * CommandBuffer (minimum) -> https://vkguide.dev/docs/new_chapter_1/vulkan_command_flow/ 
+ */
+YND VkResult
+vkCommandPoolCreate(VulkanDevice device, VkAllocationCallbacks* pAllocator, VkCommandPool* pOutCommandPool)
+{
+	VkCommandPoolCreateInfo poolCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
+	};
+	VK_CHECK(vkCreateCommandPool(device.logicalDev, &poolCreateInfo, pAllocator, pOutCommandPool));
     YINFO("Graphics command pool created.");
 	return VK_SUCCESS;
 }
@@ -33,7 +46,6 @@ vkCommandBufferCreate(VkContext *pCtx)
             memset(&pCtx->pGfxCommands[i], 0, sizeof(VulkanCommandBuffer));
         }
     }
-
     for (uint32_t i = 0; i < pCtx->swapchain.imageCount; ++i) 
 	{
         if (pCtx->pGfxCommands[i].handle) 
@@ -46,18 +58,17 @@ vkCommandBufferCreate(VkContext *pCtx)
              */
         }
         memset(&pCtx->pGfxCommands[i], 0, sizeof(VulkanCommandBuffer));
-        VK_CHECK(vkCommandBufferAllocate(pCtx, VK_COMMAND_BUFFER_LEVEL_PRIMARY, pCtx->device.graphicsCommandPool,
-				&pCtx->pGfxCommands[i]));
+        VK_CHECK(vkCommandBufferAllocate(pCtx->device.logicalDev, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 
+					pCtx->device.graphicsCommandPool, &pCtx->pGfxCommands[i]));
     }
     YINFO("Vulkan command buffers created.");
 	return VK_SUCCESS;
 }
 
 YND VkResult
-vkCommandBufferAllocate(VkContext *pCtx, VkCommandBufferLevel cmdBufferLvl, VkCommandPool pool,
+vkCommandBufferAllocate(VkDevice device, VkCommandBufferLevel cmdBufferLvl, VkCommandPool pool,
 		VulkanCommandBuffer *pOutCommandBuffers)
 {
-	VkDevice device = pCtx->device.logicalDev;
 	memset(pOutCommandBuffers, 0, sizeof(VulkanCommandBuffer));
 
 	VkCommandBufferAllocateInfo allocateInfo = {

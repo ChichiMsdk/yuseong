@@ -12,6 +12,40 @@
 #include <math.h>
 
 VkResult
+vkImmediateSubmit(VkContext* pCtx, void (*function)(VkCommandBuffer cmd))
+{
+	VK_CHECK(vkFenceReset(pCtx, &pCtx->device.immediateSubmit.fence));
+	b8 bSingleUse = TRUE;
+	b8 bRenderPassContinue = FALSE;
+	b8 bSimultaneousUse = FALSE;
+	vkCommandBufferBegin(&pCtx->device.immediateSubmit.commandBuffer, bSingleUse, bRenderPassContinue, bSimultaneousUse);
+	function(pCtx->device.immediateSubmit.commandBuffer.handle);
+	VK_CHECK(vkEndCommandBuffer(pCtx->device.immediateSubmit.commandBuffer.handle));
+
+	VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+		.commandBuffer = pCtx->device.immediateSubmit.commandBuffer.handle,
+	};
+
+	VkSubmitInfo2 submitInfo2 = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+		.commandBufferInfoCount = 1,
+		.pCommandBufferInfos = &cmdBufferSubmitInfo,
+		.pWaitSemaphoreInfos = VK_NULL_HANDLE,
+		.waitSemaphoreInfoCount = 1,
+		.pSignalSemaphoreInfos = VK_NULL_HANDLE,
+		.signalSemaphoreInfoCount = 1,
+	};
+
+	// submit command buffer to the queue and execute it.
+	//  _renderFence will now block until the graphic commands finish execution
+	VK_CHECK(vkQueueSubmit2(pCtx->device.graphicsQueue, 1, &submitInfo2, pCtx->device.immediateSubmit.fence.handle));
+
+	VK_CHECK(vkWaitForFences(pCtx->device.logicalDev, 1, &pCtx->device.immediateSubmit.fence.handle, TRUE, 9999999999));
+	return VK_SUCCESS;
+}
+
+VkResult
 vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 {
 	VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;

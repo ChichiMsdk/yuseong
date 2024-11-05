@@ -5,10 +5,12 @@
 #include "yvulkan.h"
 
 YND VkResult vkCommandPoolCreate(
-		VkContext*							pContext);
+		VulkanDevice						device,
+		VkAllocationCallbacks*				pAllocator,
+		VkCommandPool*						pOutCommandPool);
 
 YND VkResult vkCommandBufferAllocate(
-		VkContext*							pCtx,
+		VkDevice							device,
 		VkCommandBufferLevel				cmdBufferLvl,
 		VkCommandPool						pool,
 		VulkanCommandBuffer*				pOutCommandBuffers);

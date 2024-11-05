@@ -57,8 +57,9 @@ vkFramebuffersRegenerate(VkContext* pCtx, VkSwapchain* pSwapchain, VulkanRenderP
 }
 
 static inline void
-SyncInit(VkContext* pCtx, VkDevice device)
+SyncInit(VkContext* pCtx, VulkanDevice device)
 {
+	b8 bSignaled = TRUE;
     /*
 	 * NOTE: one fence to control when the gpu has finished rendering the frame,
 	 * and 2 semaphores to synchronize rendering with swapchain
@@ -69,13 +70,13 @@ SyncInit(VkContext* pCtx, VkDevice device)
 	for (uint8_t i = 0; i < pCtx->swapchain.maxFrameInFlight; i++)
 	{
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-		vkCreateSemaphore(device, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresAvailableImage[i]);
-		vkCreateSemaphore(device, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresQueueComplete[i]);
+		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresAvailableImage[i]);
+		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresQueueComplete[i]);
 
 		/* NOTE: Assuming that the app CANNOT run without fences therefore we abort() in case of failure */
-		b8 bSignaled = TRUE;
-		VK_ASSERT(vkFenceCreate(device, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
+		VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
 	}
+	VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence))
 }
 
 YND VkResult
@@ -198,7 +199,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	int32_t width = pCurrentCtx->framebufferWidth;
 	int32_t height = pCurrentCtx->framebufferHeight;
 	VK_CHECK(vkSwapchainCreate(pCurrentCtx, width, height, &pCurrentCtx->swapchain));
-	VK_CHECK(vkCommandPoolCreate(pCurrentCtx));
+	VK_CHECK(vkCommandPoolCreate(pCurrentCtx->device, pCurrentCtx->pAllocator, &pCurrentCtx->device.graphicsCommandPool));
 	VK_CHECK(vkCommandBufferCreate(pCurrentCtx));
 
 	YMB RgbaFloat color = { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
@@ -218,7 +219,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	pCurrentCtx->pFencesInFlight = DarrayReserve(VulkanFence, pCurrentCtx->swapchain.maxFrameInFlight);
 
 	/* NOTE: Init semaphore and fences */
-	SyncInit(pCurrentCtx, pCurrentCtx->device.logicalDev);
+	SyncInit(pCurrentCtx, pCurrentCtx->device);
 
 	/*
 	 * NOTE: In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
@@ -243,9 +244,124 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredValidationLayerNames);
 	DarrayDestroy(ppRequiredExtensions);
-	/* (*ppOutCtx) = &pCurrentCtx-> */
 	(*ppOutCtx) = pCurrentCtx;
 	return VK_SUCCESS;
+}
+
+void
+vkShutdown(void *pContext)
+{
+	VkContext *pCtx = (VkContext*)pContext;
+	VkDevice device = pCtx->device.logicalDev;
+	VulkanDevice myDevice = pCtx->device;
+	VkAllocationCallbacks* pAllocator = pCtx->pAllocator;
+
+#ifdef DEBUG
+		PFN_vkDestroyDebugUtilsMessengerEXT pfnDestroyDebug = (PFN_vkDestroyDebugUtilsMessengerEXT)
+			vkGetInstanceProcAddr(pCtx->instance, "vkDestroyDebugUtilsMessengerEXT");
+
+		KASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
+		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
+#endif // DEBUG
+	
+	VK_ASSERT(vkDeviceWaitIdle(device));
+	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
+	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
+
+	vkDestroyDescriptorSetLayout(device, pCtx->drawImageDescriptorSetLayout, pAllocator);
+	vkDestroyDescriptorPool(device, pCtx->descriptorPool.handle, pAllocator);
+
+	uint32_t poolCount = 1;
+	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
+	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, poolCount));
+
+	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
+	vkDestroyImage(device, pCtx->drawImage.image.handle, pAllocator);
+	vkDestroyImageView(device, pCtx->drawImage.image.view, pAllocator);
+	vkFreeMemory(device, pCtx->drawImage.image.memory, pAllocator);
+    /*
+	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
+	 * for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
+	 * 	vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
+	 * vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
+     */
+	vkDestroySurfaceKHR(pCtx->instance, pCtx->surface, pAllocator);
+
+	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
+	{
+		vkFramebufferDestroy(device, pAllocator, &pCtx->swapchain.pFramebuffers[i]);
+	}
+
+	DarrayDestroy(pCtx->swapchain.pFramebuffers);
+
+	vkRenderPassDestroy(pCtx, &pCtx->mainRenderpass); 
+	for (uint8_t i = 0; i < pCtx->swapchain.maxFrameInFlight; i++)
+	{
+		vkDestroySemaphore(device, pCtx->pSemaphoresAvailableImage[i], pAllocator);
+		vkDestroySemaphore(device, pCtx->pSemaphoresQueueComplete[i], pAllocator);
+		vkFenceDestroy(pCtx, &pCtx->pFencesInFlight[i]);
+	}
+	DarrayDestroy(pCtx->pSemaphoresQueueComplete);
+	DarrayDestroy(pCtx->pSemaphoresAvailableImage);
+	DarrayDestroy(pCtx->pFencesInFlight);
+	DarrayDestroy(pCtx->ppImagesInFlight);
+	DarrayDestroy(pCtx->pGfxCommands);
+
+	/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
+	if (pCtx->device.swapchainSupport.pFormats)
+	{
+		yFree(pCtx->device.swapchainSupport.pFormats, pCtx->device.swapchainSupport.formatCount, 
+				MEMORY_TAG_RENDERER);
+	}
+	if (pCtx->device.swapchainSupport.pPresentModes)
+	{
+		yFree(pCtx->device.swapchainSupport.pPresentModes, pCtx->device.swapchainSupport.presentModeCount, 
+				MEMORY_TAG_RENDERER);
+	}
+	vkDestroyDevice(pCtx->device.logicalDev, pAllocator);
+	vkDestroyInstance(pCtx->instance, pAllocator);
+	yFree(pCtx, 1, MEMORY_TAG_RENDERER_CONTEXT);
+}
+
+YND int32_t
+MemoryFindIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t propertyFlags)
+{
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	{
+        // Check each memory type to see if its bit is set to 1.
+        if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+		{
+            return i;
+        }
+    }
+    YWARN("Unable to find suitable memory type!");
+    return -1;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL 
+vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, YMB void *pUserData)
+{
+	switch (messageSeverity)
+	{
+		default:
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			YERROR(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			YWARN(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+			YINFO(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+			YTRACE(pCallbackData->pMessage);
+			break;
+	}
+	return VK_FALSE;
 }
 
 /*
@@ -409,118 +525,4 @@ vkInit(OsState *pOsState, void** ppOutCtx)
  * }
  */
 
-void
-vkShutdown(void *pContext)
-{
-	VkContext *pCtx = (VkContext*)pContext;
-	VkDevice device = pCtx->device.logicalDev;
-	VulkanDevice myDevice = pCtx->device;
-	VkAllocationCallbacks* pAllocator = pCtx->pAllocator;
 
-#ifdef DEBUG
-		PFN_vkDestroyDebugUtilsMessengerEXT pfnDestroyDebug = (PFN_vkDestroyDebugUtilsMessengerEXT)
-			vkGetInstanceProcAddr(pCtx->instance, "vkDestroyDebugUtilsMessengerEXT");
-
-		KASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
-		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
-#endif // DEBUG
-	
-	VK_ASSERT(vkDeviceWaitIdle(device));
-	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
-	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
-
-	vkDestroyDescriptorSetLayout(device, pCtx->drawImageDescriptorSetLayout, pAllocator);
-	vkDestroyDescriptorPool(device, pCtx->descriptorPool.handle, pAllocator);
-
-	uint32_t poolCount = 1;
-	VK_ASSERT(vkCommandBufferFree(pCtx, pCtx->pGfxCommands, &myDevice.graphicsCommandPool, pCtx->swapchain.imageCount));
-	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, poolCount));
-
-	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
-	vkDestroyImage(device, pCtx->drawImage.image.handle, pAllocator);
-	vkDestroyImageView(device, pCtx->drawImage.image.view, pAllocator);
-	vkFreeMemory(device, pCtx->drawImage.image.memory, pAllocator);
-    /*
-	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
-	 * for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
-	 * 	vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
-	 * vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
-     */
-	vkDestroySurfaceKHR(pCtx->instance, pCtx->surface, pAllocator);
-
-	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
-	{
-		vkFramebufferDestroy(device, pAllocator, &pCtx->swapchain.pFramebuffers[i]);
-	}
-
-	DarrayDestroy(pCtx->swapchain.pFramebuffers);
-
-	vkRenderPassDestroy(pCtx, &pCtx->mainRenderpass); 
-	for (uint8_t i = 0; i < pCtx->swapchain.maxFrameInFlight; i++)
-	{
-		vkDestroySemaphore(device, pCtx->pSemaphoresAvailableImage[i], pAllocator);
-		vkDestroySemaphore(device, pCtx->pSemaphoresQueueComplete[i], pAllocator);
-		vkFenceDestroy(pCtx, &pCtx->pFencesInFlight[i]);
-	}
-	DarrayDestroy(pCtx->pSemaphoresQueueComplete);
-	DarrayDestroy(pCtx->pSemaphoresAvailableImage);
-	DarrayDestroy(pCtx->pFencesInFlight);
-	DarrayDestroy(pCtx->ppImagesInFlight);
-	DarrayDestroy(pCtx->pGfxCommands);
-
-	/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
-	if (pCtx->device.swapchainSupport.pFormats)
-	{
-		yFree(pCtx->device.swapchainSupport.pFormats, pCtx->device.swapchainSupport.formatCount, 
-				MEMORY_TAG_RENDERER);
-	}
-	if (pCtx->device.swapchainSupport.pPresentModes)
-	{
-		yFree(pCtx->device.swapchainSupport.pPresentModes, pCtx->device.swapchainSupport.presentModeCount, 
-				MEMORY_TAG_RENDERER);
-	}
-	vkDestroyDevice(pCtx->device.logicalDev, pAllocator);
-	vkDestroyInstance(pCtx->instance, pAllocator);
-	yFree(pCtx, 1, MEMORY_TAG_RENDERER_CONTEXT);
-}
-
-YND int32_t
-MemoryFindIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t propertyFlags)
-{
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
-
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
-	{
-        // Check each memory type to see if its bit is set to 1.
-        if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
-		{
-            return i;
-        }
-    }
-    YWARN("Unable to find suitable memory type!");
-    return -1;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL 
-vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, YMB void *pUserData)
-{
-	switch (messageSeverity)
-	{
-		default:
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			YERROR(pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			YWARN(pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-			YINFO(pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			YTRACE(pCallbackData->pMessage);
-			break;
-	}
-	return VK_FALSE;
-}

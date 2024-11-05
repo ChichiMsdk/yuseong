@@ -34,7 +34,7 @@ typedef struct OsState OsState;
 		VkResult errcode = (expr); \
 		if (errcode != VK_SUCCESS) \
 		{ \
-			YERROR("%s", string_VkResult(errcode)); \
+			YERROR2("%s", string_VkResult(errcode)); \
 			return errcode; \
 		} \
 	} while (0);
@@ -74,6 +74,30 @@ typedef struct VulkanFence
 	b8		bSignaled;
 } VulkanFence;
 
+typedef enum VulkanCommandBufferState 
+{
+	COMMAND_BUFFER_STATE_READY,
+	COMMAND_BUFFER_STATE_RECORDING,
+	COMMAND_BUFFER_STATE_IN_RENDER_PASS,
+	COMMAND_BUFFER_STATE_RECORDING_ENDED,
+	COMMAND_BUFFER_STATE_SUBMITTED,
+	COMMAND_BUFFER_STATE_NOT_ALLOCATED
+} VkCommandBufferState;
+
+typedef struct VulkanCommandBuffer 
+{
+	VkCommandBuffer			handle;
+	VkCommandBufferState	state;
+} VulkanCommandBuffer;
+
+typedef struct VulkanImmediateSubmit
+{
+	VulkanFence			fence;
+	VulkanCommandBuffer	commandBuffer;
+	VkCommandPool		commandPool;
+}VulkanImmediateSubmit;
+
+
 typedef struct VulkanDevice
 {
 	VkDevice							logicalDev;
@@ -94,6 +118,8 @@ typedef struct VulkanDevice
 
 	VkCommandPool						graphicsCommandPool;
 	VkFormat							depthFormat;
+
+	VulkanImmediateSubmit				immediateSubmit;
 } VulkanDevice;
 
 typedef struct VulkanImage
@@ -104,7 +130,6 @@ typedef struct VulkanImage
 	uint32_t		width;
 	uint32_t		height;
 } VulkanImage;
-
 
 typedef enum VulkanRenderPassState 
 {
@@ -151,21 +176,6 @@ typedef struct VkSwapchain
 	VulkanImage			depthAttachment;
 } VkSwapchain;
 
-typedef enum VulkanCommandBufferState 
-{
-	COMMAND_BUFFER_STATE_READY,
-	COMMAND_BUFFER_STATE_RECORDING,
-	COMMAND_BUFFER_STATE_IN_RENDER_PASS,
-	COMMAND_BUFFER_STATE_RECORDING_ENDED,
-	COMMAND_BUFFER_STATE_SUBMITTED,
-	COMMAND_BUFFER_STATE_NOT_ALLOCATED
-} VkCommandBufferState;
-
-typedef struct VulkanCommandBuffer 
-{
-	VkCommandBuffer			handle;
-	VkCommandBufferState	state;
-} VulkanCommandBuffer;
 
 typedef struct DrawImage
 {
@@ -192,13 +202,6 @@ typedef struct DescriptorAllocator
 	VkDescriptorPool		pool;
 	PoolSizeRatio			poolSizeRatio;
 } DescriptorAllocator;
-
-typedef struct VulkanImmediateSubmit
-{
-	VulkanFence			fence;
-	VulkanCommandBuffer	commandBuffer;
-	VkCommandPool		commandPool;
-}VulkanImmediateSubmit;
 
 typedef struct VkContext
 {
@@ -253,8 +256,6 @@ typedef struct VkContext
 
 	VkDescriptorSet					drawImageDescriptorSet;
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
-
-	VulkanImmediateSubmit			immediateSubmit;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;
