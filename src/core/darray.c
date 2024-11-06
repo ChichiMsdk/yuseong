@@ -23,6 +23,8 @@ _DarrayCreate(uint64_t length, uint64_t stride)
 void
 _DarrayDestroy(void* pArray)
 {
+	if (pArray == NULL)
+		return ;
     uint64_t* pHeader = (uint64_t*)pArray - DARRAY_FIELD_LENGTH;
     uint64_t headerSize = DARRAY_FIELD_LENGTH * sizeof(uint64_t);
     uint64_t totalSize = headerSize + pHeader[DARRAY_CAPACITY] * pHeader[DARRAY_STRIDE];
