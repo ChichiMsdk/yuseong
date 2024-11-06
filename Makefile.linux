@@ -12,17 +12,17 @@ GLFW3			=1
 CDEFINES		+=-DPLATFORM_LINUX
 CDEFINES		+= -DYGFLW3
 
+IMGUI_FILES		=$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
+IMGUI_OBJS		=$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
+
+C_OBJS			+= $(LINUX_OBJS) $(VULKAN_OBJS)
+OUTPUT			=$(NAME)
+
 ifdef TRACY_USE
-	INCLUDE_DIRS	+= -I/usr/include/x86_64-unknown-linux-gnu/c++/v1
-	LIB_PATH		+= -L/usr/lib/x86_64-unknown-linux-gnu
 	LIBS			+= -lc++
+	LIB_PATH		+= -L/usr/lib/x86_64-unknown-linux-gnu
+	INCLUDE_DIRS	+= -I/usr/include/x86_64-unknown-linux-gnu/c++/v1
 endif
-
-IMGUI_FILES	=$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
-IMGUI_OBJS	=$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
-
-C_OBJS		+= $(LINUX_OBJS) $(VULKAN_OBJS)
-OUTPUT		=$(NAME)
 
 ############################## COLORS ###################################
 NC=\033[0m

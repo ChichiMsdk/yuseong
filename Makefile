@@ -1,5 +1,4 @@
 FILE := Makefile
-
 OS_EXT =
 ifeq ($(OS),Windows_NT)
 	OS_EXT := .win32
@@ -166,7 +165,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB_OUT)
 	@$(ECHO_E) "$(PURPLE)Updating compile_commands.json..$(NC)"
-	$(BUILD_DIR)/$(JASB_OUT) $(JASB_CMD)
+	@$(BUILD_DIR)/$(JASB_OUT) $(JASB_CMD)
 
 #*************************** CLEAN *************************************#
 
