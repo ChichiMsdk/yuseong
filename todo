@@ -1,16 +1,16 @@
 TODO:
 
-- Os's specific compile-time defines
+- Runtime shader's compilation
+- Threading
 - Wrap VkResult errorcode
-- Config for building without backend
-- Better linker ? Improve compile times..
 - Change the input system
 - Remove the amount of layers
+- Config for building without backend
 - Config files ?
-
-
 
 DONE:
 * Change backend easily
 * Filesystem's API layer
 * Build system using the Filesystem's api layer
+* Os's specific compile-time defines
+* Better linker ? Improve compile times..
