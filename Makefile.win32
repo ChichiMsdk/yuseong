@@ -1,4 +1,4 @@
-# JASB_LIB +=-luser32
+JASB_OUT 		=$(JASB_NAME).exe
 IMGUI_DIR		=$(SRC_DIR)/cimgui
 CIMGUI_DIR		=$(SRC_DIR)/cimgui
 

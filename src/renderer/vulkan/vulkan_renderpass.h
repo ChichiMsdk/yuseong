@@ -3,7 +3,7 @@
 
 #include "yvulkan.h"
 
-void vkRenderPassCreate(
+YND VkResult vkRenderPassCreate(
 		VkContext*							pCtx, 
 		VulkanRenderPass*					pOutRenderPass,
 		RgbaFloat							color,

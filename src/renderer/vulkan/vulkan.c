@@ -28,7 +28,7 @@
 YMB static VkContext gVkCtx;
 static GlobalContext gContext;
 
-static inline VkResult DebugCallbackSetup(
+YMB static inline VkResult DebugCallbackSetup(
 		VkContext*										pCtx);
 
 static inline void SyncInit(
@@ -40,7 +40,7 @@ YND static int32_t MemoryFindIndex(
 		uint32_t										typeFilter,
 		uint32_t										propertyFlags);
 
-static inline VkResult DebugRequiredExtensionValidationLayers(
+YMB static inline VkResult DebugRequiredExtensionValidationLayers(
 		const char***									pppRequiredExtensions,
 		const char***									pppRequiredValidationLayerNames,
 		uint32_t*										pRequiredValidationLayerCount);
@@ -112,7 +112,6 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 
 	/* NOTE: Create vkSurface  */
 	VK_CHECK(OsCreateVkSurface(pOsState, pCurrentCtx));
-
 	YDEBUG("Vulkan surface created");
 
 #ifdef DEBUG
@@ -122,19 +121,24 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: Creating the device */
 	VK_CHECK(VulkanCreateDevice(pCurrentCtx, &pCurrentCtx->device.logicalDev, pGPUName));
 
-	/* NOTE: Create Swapchain and commandpool/commandbuffer */
+	/* NOTE: Create Swapchain */
 	int32_t width = pCurrentCtx->framebufferWidth;
 	int32_t height = pCurrentCtx->framebufferHeight;
 	VK_CHECK(vkSwapchainCreate(pCurrentCtx, width, height, &pCurrentCtx->swapchain));
+
+	/* NOTE: Create commandPool */
 	VK_CHECK(vkCommandPoolCreate(pCurrentCtx->device, pCurrentCtx->pAllocator, &pCurrentCtx->device.graphicsCommandPool));
+
+	/* NOTE: Create commandBuffer */
 	VK_CHECK(vkCommandBufferCreate(pCurrentCtx));
 
+	/* NOTE: Create RenderPass */
 	YMB RgbaFloat color = { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
 	YMB RectFloat rect = { .x = 0.0f, .y = 0.0f, .w = width, .h = height, };
 	YMB f32 depth = 1.0f;
 	YMB f32 stencil = 0.0f;
+	VK_CHECK(vkRenderPassCreate(pCurrentCtx, &pCurrentCtx->mainRenderpass, color, rect, depth, stencil));
 
-	vkRenderPassCreate(pCurrentCtx, &pCurrentCtx->mainRenderpass, color, rect, depth, stencil);
 	pCurrentCtx->swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, pCurrentCtx->swapchain.imageCount);
 	vkFramebuffersRegenerate(pCurrentCtx, &pCurrentCtx->swapchain, &pCurrentCtx->mainRenderpass);
 

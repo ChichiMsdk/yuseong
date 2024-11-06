@@ -25,7 +25,7 @@ COMMAND_CDEFINES		=-DCHICHI
 COMMAND_CFLAGS			=-g3 -Wvarargs
 
 ifeq ($(ASAN_USE),1)
-	COMMAND_CFLAGS		+= -fsanitize=address -O0
+	COMMAND_CFLAGS		+= -fsanitize=address -O3
 else
 	COMMAND_CFLAGS		+= -O3
 endif
@@ -38,7 +38,7 @@ ifeq ($(GLFW_USE),1)
 	COMMAND_CDEFINES	+= -DYGLFW3
 endif
 ifeq ($(RELEASE_USE),1)
-	COMMAND_CDEFINES	+= -D_RELEASE -DRELEASE -DYURELEASE
+	COMMAND_CDEFINES	+= -D_RELEASE -DRELEASE -DYURELEASE=1
 else
 	COMMAND_CDEFINES	+= -D_DEBUG -DDEBUG -DYUDEBUG
 endif
@@ -48,6 +48,7 @@ BUILD_DIR		=build
 OBJ_DIR			=$(BUILD_DIR)/obj
 OBJ				=obj
 ECHO_E			=echo
+JASB_NAME		=jasb
 JASB_OUT		=jasb
 JASB_FILE		=jasb.c
 JASB_CMD		=*.o.json
@@ -165,7 +166,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB_OUT)
 	@$(ECHO_E) "$(PURPLE)Updating compile_commands.json..$(NC)"
-	@$(BUILD_DIR)/$(JASB_OUT) $(JASB_CMD)
+	$(BUILD_DIR)/$(JASB_OUT) $(JASB_CMD)
 
 #*************************** CLEAN *************************************#
 
