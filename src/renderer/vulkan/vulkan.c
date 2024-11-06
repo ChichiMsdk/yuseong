@@ -10,7 +10,6 @@
 #include "vulkan_fence.h"
 #include "vulkan_descriptor.h"
 #include "vulkan_pipeline.h"
-#include "vulkan_imgui.h"
 
 #include "core/darray.h"
 #include "core/darray_debug.h"
@@ -61,6 +60,7 @@ SyncInit(VkContext* pCtx, VulkanDevice device)
 	VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence))
 }
 
+#ifdef DEBUG
 static inline VkResult
 DebugCallbackSetup(VkContext* pCtx)
 {
@@ -142,6 +142,7 @@ DebugRequiredExtensionValidationLayers(
 	YINFO("All required validation layers are present.");
 	return VK_SUCCESS;
 }
+#endif
 
 YND VkResult
 vkInit(OsState *pOsState, void** ppOutCtx)
@@ -253,8 +254,6 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 	VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, pShaderFilePath));
-
-	VK_CHECK(ImguiInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredValidationLayerNames);

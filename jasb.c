@@ -464,7 +464,7 @@ DestroyFileList(FileList *pFileList)
 			LocalSize(lpDisplayBuf) / sizeof(TCHAR),
 			TEXT("%s failed with error %d: %s"), 
 			lpszFunction, dw, lpMsgBuf); 
-		MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+		fprintf(stderr, "Error: %s\n", (LPCTSTR)lpDisplayBuf);
 
 		LocalFree(lpMsgBuf);
 		LocalFree(lpDisplayBuf);

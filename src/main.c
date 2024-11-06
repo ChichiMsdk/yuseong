@@ -7,7 +7,7 @@
 
 b8 gRunning = TRUE;
 
-const char* __asan_default_options() { return "detect_leaks=0"; }
+/* const char* __asan_default_options() { return "detect_leaks=0"; } */
 #include "test.h"
 
 AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 1500, .h = 900, };

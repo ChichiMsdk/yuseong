@@ -1,7 +1,5 @@
 #include "vulkan_draw.h"
 
-#include "vulkan_imgui.h"
-
 #include "renderer/renderer_defines.h"
 #include "vulkan_fence.h"
 #include "vulkan_swapchain.h"
