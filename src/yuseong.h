@@ -12,6 +12,8 @@
 extern AppConfig gAppConfig;
 extern OsState gOsState;
 
+void AddEventCallbackAndInit(void);
+
 void ArgvCheck(
 		int									argc,
 		char**								ppArgv,

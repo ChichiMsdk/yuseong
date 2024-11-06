@@ -29,12 +29,8 @@ main(int argc, char **ppArgv)
 	if (!OsInit(&gOsState, gAppConfig))
 		exit(1);
 
-	EventInit();
+	AddEventCallbackAndInit();
 	InputInitialize();
-	EventRegister(EVENT_CODE_APPLICATION_QUIT, 0, _OnEvent);
-	EventRegister(EVENT_CODE_KEY_PRESSED, 0, _OnKey);
-	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
-	EventRegister(EVENT_CODE_RESIZED, 0, _OnResized);
 
 	YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
 	KASSERT(gAppConfig.pRenderer);

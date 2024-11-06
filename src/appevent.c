@@ -2,6 +2,16 @@
 
 #include "core/ystring.h"
 
+void 
+AddEventCallbackAndInit(void)
+{
+	EventInit();
+	EventRegister(EVENT_CODE_APPLICATION_QUIT, 0, _OnEvent);
+	EventRegister(EVENT_CODE_KEY_PRESSED, 0, _OnKey);
+	EventRegister(EVENT_CODE_KEY_RELEASED, 0, _OnKey);
+	EventRegister(EVENT_CODE_RESIZED, 0, _OnResized);
+}
+
 void
 ArgvCheck(int argc, char **ppArgv, RendererType *pType)
 {
