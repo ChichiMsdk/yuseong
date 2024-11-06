@@ -1,16 +1,17 @@
-#ifndef ASSERTS_H
-#define ASSERTS_H
-#include "mydefines.h"
-
 #define YASSERTIONS_ENABLED
 
+#ifndef MYASSERT_H
+#define MYASSERT_H
+#include "mydefines.h"
+
 #ifdef YASSERTIONS_ENABLED
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #define YDebugBreak() __debugbreak()
 #else
 #define YDebugBreak() __builtin_trap()
-#endif // YASSERTIONS_ENABLED
+#endif // _MSC_VER
 
 #include <stdint.h>
 
@@ -57,6 +58,6 @@ void ReportAssertionFailure(
 #define KASSERT_MSG(expr, message)  // Does nothing at all
 #define KASSERT_DEBUG(expr)         // Does nothing at all
 
-#endif //DEBUG
+#endif //YASSERTIONS_ENABLED
 
-#endif // ASSERT_H
+#endif // MYASSERT_H
