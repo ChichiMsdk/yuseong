@@ -1,4 +1,4 @@
-#define DARRAY_LOG
+#include "darray_debug.h"
 #ifndef DARRAY_LOG
 
 #ifndef DARRAY_H

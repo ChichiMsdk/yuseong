@@ -1,4 +1,7 @@
+#ifdef DDEBUG
 #define DARRAY_LOG
+#endif
+
 #ifdef DARRAY_LOG
 
 #ifndef DARRAY_DEBUG_H
@@ -129,5 +132,6 @@ YND void* _DarrayInsertAt(
     _DarrayFieldSet(array, DARRAY_LENGTH, value)
 
 #endif // DARRAY_DEBUG_H
-
+#else
+void GetLeaks(void);
 #endif // DARRAY_LOG

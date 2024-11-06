@@ -308,5 +308,11 @@ _DarrayInsertAt(void* pArray, uint64_t index, void* pValue, const char* pFile, i
     _DarrayFieldSet(pArray, DARRAY_LENGTH, length + 1);
     return pArray;
 }
+#else
+
+void
+GetLeaks(void)
+{
+}
 
 #endif // DARRAY_LOG

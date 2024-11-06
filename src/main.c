@@ -4,6 +4,7 @@
 #include "yuseong.h"
 
 #include "core/darray_debug.h"
+#include "core/darray.h"
 
 b8 gRunning = TRUE;
 
