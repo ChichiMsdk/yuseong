@@ -51,6 +51,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkDebugCallback(
 		const VkDebugUtilsMessengerCallbackDataEXT*		pCallbackData,
 		void*											pUserData);
 
+extern int32_t gShaderFileIndex;
+
+/* TODO: Make it a function that looks config file for the folder ?*/
+extern const char *gpShaderFilePath[];
 
 YND VkResult
 vkInit(OsState *pOsState, void** ppOutCtx)
@@ -133,18 +137,18 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	VK_CHECK(vkCommandBufferCreate(pCurrentCtx));
 
 	/* NOTE: Create RenderPass */
-	YMB RgbaFloat color = { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
-	YMB RectFloat rect = { .x = 0.0f, .y = 0.0f, .w = width, .h = height, };
-	YMB f32 depth = 1.0f;
-	YMB f32 stencil = 0.0f;
+	YMB RgbaFloat	color	= { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
+	YMB RectFloat	rect	= { .x = 0.0f, .y = 0.0f, .w = width, .h = height, };
+	YMB f32			depth	= 1.0f;
+	YMB f32 		stencil	= 0.0f;
 	VK_CHECK(vkRenderPassCreate(pCurrentCtx, &pCurrentCtx->mainRenderpass, color, rect, depth, stencil));
 
 	pCurrentCtx->swapchain.pFramebuffers = DarrayReserve(VulkanFramebuffer, pCurrentCtx->swapchain.imageCount);
 	vkFramebuffersRegenerate(pCurrentCtx, &pCurrentCtx->swapchain, &pCurrentCtx->mainRenderpass);
 
-	pCurrentCtx->pSemaphoresAvailableImage = DarrayReserve(VkSemaphore, pCurrentCtx->swapchain.maxFrameInFlight);
-	pCurrentCtx->pSemaphoresQueueComplete = DarrayReserve(VkSemaphore, pCurrentCtx->swapchain.maxFrameInFlight);
-	pCurrentCtx->pFencesInFlight = DarrayReserve(VulkanFence, pCurrentCtx->swapchain.maxFrameInFlight);
+	pCurrentCtx->pSemaphoresAvailableImage	= DarrayReserve(VkSemaphore, pCurrentCtx->swapchain.maxFrameInFlight);
+	pCurrentCtx->pSemaphoresQueueComplete	= DarrayReserve(VkSemaphore, pCurrentCtx->swapchain.maxFrameInFlight);
+	pCurrentCtx->pFencesInFlight			= DarrayReserve(VulkanFence, pCurrentCtx->swapchain.maxFrameInFlight);
 
 	/* NOTE: Init semaphore and fences */
 	SyncInit(pCurrentCtx, pCurrentCtx->device);
@@ -160,16 +164,14 @@ vkInit(OsState *pOsState, void** ppOutCtx)
         pCurrentCtx->ppImagesInFlight[i] = 0;
     }
 
-	/* TODO: Make it a function that looks config file for the folder ?*/
-	const char *pShaderFilePath = "./build/obj/shaders/gradient_color.comp.spv";
-
 	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
-	VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, pShaderFilePath));
+	/* VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath[gShaderFileIndex])); */
+	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath));
 
 	/* NOTE: Cleanup */
-	DarrayDestroy(ppRequiredValidationLayerNames);
 	DarrayDestroy(ppRequiredExtensions);
+	DarrayDestroy(ppRequiredValidationLayerNames);
 
 	(*ppOutCtx) = pCurrentCtx;
 
@@ -182,6 +184,7 @@ static inline VkResult
 DebugCallbackSetup(VkContext* pCtx)
 {
 	YDEBUG("Creating Vulkan debugger...");
+
 	uint32_t logSeverity = 
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT 
 		| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -203,7 +206,7 @@ DebugCallbackSetup(VkContext* pCtx)
 
 	PFN_vkCreateDebugUtilsMessengerEXT pfnDebug =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(pCtx->instance, "vkCreateDebugUtilsMessengerEXT");
-	KASSERT_MSG(pfnDebug, "Failed to create debug messenger!");
+	YASSERT_MSG(pfnDebug, "Failed to create debug messenger!");
 	VK_CHECK(pfnDebug(pCtx->instance, &debugCreateInfo, pCtx->pAllocator, &pCtx->debugMessenger));
 	YDEBUG("Vulkan debugger created.");
 
@@ -217,25 +220,27 @@ DebugRequiredExtensionValidationLayers(
 		uint32_t*							pRequiredValidationLayerCount)
 {
 	DarrayPush(*pppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
 	YDEBUG("Required extensions:");
 	uint32_t length = DarrayLength(*pppRequiredExtensions);
 	for (uint32_t i = 0; i < length; ++i)
 		YDEBUG((*pppRequiredExtensions)[i]);
 
-	/* NOTE: The list of validation layers required. */
 	YINFO("Validation layers enabled. Enumerating...");
+
+	/* NOTE: The list of validation layers required. */
 	*pppRequiredValidationLayerNames = DarrayCreate(const char*);
 	DarrayPush(*pppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
 	*pRequiredValidationLayerCount = DarrayLength(*pppRequiredValidationLayerNames);
 
-	// Obtain list of available validation layers.
+	/* NOTE: Obtain list of available validation layers. */
 	uint32_t availableLayerCount = 0;
 	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
 
 	VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
 	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
 
-	//  Verify all required layers are available.
+	/* NOTE:Verify all required layers are available. */
 	for (uint32_t i = 0; i < *pRequiredValidationLayerCount; ++i)
 	{
 		YINFO("Searching for layer: %s...", (*pppRequiredValidationLayerNames)[i]);
@@ -264,23 +269,25 @@ DebugRequiredExtensionValidationLayers(
 void
 vkShutdown(void *pContext)
 {
-	VkContext *pCtx = (VkContext*)pContext;
-	VkDevice device = pCtx->device.logicalDev;
-	VulkanDevice myDevice = pCtx->device;
-	VkAllocationCallbacks* pAllocator = pCtx->pAllocator;
+	VkContext *pCtx						= (VkContext*)pContext;
+	VkDevice device						= pCtx->device.logicalDev;
+	VulkanDevice myDevice				= pCtx->device;
+	VkAllocationCallbacks* pAllocator	= pCtx->pAllocator;
 
 #ifdef DEBUG
 		PFN_vkDestroyDebugUtilsMessengerEXT pfnDestroyDebug = (PFN_vkDestroyDebugUtilsMessengerEXT)
 			vkGetInstanceProcAddr(pCtx->instance, "vkDestroyDebugUtilsMessengerEXT");
 
-		KASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
+		YASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
 		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
 #endif // DEBUG
-	
-	VK_ASSERT(vkDeviceWaitIdle(device));
-	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
-	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
 
+    /*
+	 * VK_ASSERT(vkDeviceWaitIdle(device));
+	 * vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
+	 * vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
+     */
+	vkPipelinesCleanUp(pCtx, device);
 	vkDestroyDescriptorSetLayout(device, pCtx->drawImageDescriptorSetLayout, pAllocator);
 	vkDestroyDescriptorPool(device, pCtx->descriptorPool.handle, pAllocator);
 
@@ -298,6 +305,7 @@ vkShutdown(void *pContext)
 	 * 	vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
 	 * vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
      */
+
 	vkDestroySurfaceKHR(pCtx->instance, pCtx->surface, pAllocator);
 
 	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
@@ -323,16 +331,21 @@ vkShutdown(void *pContext)
 	/* TODO: Add check if NULL so we dont substract the size and prevent checking here */
 	if (pCtx->device.swapchainSupport.pFormats)
 	{
-		yFree(pCtx->device.swapchainSupport.pFormats, pCtx->device.swapchainSupport.formatCount, 
+		yFree(
+				pCtx->device.swapchainSupport.pFormats,
+				pCtx->device.swapchainSupport.formatCount,
 				MEMORY_TAG_RENDERER);
 	}
 	if (pCtx->device.swapchainSupport.pPresentModes)
 	{
-		yFree(pCtx->device.swapchainSupport.pPresentModes, pCtx->device.swapchainSupport.presentModeCount, 
+		yFree(
+				pCtx->device.swapchainSupport.pPresentModes,
+				pCtx->device.swapchainSupport.presentModeCount,
 				MEMORY_TAG_RENDERER);
 	}
 	vkDestroyDevice(pCtx->device.logicalDev, pAllocator);
 	vkDestroyInstance(pCtx->instance, pAllocator);
+
 	yFree(pCtx, 1, MEMORY_TAG_RENDERER_CONTEXT);
 }
 
@@ -359,7 +372,7 @@ SyncInit(VkContext* pCtx, VulkanDevice device)
 		VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
 	}
 	/* NOTE: Fence for the immediate submit commands */
-	VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence))
+	/* VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence)) */
 }
 
 YND int32_t

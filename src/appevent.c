@@ -2,6 +2,11 @@
 
 #include "core/ystring.h"
 
+extern int32_t gShaderFileIndex;
+/* TODO: Make it a function that looks config file for the folder ?*/
+extern const char *gpShaderFilePath[];
+extern uint32_t gFilePathSize;
+
 void 
 AddEventCallbackAndInit(void)
 {
@@ -26,6 +31,58 @@ ArgvCheck(int argc, char **ppArgv, RendererType *pType)
 		else
 			YERROR("Unknown rendererType option. Using default %s", pRendererType[*pType]);
 	}
+}
+
+b8
+_OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context) 
+{
+	if (code == EVENT_CODE_KEY_PRESSED) 
+	{
+		uint16_t keyCode = context.data.uint16_t[0];
+		switch (keyCode)
+		{
+			case KEY_RIGHT:
+				{
+					gShaderFileIndex++;
+					if (gShaderFileIndex >= (int32_t) gFilePathSize)
+						gShaderFileIndex = 0;
+					YINFO("FileShaderIndex: %u", gShaderFileIndex);
+					return TRUE;
+				}
+			case KEY_LEFT:
+				{
+					gShaderFileIndex--;
+					if (gShaderFileIndex < 0)
+						gShaderFileIndex = gFilePathSize - 1;
+					YINFO("FileShaderIndex: %u", gShaderFileIndex);
+					return TRUE;
+				}
+		}
+	}
+	else if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
+	{
+		uint16_t keyCode = context.data.uint16_t[0];
+		switch (keyCode)
+		{
+			case KEY_ESCAPE:
+				{
+					/* NOTE: Technically firing an event to itself, but there may be other listeners. */
+					EventContext data = {0};
+					EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
+					return TRUE;
+				}
+			default:
+				{
+					YINFO("%d -> '%c' key pressed in window.\n", keyCode, keyCode);
+				}
+		}
+	}
+	else if (code == EVENT_CODE_KEY_RELEASED) 
+	{
+		YMB uint16_t keyCode = context.data.uint16_t[0];
+		/* YINFO("%d -> '%c' key released in window.\n", keyCode, keyCode); */
+	}
+	return FALSE;
 }
 
 b8
@@ -77,29 +134,6 @@ _OnEvent(uint16_t code, YMB void* pSender, YMB void* pListenerInst, YMB EventCon
 				gRunning = FALSE;
 				return TRUE;
 			}
-	}
-	return FALSE;
-}
-
-b8
-_OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext context) 
-{
-	if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
-	{
-		uint16_t keyCode = context.data.uint16_t[0];
-		if (keyCode == KEY_ESCAPE) 
-		{
-			// NOTE: Technically firing an event to itself, but there may be other listeners.
-			EventContext data = {0};
-			EventFire(EVENT_CODE_APPLICATION_QUIT, 0, data);
-			return TRUE;
-		}
-		YINFO("%d -> '%c' key pressed in window.\n", keyCode, keyCode);
-	}
-	else if (code == EVENT_CODE_KEY_RELEASED) 
-	{
-		YMB uint16_t keyCode = context.data.uint16_t[0];
-		YINFO("%d -> '%c' key released in window.\n", keyCode, keyCode);
 	}
 	return FALSE;
 }

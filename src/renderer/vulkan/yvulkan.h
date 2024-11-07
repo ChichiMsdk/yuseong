@@ -8,8 +8,10 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
+#include "core/vec4.h"
 #include "core/myassert.h"
 #include "renderer/renderer_defines.h"
+#include "renderer/vulkan/macro_utils.h"
 
 #ifdef PLATFORM_LINUX
 #	ifdef YGLFW3
@@ -18,27 +20,13 @@
 
 typedef struct OsState OsState;
 
-#define VK_ASSERT(expr) KASSERT_MSG(expr == VK_SUCCESS, string_VkResult(expr));
-
-#define VK_RESULT(expr) \
-	do { \
-		VkResult errcode = (expr); \
-		if (errcode != VK_SUCCESS) \
-		{ \
-			return errcode; \
-		} \
-	} while (0);
-
-#define VK_CHECK(expr) \
-	do { \
-		VkResult errcode = (expr); \
-		if (errcode != VK_SUCCESS) \
-		{ \
-			YERROR2("%s", string_VkResult(errcode)); \
-			return errcode; \
-		} \
-	} while (0);
-
+typedef struct ComputeShaderFx
+{
+	const char*			pFilePath;
+	VkPipeline			pipeline;
+	VkPipelineLayout	pipelineLayout;
+	ComputePushConstant pushConstant;
+} ComputeShaderFx;
 
 typedef struct VkPhysicalDeviceRequirements
 {
@@ -199,8 +187,8 @@ typedef struct VulkanDescriptorPool
 
 typedef struct DescriptorAllocator
 {
-	VkDescriptorPool		pool;
-	PoolSizeRatio			poolSizeRatio;
+	VkDescriptorPool	pool;
+	PoolSizeRatio		poolSizeRatio;
 } DescriptorAllocator;
 
 typedef struct VkContext
@@ -257,6 +245,8 @@ typedef struct VkContext
 	VkDescriptorSet					drawImageDescriptorSet;
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
 
+	ComputeShaderFx					*pComputeShaders;
+
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;
 #endif
@@ -276,7 +266,7 @@ YND VkResult vkInit(
 		OsState*							pState,
 		void**								ppOutContext);
 
-void		 vkShutdown(
+void vkShutdown(
 		void*								pCtx);
 
 #endif // YVULKAN_H

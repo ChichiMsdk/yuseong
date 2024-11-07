@@ -28,8 +28,10 @@
 /*
  * TODO: Change error handling here
  * Needs to take into account fopen failures
+ *
+ * TODO: Keep those files loaded in memory ?
  */
-VkResult
+YND VkResult
 vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkShaderModule* pOutShaderModule)
 {
 	uint32_t*	pBuffer;
@@ -67,7 +69,106 @@ vkLoadShaderModule(VkContext *pCtx, const char* pFilePath, VkDevice device, VkSh
 	return VK_SUCCESS;
 }
 
-VkResult
+YND VkResult
+vkComputePipelineInit(VkContext *pCtx, VkDevice device, const char** ppShaderPaths)
+{
+	pCtx->pComputeShaders = DarrayReserve(ComputeShaderFx, 3);
+
+	/* NOTE: Init pipelineLayout */
+	VkPushConstantRange pushConstantRange = {
+		.offset = 0,
+		.size = sizeof(ComputePushConstant),
+		.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	};
+	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo = {
+		.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.pNext					= VK_NULL_HANDLE,
+		.pSetLayouts			= &pCtx->drawImageDescriptorSetLayout,
+		.setLayoutCount			= 1,
+		.pPushConstantRanges	= &pushConstantRange,
+		.pushConstantRangeCount	= 1,
+	};
+	VK_CHECK(vkCreatePipelineLayout(
+				device,
+				&computePipelineLayoutCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->gradientComputePipelineLayout));
+
+	/* NOTE: Setup PipelineInfo */
+	uint32_t createInfoCount = 1;
+	VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+
+	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
+		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
+		.pName	= "main",
+	};
+	VkComputePipelineCreateInfo computePipelineCreateInfo = {
+		.sType	= VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.layout	= pCtx->gradientComputePipelineLayout,
+		.stage	= pipelineShaderStageInfo,
+	};
+
+	/* NOTE: Load and init pipeline of gradientColorDrawShader */
+	VkShaderModule gradientDrawShader;
+	VkShaderModule skyDrawShader;
+	VkShaderModule gradientColorDrawShader;
+	VK_CHECK(vkLoadShaderModule(pCtx, ppShaderPaths[0], device, &gradientColorDrawShader));
+	VK_CHECK(vkLoadShaderModule(pCtx, ppShaderPaths[1], device, &gradientDrawShader));
+	VK_CHECK(vkLoadShaderModule(pCtx, ppShaderPaths[2], device, &skyDrawShader));
+
+	/* NOTE: Load and init pipeline of gradientDrawShader */
+	pCtx->pComputeShaders[0].pFilePath = ppShaderPaths[0];
+	pCtx->pComputeShaders[0].pipelineLayout = pCtx->gradientComputePipelineLayout;
+	pCtx->pComputeShaders[0].pushConstant.data1 = Vec4Get(1.0f, 0.0f, 0.0f, 1.0f);
+	pCtx->pComputeShaders[0].pushConstant.data2 = Vec4Get(0.0f, 0.0f, 1.0f, 1.0f);
+	computePipelineCreateInfo.stage.module = gradientColorDrawShader;
+	VK_CHECK(vkCreateComputePipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&computePipelineCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->pComputeShaders[0].pipeline));
+
+	/* NOTE: Load and init pipeline of gradientDrawShader */
+	pCtx->pComputeShaders[1].pFilePath = ppShaderPaths[1];
+	pCtx->pComputeShaders[1].pipelineLayout = pCtx->gradientComputePipelineLayout;
+	pCtx->pComputeShaders[1].pushConstant.data1 = Vec4Get(1.0f, 0.0f, 0.0f, 1.0f);
+	pCtx->pComputeShaders[1].pushConstant.data2 = Vec4Get(0.0f, 0.0f, 1.0f, 1.0f);
+	computePipelineCreateInfo.stage.module = gradientDrawShader;
+	VK_CHECK(vkCreateComputePipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&computePipelineCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->pComputeShaders[1].pipeline));
+
+	/* NOTE: Load and init pipeline of skyDrawShader */
+	pCtx->pComputeShaders[2].pFilePath = ppShaderPaths[2];
+	pCtx->pComputeShaders[2].pipelineLayout = pCtx->gradientComputePipelineLayout;
+	pCtx->pComputeShaders[2].pushConstant.data1 = Vec4Get(0.1f, 0.2f, 0.4f, 0.97f);
+	computePipelineCreateInfo.stage.module = skyDrawShader;
+	VK_CHECK(vkCreateComputePipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&computePipelineCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->pComputeShaders[2].pipeline));
+
+	/* NOTE: Cleanup */
+	vkDestroyShaderModule(device, skyDrawShader, pCtx->pAllocator);
+	vkDestroyShaderModule(device, gradientColorDrawShader, pCtx->pAllocator);
+	vkDestroyShaderModule(device, gradientDrawShader, pCtx->pAllocator);
+
+	return VK_SUCCESS;
+}
+
+YND VkResult
 vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 {
 	VkPushConstantRange pushConstantRange = {
@@ -119,5 +220,17 @@ vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 
 	vkDestroyShaderModule(device, computeDrawShader, pCtx->pAllocator);
 
+	return VK_SUCCESS;
+}
+
+YND VkResult
+vkPipelineReset(VkContext *pCtx, VkDevice device, const char* pFilePath)
+{
+	VK_ASSERT(vkDeviceWaitIdle(device));
+	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pCtx->pAllocator);
+	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pCtx->pAllocator);
+
+	VK_CHECK(vkPipelineInit(pCtx, device, pFilePath));
+	YINFO("Pipeline was successfully reset.");
 	return VK_SUCCESS;
 }
