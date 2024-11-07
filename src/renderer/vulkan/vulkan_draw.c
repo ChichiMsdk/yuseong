@@ -52,7 +52,7 @@ vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd, ComputeSha
 	return VK_SUCCESS;
 }
 
-extern const char *gpShaderFilePath[];
+extern const char *gppShaderFilePath[];
 extern int32_t gShaderFileIndex;
 static int32_t gOldFileShaderIndex;
 
@@ -62,7 +62,7 @@ vkPipelineCheckReset(VkContext* pCtx, VkDevice device)
 	if (gOldFileShaderIndex != gShaderFileIndex)
 	{
 		gOldFileShaderIndex = gShaderFileIndex;
-		VK_CHECK(vkPipelineReset(pCtx, device, gpShaderFilePath[gShaderFileIndex]));
+		VK_CHECK(vkPipelineReset(pCtx, device, gppShaderFilePath[gShaderFileIndex]));
 	}
 	return VK_SUCCESS;
 }

@@ -28,9 +28,6 @@
 YMB static VkContext gVkCtx;
 static GlobalContext gContext;
 
-YMB static inline VkResult DebugCallbackSetup(
-		VkContext*										pCtx);
-
 static inline void SyncInit(
 		VkContext*										pCtx,
 		VulkanDevice									device);
@@ -45,16 +42,12 @@ YMB static inline VkResult DebugRequiredExtensionValidationLayers(
 		const char***									pppRequiredValidationLayerNames,
 		uint32_t*										pRequiredValidationLayerCount);
 
-VKAPI_ATTR VkBool32 VKAPI_CALL vkDebugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
-		const VkDebugUtilsMessengerCallbackDataEXT*		pCallbackData,
-		void*											pUserData);
-
-extern int32_t gShaderFileIndex;
+YMB static inline VkResult DebugCallbackSetup(
+		VkContext*										pCtx);
 
 /* TODO: Make it a function that looks config file for the folder ?*/
-extern const char *gpShaderFilePath[];
+extern int32_t gShaderFileIndex;
+extern const char *gppShaderFilePath[];
 
 YND VkResult
 vkInit(OsState *pOsState, void** ppOutCtx)
@@ -164,10 +157,11 @@ vkInit(OsState *pOsState, void** ppOutCtx)
         pCurrentCtx->ppImagesInFlight[i] = 0;
     }
 
-	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
+	/* NOTE: DescriptorSets allocation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
 	/* VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath[gShaderFileIndex])); */
-	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath));
+	/* NOTE: ComputePipeline for shaders */
+	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gppShaderFilePath));
 
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredExtensions);
@@ -178,93 +172,6 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	YINFO("Vulkan renderer initialized.");
 	return VK_SUCCESS;
 }
-
-#ifdef DEBUG
-static inline VkResult
-DebugCallbackSetup(VkContext* pCtx)
-{
-	YDEBUG("Creating Vulkan debugger...");
-
-	uint32_t logSeverity = 
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT 
-		| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-	// | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-	//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-
-	VkDebugUtilsMessageTypeFlagsEXT messageType = 
-		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-		| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT 
-		| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT 
-		| VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
-
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
-		.sType				= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-		.messageSeverity	= logSeverity,
-		.pfnUserCallback	= vkDebugCallback,
-		.messageType		= messageType,
-	};
-
-	PFN_vkCreateDebugUtilsMessengerEXT pfnDebug =
-		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(pCtx->instance, "vkCreateDebugUtilsMessengerEXT");
-	YASSERT_MSG(pfnDebug, "Failed to create debug messenger!");
-	VK_CHECK(pfnDebug(pCtx->instance, &debugCreateInfo, pCtx->pAllocator, &pCtx->debugMessenger));
-	YDEBUG("Vulkan debugger created.");
-
-	return VK_SUCCESS;
-}
-
-static inline VkResult
-DebugRequiredExtensionValidationLayers(
-		const char***						pppRequiredExtensions,
-		const char***						pppRequiredValidationLayerNames,
-		uint32_t*							pRequiredValidationLayerCount)
-{
-	DarrayPush(*pppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-	YDEBUG("Required extensions:");
-	uint32_t length = DarrayLength(*pppRequiredExtensions);
-	for (uint32_t i = 0; i < length; ++i)
-		YDEBUG((*pppRequiredExtensions)[i]);
-
-	YINFO("Validation layers enabled. Enumerating...");
-
-	/* NOTE: The list of validation layers required. */
-	*pppRequiredValidationLayerNames = DarrayCreate(const char*);
-	DarrayPush(*pppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
-	*pRequiredValidationLayerCount = DarrayLength(*pppRequiredValidationLayerNames);
-
-	/* NOTE: Obtain list of available validation layers. */
-	uint32_t availableLayerCount = 0;
-	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
-
-	VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
-	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
-
-	/* NOTE:Verify all required layers are available. */
-	for (uint32_t i = 0; i < *pRequiredValidationLayerCount; ++i)
-	{
-		YINFO("Searching for layer: %s...", (*pppRequiredValidationLayerNames)[i]);
-		b8 bFound = FALSE;
-		for (uint32_t j = 0; j < availableLayerCount; ++j)
-		{
-			if (!strcmp((*pppRequiredValidationLayerNames)[i], pAvailableLayers[j].layerName))
-			{ 
-				bFound = TRUE; 
-				YINFO("Found."); 
-				break; 
-			}
-		}
-		if (!bFound) 
-		{ 
-			YFATAL("Required validation layer is missing: %s", (*pppRequiredValidationLayerNames)[i]); 
-			exit(1); 
-		}
-	}
-	DarrayDestroy(pAvailableLayers);
-	YINFO("All required validation layers are present.");
-	return VK_SUCCESS;
-}
-#endif
 
 void
 vkShutdown(void *pContext)
@@ -392,6 +299,99 @@ MemoryFindIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t p
     YWARN("Unable to find suitable memory type!");
     return -1;
 }
+
+VKAPI_ATTR VkBool32 VKAPI_CALL vkDebugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT			messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
+		const VkDebugUtilsMessengerCallbackDataEXT*		pCallbackData,
+		void*											pUserData);
+
+#ifdef DEBUG
+static inline VkResult
+DebugCallbackSetup(VkContext* pCtx)
+{
+	YDEBUG("Creating Vulkan debugger...");
+
+	uint32_t logSeverity = 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+	// | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+	//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+
+	VkDebugUtilsMessageTypeFlagsEXT messageType = 
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT 
+		| VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
+		.sType				= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		.messageSeverity	= logSeverity,
+		.pfnUserCallback	= vkDebugCallback,
+		.messageType		= messageType,
+	};
+
+	PFN_vkCreateDebugUtilsMessengerEXT pfnDebug =
+		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(pCtx->instance, "vkCreateDebugUtilsMessengerEXT");
+	YASSERT_MSG(pfnDebug, "Failed to create debug messenger!");
+	VK_CHECK(pfnDebug(pCtx->instance, &debugCreateInfo, pCtx->pAllocator, &pCtx->debugMessenger));
+	YDEBUG("Vulkan debugger created.");
+
+	return VK_SUCCESS;
+}
+
+static inline VkResult
+DebugRequiredExtensionValidationLayers(
+		const char***						pppRequiredExtensions,
+		const char***						pppRequiredValidationLayerNames,
+		uint32_t*							pRequiredValidationLayerCount)
+{
+	DarrayPush(*pppRequiredExtensions, &VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+	YDEBUG("Required extensions:");
+	uint32_t length = DarrayLength(*pppRequiredExtensions);
+	for (uint32_t i = 0; i < length; ++i)
+		YDEBUG((*pppRequiredExtensions)[i]);
+
+	YINFO("Validation layers enabled. Enumerating...");
+
+	/* NOTE: The list of validation layers required. */
+	*pppRequiredValidationLayerNames = DarrayCreate(const char*);
+	DarrayPush(*pppRequiredValidationLayerNames, &"VK_LAYER_KHRONOS_validation");
+	*pRequiredValidationLayerCount = DarrayLength(*pppRequiredValidationLayerNames);
+
+	/* NOTE: Obtain list of available validation layers. */
+	uint32_t availableLayerCount = 0;
+	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, 0));
+
+	VkLayerProperties* pAvailableLayers = DarrayReserve(VkLayerProperties, availableLayerCount);
+	VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, pAvailableLayers));
+
+	/* NOTE:Verify all required layers are available. */
+	for (uint32_t i = 0; i < *pRequiredValidationLayerCount; ++i)
+	{
+		YINFO("Searching for layer: %s...", (*pppRequiredValidationLayerNames)[i]);
+		b8 bFound = FALSE;
+		for (uint32_t j = 0; j < availableLayerCount; ++j)
+		{
+			if (!strcmp((*pppRequiredValidationLayerNames)[i], pAvailableLayers[j].layerName))
+			{ 
+				bFound = TRUE; 
+				YINFO("Found."); 
+				break; 
+			}
+		}
+		if (!bFound) 
+		{ 
+			YFATAL("Required validation layer is missing: %s", (*pppRequiredValidationLayerNames)[i]); 
+			exit(1); 
+		}
+	}
+	DarrayDestroy(pAvailableLayers);
+	YINFO("All required validation layers are present.");
+	return VK_SUCCESS;
+}
+#endif
 
 VKAPI_ATTR VkBool32 VKAPI_CALL 
 vkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,YMB VkDebugUtilsMessageTypeFlagsEXT messageTypes,

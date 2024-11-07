@@ -9,12 +9,12 @@
 b8 gRunning = TRUE;
 
 /* TODO: Make it a function that looks config file for the folder ?*/
-const char *gpShaderFilePath[] = {
+const char *gppShaderFilePath[] = {
 	"./build/obj/shaders/gradient_color.comp.spv",
 	"./build/obj/shaders/gradient.comp.spv",
 	"./build/obj/shaders/sky.comp.spv",
 };
-uint32_t gFilePathSize = COUNT_OF(gpShaderFilePath);
+uint32_t gFilePathSize = COUNT_OF(gppShaderFilePath);
 int32_t gShaderFileIndex = 0;
 
 /* const char* __asan_default_options() { return "detect_leaks=0"; } */

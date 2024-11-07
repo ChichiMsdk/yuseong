@@ -4,7 +4,7 @@
 
 extern int32_t gShaderFileIndex;
 /* TODO: Make it a function that looks config file for the folder ?*/
-extern const char *gpShaderFilePath[];
+extern const char *gppShaderFilePath[];
 extern uint32_t gFilePathSize;
 
 void 
