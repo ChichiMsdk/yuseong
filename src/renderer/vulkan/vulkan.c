@@ -161,7 +161,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
     }
 
 	/* TODO: Make it a function that looks config file for the folder ?*/
-	const char *pShaderFilePath = "./build/obj/shaders/gradient.comp.spv";
+	const char *pShaderFilePath = "./build/obj/shaders/gradient_color.comp.spv";
 
 	/* NOTE: DescriptorSets allocation and Pipeline for shaders creation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));

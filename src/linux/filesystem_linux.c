@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 int
 OsFopen(FILE** pFile, const char* pFilePath, const char* pMode)
@@ -51,9 +52,9 @@ OsFclose(FILE* pStream)
 }
 
 int
-OsStrError(char *pBuffer, size_t bufSize, int errnum)
+OsStrError(YMB char *pBuffer,YMB  size_t bufSize,YMB  int errnum)
 {
-	return strerror_r(errnum, pBuffer, bufSize);
+	return 1;
 }
 
 #endif // YPLATFORM_LINUX

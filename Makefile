@@ -19,8 +19,10 @@ ASAN_USE				=
 RELEASE_USE				=
 TRACY_USE				=
 GLFW3					=
+
 COMMAND_CDEFINES		=-DCHICHI
 COMMAND_CFLAGS			=-g3 -Wvarargs
+
 ifeq ($(ASAN_USE),1)
 	COMMAND_CFLAGS		+= -fsanitize=address -O3
 else
@@ -39,6 +41,7 @@ ifeq ($(RELEASE_USE),1)
 else
 	COMMAND_CDEFINES	+= -D_DEBUG -DDEBUG -DYUDEBUG
 endif
+
 NAME			=yuseong
 BUILD_DIR		=build
 OBJ_DIR			=$(BUILD_DIR)/obj
@@ -112,16 +115,14 @@ ifdef CPP_USE
 	CPP_OBJS	+= $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 endif
 
-CFLAGS			+= $(CDEFINES)
-CPPFLAGS		+= $(CPPDEFINES)
-
 color_link		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC) $(LIB_PATH) $(LIBS)"
 cpp_compile		=$(ECHO_E) "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CPPFLAGS) $(INCLUDE_DIRS)"
 c_compile		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CFLAGS) $(INCLUDE_DIRS)"
 
-MJJSON			=-MJ$@.json 
-
 include $(FILE)$(OS_EXT)
+
+CFLAGS			+= $(CDEFINES)
+CPPFLAGS		+= $(CPPDEFINES)
 
 #*************************** ALL ***************************************#
 
@@ -153,12 +154,12 @@ $(BUILD_DIR)/$(OUTPUT): $(C_OBJS) $(CPP_OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@$(cpp_compile)
-	@$(CPP) $(CPPFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@$(c_compile)
-	@$(CC) $(CFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
 
 #*************************** COMPILE_JSON ******************************#
 

@@ -1,5 +1,6 @@
 #ifdef PLATFORM_LINUX
 #include "linux_utils.h"
+#include <time.h>
 
 /*
  * https://wayland-book.com/surfaces/shared-memory.html

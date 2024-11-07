@@ -1,16 +1,17 @@
-CC				=clang-19
+CC				=clang
 CLINKER			=mold
 
 IMGUI_DIR		=$(SRC_DIR)/imgui
 
 INCLUDE_DIRS	+= -I$(HOME)/tracy/public -I$(HOME)/tracy/public/tracy
-INCLUDE_DIRS	+= -Isrc/renderer/opengl
+
+# INCLUDE_DIRS	+= -Isrc/renderer/opengl
 
 LIBS			+=-lGL -lglfw -lvulkan -lwayland-client -lxkbcommon -lm
 
 GLFW3			=1
 CDEFINES		+=-DPLATFORM_LINUX
-CDEFINES		+= -DYGFLW3
+CDEFINES		+=-DYGLFW3
 
 IMGUI_FILES		=$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
 IMGUI_OBJS		=$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))

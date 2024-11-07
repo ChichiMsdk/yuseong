@@ -6,6 +6,7 @@
 #include "vulkan_command.h"
 #include "vulkan_image.h"
 
+#include "core/vec4.h"
 #include "core/logger.h"
 #include "TracyC.h"
 
@@ -15,10 +16,10 @@ VkResult
 vkImmediateSubmit(VkContext* pCtx, VulkanDevice device, void (*function)(VkCommandBuffer cmd))
 {
 	VK_CHECK(vkFenceReset(pCtx, &device.immediateSubmit.fence));
-	b8 bSingleUse = TRUE;
-	b8 bRenderPassContinue = FALSE;
-	b8 bSimultaneousUse = FALSE;
 
+	b8 bSingleUse			= TRUE;
+	b8 bRenderPassContinue	= FALSE;
+	b8 bSimultaneousUse		= FALSE;
 	vkCommandBufferBegin(&device.immediateSubmit.commandBuffer, bSingleUse, bRenderPassContinue, bSimultaneousUse);
 
 	function(device.immediateSubmit.commandBuffer.handle);
@@ -26,23 +27,23 @@ vkImmediateSubmit(VkContext* pCtx, VulkanDevice device, void (*function)(VkComma
 	VK_CHECK(vkEndCommandBuffer(device.immediateSubmit.commandBuffer.handle));
 
 	VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-		.commandBuffer = device.immediateSubmit.commandBuffer.handle,
+		.sType						= VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+		.commandBuffer				= device.immediateSubmit.commandBuffer.handle,
 	};
-
 	VkSubmitInfo2 submitInfo2 = {
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-		.commandBufferInfoCount = 1,
-		.pCommandBufferInfos = &cmdBufferSubmitInfo,
-		.pWaitSemaphoreInfos = VK_NULL_HANDLE,
-		.waitSemaphoreInfoCount = 0,
-		.pSignalSemaphoreInfos = VK_NULL_HANDLE,
-		.signalSemaphoreInfoCount = 0,
+		.sType						= VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+		.commandBufferInfoCount		= 1,
+		.pCommandBufferInfos		= &cmdBufferSubmitInfo,
+		.pWaitSemaphoreInfos		= VK_NULL_HANDLE,
+		.waitSemaphoreInfoCount		= 0,
+		.pSignalSemaphoreInfos		= VK_NULL_HANDLE,
+		.signalSemaphoreInfoCount	= 0,
 	};
-	uint32_t submitCount = 1;
-	uint32_t fenceCount = 1;
+	uint32_t	submitCount	= 1;
+	uint32_t	fenceCount	= 1;
 	VK_CHECK(vkQueueSubmit2(device.graphicsQueue, submitCount, &submitInfo2, device.immediateSubmit.fence.handle));
 	VK_CHECK(vkWaitForFences(device.logicalDev, fenceCount, &device.immediateSubmit.fence.handle, TRUE, 9999999999));
+
 	return VK_SUCCESS;
 }
 
@@ -52,11 +53,10 @@ vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 	VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 	vkCmdBindPipeline(pCmd->handle, pipelineBindPoint, pCtx->gradientComputePipeline);
 
-	uint32_t firstSet = 0;
-	uint32_t descriptorSetCount = 1;
-	uint32_t dynamicOffsetCount = 0;
-	const uint32_t* pDynamicOffsets = VK_NULL_HANDLE;
-
+	const uint32_t*	pDynamicOffsets		= VK_NULL_HANDLE;
+	uint32_t		firstSet			= 0;
+	uint32_t		descriptorSetCount	= 1;
+	uint32_t		dynamicOffsetCount	= 0;
 	vkCmdBindDescriptorSets(
 			pCmd->handle,
 			pipelineBindPoint,
@@ -67,10 +67,25 @@ vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 			dynamicOffsetCount,
 			pDynamicOffsets);
 
+	ComputePushConstant pushConstant = {
+		.data1 = Vec4Get(1.0f, 0.0f, 0.0f, 1.0f),
+		.data2 = Vec4Get(0.0f, 0.0f, 1.0f, 1.0f),
+	};
+
+	VkShaderStageFlags	flags = VK_SHADER_STAGE_COMPUTE_BIT;
+	vkCmdPushConstants(
+			pCmd->handle,
+			pCtx->gradientComputePipelineLayout,
+			flags,
+			0,
+			sizeof(ComputePushConstant),
+			&pushConstant);
+
 	uint32_t groupCountX = ceil(pCtx->drawImage.extent.width / 16.0f);
 	uint32_t groupCountY = ceil(pCtx->drawImage.extent.height / 16.0f);
 	uint32_t groupCountZ = 1;
 	vkCmdDispatch(pCmd->handle, groupCountX, groupCountY, groupCountZ);
+
 	return VK_SUCCESS;
 }
 
@@ -95,8 +110,9 @@ YND VkResult
 vkDrawImpl(VkContext* pCtx)
 {
 	TracyCZoneN(drawCtx, "yDraw", 1);
-	YMB VkDevice device = pCtx->device.logicalDev;
-	uint64_t fenceWaitTimeoutNs = 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
+
+	YMB VkDevice	device				= pCtx->device.logicalDev;
+	uint64_t		fenceWaitTimeoutNs	= 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
 	VK_CHECK(vkFenceWait(pCtx, &pCtx->pFencesInFlight[pCtx->currentFrame], fenceWaitTimeoutNs));
 
 	/*
@@ -115,16 +131,21 @@ vkDrawImpl(VkContext* pCtx)
 				&pCtx->imageIndex));
 
 	/* NOTE: Getting the current frame's cmd buffer and reset it */
-	VulkanCommandBuffer *pCmd = &pCtx->pGfxCommands[pCtx->imageIndex];
-	VkCommandBufferResetFlags flags = 0;
+	VulkanCommandBuffer*		pCmd	= &pCtx->pGfxCommands[pCtx->imageIndex];
+	VkCommandBufferResetFlags	flags	= 0;
 	VK_CHECK(vkCommandBufferReset(pCmd, flags));
 
 	/* NOTE: Start command recording */
-	vkCommandBufferBegin(pCmd, TRUE, FALSE, FALSE);
-	VkImage swapchainImage = pCtx->swapchain.pImages[pCtx->imageIndex];
-	DrawImage drawImage = pCtx->drawImage;
-	VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	VkImageLayout newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	b8				bSingleUse			= TRUE;
+	b8				bSimultaneousUse	= FALSE;
+	b8				bRenderPassContinue	= FALSE;
+	DrawImage		drawImage			= pCtx->drawImage;
+	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
+	vkCommandBufferBegin(pCmd, bSingleUse, bRenderPassContinue, bSimultaneousUse);
+
+	/* NOTE: Make the swapchain image into general mode */
+	VkImageLayout	currentLayout		= VK_IMAGE_LAYOUT_UNDEFINED;
+	VkImageLayout	newLayout			= VK_IMAGE_LAYOUT_GENERAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 
 	/* NOTE: Clear the background */
@@ -134,14 +155,14 @@ vkDrawImpl(VkContext* pCtx)
 	vkComputeShaderInvocation(pCtx, pCmd);
 
 	/* NOTE: Make the swapchain image into presentable mode */
-	currentLayout = VK_IMAGE_LAYOUT_GENERAL;
-	newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	currentLayout	= VK_IMAGE_LAYOUT_GENERAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	/* NOTE: Copy the image */
-	VkExtent2D swapchainExtent = {.width = pCtx->swapchain.extent.width, .height = drawImage.extent.height};
-	VkExtent2D drawExtent = {.width = drawImage.extent.width, .height = drawImage.extent.height};
+	VkExtent2D drawExtent		= {.width = drawImage.extent.width, .height = drawImage.extent.height};
+	VkExtent2D swapchainExtent	= {.width = pCtx->swapchain.extent.width, .height = drawImage.extent.height};
 	vkImageCopy(pCmd->handle, drawImage.image.handle, swapchainImage, drawExtent, swapchainExtent);
 
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -161,18 +182,20 @@ vkDrawImpl(VkContext* pCtx)
 void
 vkClearBackground(VkContext* pCtx, VulkanCommandBuffer* pCmd, VkImage pImage)
 {
-	f32 flashSpeed = 960.0f;
-	YMB f32 flash = fabs(sin(pCtx->nbFrames / flashSpeed));
-	VkClearColorValue clearValue = {.float32 = {0.0f, 0.0f, flash, 1.0f}};
+	f32					flashSpeed	= 960.0f;
+	YMB f32				flash		= fabs(sin(pCtx->nbFrames / flashSpeed));
+	VkClearColorValue	clearValue	= {.float32 = {0.0f, 0.0f, flash, 1.0f}};
+
 	VkImageSubresourceRange clearRange = {
-		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		.baseMipLevel = 0,
-		.levelCount = VK_REMAINING_MIP_LEVELS,
-		.baseArrayLayer = 0,
-		.layerCount = VK_REMAINING_ARRAY_LAYERS,
+		.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT,
+		.baseMipLevel	= 0,
+		.levelCount		= VK_REMAINING_MIP_LEVELS,
+		.baseArrayLayer	= 0,
+		.layerCount		= VK_REMAINING_ARRAY_LAYERS,
 	};
-	VkImageLayout clearColorImageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	uint32_t rangeCount = 1;
+
+	uint32_t 		rangeCount				= 1;
+	VkImageLayout	clearColorImageLayout	= VK_IMAGE_LAYOUT_GENERAL;
 	vkCmdClearColorImage(pCmd->handle, pImage, clearColorImageLayout, &clearValue, rangeCount, &clearRange);
 }
 
@@ -180,30 +203,31 @@ YND VkResult
 vkQueueSubmitAndSwapchainPresent(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 {
 	VkSemaphoreSubmitInfo semaphoreWaitSubmitInfo = {
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-		.semaphore = pCtx->pSemaphoresAvailableImage[pCtx->currentFrame],
-		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-		.value = 1,
+		.sType						= VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+		.semaphore					= pCtx->pSemaphoresAvailableImage[pCtx->currentFrame],
+		.stageMask					= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.value						= 1,
 	};
 	VkSemaphoreSubmitInfo semaphoreSignalSubmitInfo = {
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-		.semaphore = pCtx->pSemaphoresQueueComplete[pCtx->currentFrame],
-		.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-		.value = 1,
+		.sType 						= VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+		.semaphore 					= pCtx->pSemaphoresQueueComplete[pCtx->currentFrame],
+		.stageMask 					= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.value 						= 1,
 	};
 	VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-		.commandBuffer = pCmd->handle,
+		.sType						= VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+		.commandBuffer				= pCmd->handle,
 	};
 	VkSubmitInfo2 submitInfo2 = {
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-		.commandBufferInfoCount = 1,
-		.pCommandBufferInfos = &cmdBufferSubmitInfo,
-		.pWaitSemaphoreInfos = &semaphoreWaitSubmitInfo,
-		.waitSemaphoreInfoCount = 1,
-		.pSignalSemaphoreInfos = &semaphoreSignalSubmitInfo,
-		.signalSemaphoreInfoCount = 1,
+		.sType						= VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+		.commandBufferInfoCount		= 1,
+		.pCommandBufferInfos		= &cmdBufferSubmitInfo,
+		.pWaitSemaphoreInfos		= &semaphoreWaitSubmitInfo,
+		.waitSemaphoreInfoCount		= 1,
+		.pSignalSemaphoreInfos		= &semaphoreSignalSubmitInfo,
+		.signalSemaphoreInfoCount	= 1,
 	};
+
 	uint32_t submitCount = 1;
 	VK_CHECK(vkQueueSubmit2(
 				pCtx->device.graphicsQueue,

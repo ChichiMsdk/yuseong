@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include "core/logger.h"
-#include "core/assert.h"
+#include "core/myassert.h"
 
 #include "keyboard.h"
 #include "internals.h"

@@ -1,11 +1,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#	include "mydefines.h"
-#	define DEFINE_KEY(name, code) KEY_##name = code
+#include "mydefines.h"
+#define DEFINE_KEY(name, code) KEY_##name = code
 
 #ifdef PLATFORM_WINDOWS
-
 typedef enum MouseButtons 
 {
 	BUTTON_LEFT,
@@ -145,7 +144,9 @@ typedef enum Keys
 
 	KEYS_MAX_KEYS
 }Keys;
-#elif PLATFORM_LINUX
+#endif
+
+#ifdef PLATFORM_LINUX
 #ifdef YGLFW3
 #include <GLFW/glfw3.h>
 
@@ -155,7 +156,7 @@ typedef enum Buttons
 	BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT,
 	BUTTON_MIDDLE = GLFW_MOUSE_BUTTON_MIDDLE,
 	BUTTON_MAX_BUTTONS
-}MouseButtons;
+} MouseButtons;
 
 typedef enum Keys 
 {
@@ -291,8 +292,7 @@ typedef enum Keys
 	DEFINE_KEY(PERIOD, GLFW_KEY_PERIOD),
 	DEFINE_KEY(SLASH, GLFW_KEY_SLASH),
 	DEFINE_KEY(GRAVE, GLFW_KEY_GRAVE_ACCENT),
-
-}Keys;
+} Keys;
 
 #endif // YGLFW3
 #endif // PLATFORM_WINDOWS
