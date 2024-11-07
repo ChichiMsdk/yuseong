@@ -115,14 +115,14 @@ ifdef CPP_USE
 	CPP_OBJS	+= $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(CPP_FILES))
 endif
 
-CFLAGS			+= $(CDEFINES)
-CPPFLAGS		+= $(CPPDEFINES)
-
 color_link		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC) $(LIB_PATH) $(LIBS)"
 cpp_compile		=$(ECHO_E) "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CPPFLAGS) $(INCLUDE_DIRS)"
 c_compile		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CFLAGS) $(INCLUDE_DIRS)"
 
 include $(FILE)$(OS_EXT)
+
+CFLAGS			+= $(CDEFINES)
+CPPFLAGS		+= $(CPPDEFINES)
 
 #*************************** ALL ***************************************#
 
