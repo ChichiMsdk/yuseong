@@ -1,4 +1,4 @@
-CC				=clang-19
+CC				=clang
 CLINKER			=mold
 
 IMGUI_DIR		=$(SRC_DIR)/imgui
