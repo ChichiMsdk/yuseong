@@ -18,12 +18,12 @@ WlKeyboardKeymap(void *data, YMB struct wl_keyboard *wl_keyboard, uint32_t forma
 		uint32_t size)
 {
        InternalState *pState = data;
-       KASSERT(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
+       YASSERT(format == WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1);
 
 	   YWARN("size: %lu\n", size);
 	   YWARN("fd: %d\n", fd);
        char *map_shm = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-       KASSERT_MSG(map_shm != MAP_FAILED, strerror(errno));
+       YASSERT_MSG(map_shm != MAP_FAILED, strerror(errno));
 
        struct xkb_keymap *pXkbKeymap = xkb_keymap_new_from_string(pState->pXkbContext, map_shm,
                        XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);

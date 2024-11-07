@@ -21,27 +21,27 @@ void ReportAssertionFailure(
 		const char*							pFile,
 		int32_t								line);
 
-#define KASSERT(expr)														\
-{																			\
-	if (expr){																\
-	}																		\
-		else{																\
-			ReportAssertionFailure(#expr, "", __FILE__, __LINE__);		\
-			YDebugBreak();													\
-		}																	\
+#define YASSERT(expr)												\
+{																	\
+	if (expr){														\
+	}																\
+		else{														\
+			ReportAssertionFailure(#expr, "", __FILE__, __LINE__);	\
+			YDebugBreak();											\
+		}															\
 }
 
-#define KASSERT_MSG(expr, message)                                        \
-    {                                                                     \
-        if (expr) {                                                       \
-        } else {                                                          \
-            ReportAssertionFailure(#expr, message, __FILE__, __LINE__); \
-            YDebugBreak();                                                 \
-        }                                                                 \
+#define YASSERT_MSG(expr, message)										\
+    {																	\
+        if (expr) {														\
+        } else {														\
+            ReportAssertionFailure(#expr, message, __FILE__, __LINE__);	\
+            YDebugBreak();												\
+        }																\
     }
 
 #if defined(_DEBUG) || defined(DEBUG)
-#define KASSERT_DEBUG(expr)                                          \
+#define YASSERT_DEBUG(expr)                                          \
     {                                                                \
         if (expr) {                                                  \
         } else {                                                     \
@@ -50,13 +50,14 @@ void ReportAssertionFailure(
         }                                                            \
     }
 #else
-#define KASSERT_DEBUG(expr)  // Does nothing at all
+#define YASSERT_DEBUG(expr)  // Does nothing at all
 #endif //_DEBUG
 
 #else
-#define KASSERT(expr)               // Does nothing at all
-#define KASSERT_MSG(expr, message)  // Does nothing at all
-#define KASSERT_DEBUG(expr)         // Does nothing at all
+/* NOTE: Does nothing at all */
+#define YASSERT(expr)               
+#define YASSERT_MSG(expr, message)
+#define YASSERT_DEBUG(expr)
 
 #endif //YASSERTIONS_ENABLED
 

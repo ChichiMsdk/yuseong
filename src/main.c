@@ -8,6 +8,15 @@
 
 b8 gRunning = TRUE;
 
+/* TODO: Make it a function that looks config file for the folder ?*/
+const char *gpShaderFilePath[] = {
+	"./build/obj/shaders/gradient_color.comp.spv",
+	"./build/obj/shaders/gradient.comp.spv",
+	"./build/obj/shaders/sky.comp.spv",
+};
+uint32_t gFilePathSize = COUNT_OF(gpShaderFilePath);
+int32_t gShaderFileIndex = 0;
+
 /* const char* __asan_default_options() { return "detect_leaks=0"; } */
 #include "test.h"
 
@@ -33,7 +42,7 @@ main(int argc, char **ppArgv)
 	InputInitialize();
 
 	YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
-	KASSERT(gAppConfig.pRenderer);
+	YASSERT(gAppConfig.pRenderer);
 
 	f64 deltaFrameTime = 0.0f;
 	f64 startFrameTime = 0.0f;
@@ -53,7 +62,6 @@ main(int argc, char **ppArgv)
 
 		endFrameTime = OsGetAbsoluteTime(NANOSECONDS);
 	}
-
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();
 	EventShutdown();

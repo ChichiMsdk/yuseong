@@ -27,6 +27,7 @@ typedef struct AppConfig
 	const char*		pAppName;
 	int32_t			x, y, w, h;
 	b8				bSuspended;
+	b8				bRunning;
 	YuRenderer*		pRenderer;
 	RendererConfig*	pRendererConfig;
 } AppConfig;
