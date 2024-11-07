@@ -124,6 +124,8 @@ include $(FILE)$(OS_EXT)
 CFLAGS			+= $(CDEFINES)
 CPPFLAGS		+= $(CPPDEFINES)
 
+MJJSON			=-MJ$@.json
+
 #*************************** ALL ***************************************#
 
 all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON) $(SHADER_OBJS)
@@ -154,12 +156,12 @@ $(BUILD_DIR)/$(OUTPUT): $(C_OBJS) $(CPP_OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@$(cpp_compile)
-	@$(CPP) $(CPPFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(CPPFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@$(c_compile)
-	@$(CC) $(CFLAGS) -MJ$@.json -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(CFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
 #*************************** COMPILE_JSON ******************************#
 
