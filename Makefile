@@ -97,7 +97,11 @@ DIRECTX_FILES	=$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
 DIRECTX_OBJS	=$(patsubst $(DIRECTX_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
 METAL_FILES		=$(shell $(MYFIND) $(METAL_DIR) -type f -name '*.c')
 METAL_OBJS		=$(patsubst $(METAL_DIR)/%.c, $(OBJ_DIR)/%.o, $(METAL_FILES))
+
 SHADER_FILES	=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
+SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.frag')
+SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.vert')
+
 SHADER_OBJS		=$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
@@ -124,7 +128,9 @@ include $(FILE)$(OS_EXT)
 CFLAGS			+= $(CDEFINES)
 CPPFLAGS		+= $(CPPDEFINES)
 
+ifeq ($(CC),clang)
 MJJSON			=-MJ$@.json
+endif
 
 #*************************** ALL ***************************************#
 
@@ -172,7 +178,7 @@ $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB_OUT)
 #*************************** CLEAN *************************************#
 
 clean:
-	@echo "$(RED)Deleting files..$(NC)"
+	@$(ECHO_E) "$(RED)Deleting files..$(NC)"
 	@rm -f $(BUILD_DIR)/$(OUTPUT)
 	@rm -rf $(OBJ_DIR)
 	@$(RM_EXTRA)

@@ -22,7 +22,6 @@ OUTPUT			=$(NAME).exe
 C_OBJS			+= $(WIN32_OBJS) $(VULKAN_OBJS)
 RM_EXTRA		=rm -f $(BUILD_DIR)/$(NAME).pdb,$(BUILD_DIR)/$(NAME).exp,$(BUILD_DIR)/$(NAME).lib
 RM_EXTRA2		=rm -f $(BUILD_DIR)/$(NAME).rdi,$(BUILD_DIR)/*.ilk,$(BUILD_DIR)/vc140.pdb,$(BUILD_DIR)/*.obj
-
 ############################## COLORS ###################################
 NC=\e[0m
 BOLD=\e[1m
@@ -42,7 +41,6 @@ NC=
 BOLD=
 UNDER=
 REV=
-
 GREY=
 RED=
 GREEN=
