@@ -9,7 +9,7 @@
 
 #include "core/vec4.h"
 #include "core/logger.h"
-#include "TracyC.h"
+#include "profiler.h"
 
 #include <math.h>
 

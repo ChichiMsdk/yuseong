@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "TracyC.h"
-
 struct MemoryStats
 {
 	uint64_t totalAllocated;
@@ -59,7 +57,6 @@ _yAlloc(uint64_t size, MemoryTags tag)
 	void *pBlock = malloc(size);
 	YASSERT_MSG(pBlock, "OUT OF MEMORY");
 	memset(pBlock, 0, size);
-	TracyCAlloc(pBlock, size);
 	return pBlock;
 }
 
@@ -73,7 +70,6 @@ _yFree(void *pBlock, uint64_t size, MemoryTags tag)
 
 	// TODO: Memory alignment
 	free(pBlock);
-	TracyCFree(pBlock);
 	// WARN: This might cost a lot ?
 	pBlock = NULL;
 }
