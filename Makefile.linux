@@ -1,4 +1,4 @@
-CC				=clang
+CC				=clang-19
 CLINKER			=mold
 
 IMGUI_DIR		=$(SRC_DIR)/imgui
@@ -11,6 +11,7 @@ LIBS			+=-lGL -lglfw -lvulkan -lwayland-client -lxkbcommon -lm
 
 GLFW3			=1
 CDEFINES		+=-DPLATFORM_LINUX
+CDEFINES		+=-D_POSIX_C_SOURCE=199309L
 CDEFINES		+=-DYGLFW3
 
 IMGUI_FILES		=$(shell $(MYFIND) $(IMGUI_DIR) -type f -name '*.cpp')
