@@ -2,8 +2,9 @@
 #define VULKAN_PIPELINE_H
 
 #include "renderer/vulkan/yvulkan.h"
-#include "core/vec4.h"
 #include "core/yerror.h"
+
+#include "core/yvec4.h"
 
 YND VkResult vkLoadShaderModule(
 		VkContext*							pCtx,

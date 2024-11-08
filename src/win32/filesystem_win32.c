@@ -2,6 +2,7 @@
 
 #ifdef YPLATFORM_WINDOWS
 #include "core/filesystem.h"
+#include "core/logger.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -10,6 +11,8 @@ int
 OsFopen(FILE** pFile, const char* pFilePath, const char* pMode)
 {
 	errno_t errcode = fopen_s(pFile, pFilePath, pMode);
+	if (errcode != 0)
+		YERROR("Path: %s", pFilePath);
 	return errcode;
 }
 

@@ -1,8 +1,10 @@
-#ifndef VEC4_H
-#define VEC4_H
+#ifndef YVEC4_H
+#define YVEC4_H
 
 #include <stdalign.h>
 #include <mydefines.h>
+
+#include "cglm/vec4.h"
 
 #if defined(_MSC_VER)
 #  define Y_INLINE __forceinline
@@ -26,7 +28,7 @@
 #undef Y_ALIGN
 #define Y_ALIGN(X) 
 
-typedef Y_ALIGN(16) float vec4[4];
+typedef Y_ALIGN(16) float y_vec4[4];
 
 typedef struct ComputePushConstant
 {
@@ -60,7 +62,7 @@ Vec4Fill(f32 x, f32 y, f32 z, f32 w, vec4 vOut)
  */
 Y_INLINE
 void
-Vec4Copy(vec4 v, vec4 dest)
+Vec4Copy(y_vec4 v, vec4 dest)
 {
 	dest[0] = v[0];
 	dest[1] = v[1];
@@ -68,4 +70,3 @@ Vec4Copy(vec4 v, vec4 dest)
 	dest[3] = v[3];
 }
 #endif // VEC4_H
-

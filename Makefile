@@ -69,7 +69,7 @@ CPP				=clang++
 CPPFLAGS		=-Wno-format
 CPPDEFINES		=
 
-INCLUDE_DIRS	=-Isrc -Isrc/core
+INCLUDE_DIRS	=-Isrc -Isrc/core -Ithirdparty
 LIB_PATH		=
 LIBS			=
 
@@ -111,12 +111,12 @@ SHADER_OBJS		=$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILE
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
 
-ifdef TRACY_USE
+ifeq ($(TRACY_USE),$(filter $(TRACY_USE), on ON true TRUE yes YES))
 	CDEFINES	+= -DTRACY_ENABLE
 	CPP_FILES	+= $(SRC_DIR)/TracyClient.cpp
 	CPP_OBJS	+= $(OBJ_DIR)/TracyClient.o
 	CPPDEFINES	+= -DTRACY_ENABLE
-	CPPFLAGS	+= -stdlib=libc++
+# CPPFLAGS	+= -stdlib=libc++
 endif
 
 ifdef CPP_USE

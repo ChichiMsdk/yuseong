@@ -24,6 +24,7 @@ AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 1500, .
 OsState gOsState = {0};
 
 /* FIXME: Bug in DarrayLength - DarrayGetCapacity !! */
+/* FIXME: xmm0 registry bug alignment is wrong */
 
 #ifndef TESTING
 int

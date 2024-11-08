@@ -2,12 +2,11 @@
 #define PROFILER_H
 
 #ifdef TRACY_ENABLE
-#include "TracyC.h"
+#	include "TracyC.h"
 #else
-#define TracyCFrameMark
-#define TracyCZoneN(a, b, c)
-#define TracyCZoneEnd(a)
-
+#	define TracyCFrameMark
+#	define TracyCZoneN(a, b, c)
+#	define TracyCZoneEnd(a)
 #endif
 
 #endif // PROFILER_H

@@ -411,7 +411,7 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 		.pResults			= VK_NULL_HANDLE,
 	};
 
-	TracyCFrameMark;
+	/* TracyCFrameMark; */
 	VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{

@@ -8,7 +8,8 @@
 #include "core/logger.h"
 #include "core/myassert.h"
 #include "core/yerror.h"
-#include "core/vec4.h"
+
+#include "core/yvec4.h"
 
 #include <errno.h>
 #include <stdio.h>

@@ -7,8 +7,9 @@
 #include "vulkan_image.h"
 #include "vulkan_pipeline.h"
 
-#include "core/vec4.h"
+#include "core/yvec4.h"
 #include "core/logger.h"
+
 #include "profiler.h"
 
 #include <math.h>

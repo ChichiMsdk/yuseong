@@ -8,7 +8,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
-#include "core/vec4.h"
+#include "core/yvec4.h"
+
 #include "core/myassert.h"
 #include "renderer/renderer_defines.h"
 #include "renderer/vulkan/macro_utils.h"
