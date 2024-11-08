@@ -19,11 +19,12 @@
  * TODO: nothrow attribute ?
  */
 
-#ifdef __gcc__
-#include <attribute.h>
-#endif // __gcc__
+// WARN: <attribute.h> might not be found
+// #ifdef __GNUC__
+// #include <attribute.h>
+// #endif // __GNUC__
 
-#if defined(__clang__) || defined(__gcc__)
+#if defined(__clang__) || defined(__GNUC__)
 #define YND [[nodiscard]]
 #define YMB [[maybe_unused]]
 #elif defined(_MSC_VER)
