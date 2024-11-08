@@ -20,6 +20,8 @@ IMGUI_OBJS		=$(patsubst $(IMGUI_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(IMGUI_FILES))
 C_OBJS			+= $(LINUX_OBJS) $(VULKAN_OBJS)
 OUTPUT			=$(NAME)
 
+DEBUG_LEVEL =-ggdb3
+
 ifdef TRACY_USE
 	LIBS			+= -lc++
 	LIB_PATH		+= -L/usr/lib/x86_64-unknown-linux-gnu

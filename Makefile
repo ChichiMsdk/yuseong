@@ -21,22 +21,27 @@ TRACY_USE				=
 GLFW3					=
 
 COMMAND_CDEFINES		=-DCHICHI
-COMMAND_CFLAGS			=-g3 -Wvarargs
+COMMAND_CFLAGS			=-Wvarargs
+DEBUG_LEVEL				=-g3 
 
-ifeq ($(ASAN_USE),1)
-	COMMAND_CFLAGS		+= -fsanitize=address -O3
+ifeq ($(OPTI),none)
+	COMMAND_CFLAGS		+= -O0
 else
 	COMMAND_CFLAGS		+= -O3
 endif
-ifeq ($(TESTINGE),1)
+
+ifeq ($(ASAN_USE),ON)
+	COMMAND_CFLAGS		+= -fsanitize=address
+endif
+ifeq ($(TESTING),ON)
 	COMMAND_CDEFINES	+= -DTESTING
 else
 	COMMAND_CFLAGS		+=-Wall -Werror -Wextra
 endif
-ifeq ($(GLFW_USE),1)
+ifeq ($(GLFW_USE),ON)
 	COMMAND_CDEFINES	+= -DYGLFW3
 endif
-ifeq ($(RELEASE_USE),1)
+ifeq ($(RELEASE_USE),ON)
 	COMMAND_CDEFINES	+= -D_RELEASE -DRELEASE -DYURELEASE=1
 else
 	COMMAND_CDEFINES	+= -D_DEBUG -DDEBUG -DYUDEBUG
@@ -121,14 +126,15 @@ endif
 
 color_link		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) $(CFLAGS) -o $(YELLOW)$@$(NC) $(BLUE)$^$(NC) $(LIB_PATH) $(LIBS)"
 cpp_compile		=$(ECHO_E) "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CPPFLAGS) $(INCLUDE_DIRS)"
-c_compile		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(CFLAGS) $(INCLUDE_DIRS)"
+c_compile		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(YELLOW)$(DEBUG_LEVEL)$(NC) $(CFLAGS) $(INCLUDE_DIRS)"
 
 include $(FILE)$(OS_EXT)
 
 CFLAGS			+= $(CDEFINES)
 CPPFLAGS		+= $(CPPDEFINES)
 
-ifeq ($(CC),clang)
+
+ifeq ($(CC),$(filter $(CC),clang clang-18 clang-19))
 MJJSON			=-MJ$@.json
 endif
 
@@ -155,19 +161,19 @@ $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
 
 $(BUILD_DIR)/$(OUTPUT): $(C_OBJS) $(CPP_OBJS)
 	@$(color_link)
-	@$(CC) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
+	@$(CC) $(DEBUG_LEVEL) $(CFLAGS) -o $@ $^ $(INCLUDE_DIRS) $(LIB_PATH) $(LIBS)
 
 #*************************** COMPILE_FILES *****************************#
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@$(cpp_compile)
-	@$(CPP) $(CPPFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(DEBUG_LEVEL) $(CPPFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@$(c_compile)
-	@$(CC) $(CFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(DEBUG_LEVEL) $(CFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
 #*************************** COMPILE_JSON ******************************#
 
