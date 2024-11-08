@@ -122,8 +122,8 @@ vkComputePipelineInit(VkContext *pCtx, VkDevice device, const char** ppShaderPat
 	/* NOTE: Load and init pipeline of gradientDrawShader */
 	pCtx->pComputeShaders[0].pFilePath = ppShaderPaths[0];
 	pCtx->pComputeShaders[0].pipelineLayout = pCtx->gradientComputePipelineLayout;
-	pCtx->pComputeShaders[0].pushConstant.data1 = Vec4Get(1.0f, 0.0f, 0.0f, 1.0f);
-	pCtx->pComputeShaders[0].pushConstant.data2 = Vec4Get(0.0f, 0.0f, 1.0f, 1.0f);
+	Vec4Fill(1.0f, 0.0f, 0.0f, 1.0f, pCtx->pComputeShaders[0].pushConstant.data1);
+	Vec4Fill(0.0f, 0.0f, 1.0f, 1.0f, pCtx->pComputeShaders[0].pushConstant.data2);
 	computePipelineCreateInfo.stage.module = gradientColorDrawShader;
 	VK_CHECK(vkCreateComputePipelines(
 				device,
@@ -136,8 +136,8 @@ vkComputePipelineInit(VkContext *pCtx, VkDevice device, const char** ppShaderPat
 	/* NOTE: Load and init pipeline of gradientDrawShader */
 	pCtx->pComputeShaders[1].pFilePath = ppShaderPaths[1];
 	pCtx->pComputeShaders[1].pipelineLayout = pCtx->gradientComputePipelineLayout;
-	pCtx->pComputeShaders[1].pushConstant.data1 = Vec4Get(1.0f, 0.0f, 0.0f, 1.0f);
-	pCtx->pComputeShaders[1].pushConstant.data2 = Vec4Get(0.0f, 0.0f, 1.0f, 1.0f);
+	Vec4Fill(1.0f, 0.0f, 0.0f, 1.0f, pCtx->pComputeShaders[1].pushConstant.data1);
+	Vec4Fill(0.0f, 0.0f, 1.0f, 1.0f, pCtx->pComputeShaders[1].pushConstant.data2);
 	computePipelineCreateInfo.stage.module = gradientDrawShader;
 	VK_CHECK(vkCreateComputePipelines(
 				device,
@@ -150,7 +150,7 @@ vkComputePipelineInit(VkContext *pCtx, VkDevice device, const char** ppShaderPat
 	/* NOTE: Load and init pipeline of skyDrawShader */
 	pCtx->pComputeShaders[2].pFilePath = ppShaderPaths[2];
 	pCtx->pComputeShaders[2].pipelineLayout = pCtx->gradientComputePipelineLayout;
-	pCtx->pComputeShaders[2].pushConstant.data1 = Vec4Get(0.1f, 0.2f, 0.4f, 0.97f);
+	Vec4Fill(0.1f, 0.2f, 0.4f, 0.97f, pCtx->pComputeShaders[2].pushConstant.data1);
 	computePipelineCreateInfo.stage.module = skyDrawShader;
 	VK_CHECK(vkCreateComputePipelines(
 				device,
