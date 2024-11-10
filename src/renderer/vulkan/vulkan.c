@@ -10,6 +10,7 @@
 #include "vulkan_fence.h"
 #include "vulkan_descriptor.h"
 #include "vulkan_pipeline.h"
+#include "vulkan_timer.h"
 
 #include "core/darray.h"
 #include "core/darray_debug.h"
@@ -163,6 +164,9 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: ComputePipeline for shaders */
 	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gppShaderFilePath));
 
+	/* NOTE: Create queryPoolTimer, uses globals */
+	VK_CHECK(vkQueryPoolTimerCreate(pCurrentCtx->device.logicalDev, pCurrentCtx->pAllocator, VK_NULL_HANDLE));
+
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredExtensions);
 	DarrayDestroy(ppRequiredValidationLayerNames);
@@ -194,6 +198,11 @@ vkShutdown(void *pContext)
 	 * vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
 	 * vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
      */
+
+	/* NOTE: temporary */
+	VkQueryPool dummy = 0;
+	vkQueryPoolTimerDestroy(device, pAllocator, dummy);
+
 	vkPipelinesCleanUp(pCtx, device);
 	vkDestroyDescriptorSetLayout(device, pCtx->drawImageDescriptorSetLayout, pAllocator);
 	vkDestroyDescriptorPool(device, pCtx->descriptorPool.handle, pAllocator);

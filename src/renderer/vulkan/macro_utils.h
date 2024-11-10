@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
+
+#include "core/logger.h"
 #include "core/myassert.h"
 
 #define VK_ASSERT(expr) YASSERT_MSG(expr == VK_SUCCESS, string_VkResult(expr));

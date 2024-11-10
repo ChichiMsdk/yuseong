@@ -6,6 +6,7 @@
 #include "vulkan_command.h"
 #include "vulkan_image.h"
 #include "vulkan_pipeline.h"
+#include "vulkan_timer.h"
 
 #include "core/yvec4.h"
 #include "core/logger.h"
@@ -119,6 +120,9 @@ vkDrawImpl(VkContext* pCtx)
 	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
 	vkCommandBufferBegin(pCmd, bSingleUse, bRenderPassContinue, bSimultaneousUse);
 
+	/* NOTE: Start counter */
+	vkTimerStart(pCmd->handle);
+
 	/* NOTE: Make the swapchain image into general mode */
 	VkImageLayout	currentLayout		= VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImageLayout	newLayout			= VK_IMAGE_LAYOUT_GENERAL;
@@ -142,6 +146,9 @@ vkDrawImpl(VkContext* pCtx)
 	vkImageCopy(pCmd->handle, drawImage.image.handle, swapchainImage, drawExtent, swapchainExtent);
 
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	/* NOTE: Stop the timer and log */
+	vkTimerEnd(pCmd->handle);
+	vkTimerLog(device, NANOSECONDS);
 
 	/* NOTE: End command recording */
 	VK_CHECK(vkCommandBufferEnd(pCmd));
@@ -150,6 +157,7 @@ vkDrawImpl(VkContext* pCtx)
 	 * 	_renderFence will now block until the graphic commands finish execution
 	 */
 	VK_CHECK(vkQueueSubmitAndSwapchainPresent(pCtx, pCmd));
+
 
 	TracyCZoneEnd(drawCtx);
 	return VK_SUCCESS;
