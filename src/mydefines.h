@@ -4,6 +4,14 @@
 #include "mystd.h"
 #include <stdint.h>
 
+typedef enum SECOND_UNIT
+{
+	NANOSECONDS,
+	MICROSECONDS,
+	MILLISECONDS,
+	SECONDS
+}SECOND_UNIT;
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;

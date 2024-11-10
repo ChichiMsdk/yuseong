@@ -5,14 +5,6 @@
 #include "renderer/vulkan/yvulkan.h"
 #include <stdint.h>
 
-typedef enum SECOND_UNIT
-{
-	NANOSECONDS,
-	MICROSECONDS,
-	MILLISECONDS,
-	SECONDS
-}SECOND_UNIT;
-
 typedef struct OsState
 {
 	void *pInternalState;
