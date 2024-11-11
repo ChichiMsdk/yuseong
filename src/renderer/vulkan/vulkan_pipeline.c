@@ -235,3 +235,264 @@ vkPipelineReset(VkContext *pCtx, VkDevice device, const char* pFilePath)
 	YINFO("Pipeline was successfully reset.");
 	return VK_SUCCESS;
 }
+
+inline void
+vkRasterizerSetModes(
+		VkPipelineRasterizationStateCreateInfo*	pRasterizer,
+		VkPolygonMode							polygonMode,
+		VkCullModeFlags							cullModeFlags,
+		VkFrontFace								frontFace,
+		f32										lineWidth)
+{
+	pRasterizer->sType			= VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	pRasterizer->cullMode		= cullModeFlags;
+	pRasterizer->frontFace		= frontFace;
+	pRasterizer->polygonMode	= polygonMode;
+	pRasterizer->lineWidth		= lineWidth;
+}
+
+inline void
+vkSetMultisamplingNone(VkPipelineMultisampleStateCreateInfo* pMultisamplingCreateInfo)
+{
+	pMultisamplingCreateInfo->sType					= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	pMultisamplingCreateInfo->sampleShadingEnable	= VK_FALSE;
+	/* NOTE: multisampling defaulted to no multisampling (1 sample per pixel) */
+	pMultisamplingCreateInfo->rasterizationSamples	= VK_SAMPLE_COUNT_1_BIT;
+	pMultisamplingCreateInfo->minSampleShading		= 1.0f;
+	pMultisamplingCreateInfo->pSampleMask			= VK_NULL_HANDLE;
+	/* NOTE: no alpha to coverage either */
+	pMultisamplingCreateInfo->alphaToCoverageEnable	= VK_FALSE;
+	pMultisamplingCreateInfo->alphaToOneEnable		= VK_FALSE;
+}
+
+inline void
+vkDisableBlending(VkPipelineColorBlendAttachmentState* pColorBlendAttachment)
+{
+	/* NOTE: default write mask */
+	pColorBlendAttachment->colorWriteMask	= VK_COLOR_COMPONENT_R_BIT
+											  | VK_COLOR_COMPONENT_G_BIT
+											  | VK_COLOR_COMPONENT_B_BIT
+											  | VK_COLOR_COMPONENT_A_BIT;
+	/* NOTE: No sampling */
+	pColorBlendAttachment->blendEnable		= VK_FALSE;
+}
+
+inline void
+vkDepthTestDisable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil)
+{
+    pDepthStencil->sType					= VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pDepthStencil->depthTestEnable			= VK_FALSE;
+    pDepthStencil->depthWriteEnable			= VK_FALSE;
+    pDepthStencil->depthCompareOp			= VK_COMPARE_OP_NEVER;
+    pDepthStencil->depthBoundsTestEnable	= VK_FALSE;
+    pDepthStencil->stencilTestEnable		= VK_FALSE;
+    pDepthStencil->front					= (VkStencilOpState){0};
+    pDepthStencil->back						= (VkStencilOpState){0};
+    pDepthStencil->minDepthBounds			= 0.0f;
+    pDepthStencil->maxDepthBounds			= 1.0f;
+}
+
+inline void
+vkPipelineRenderingSetFormatAndDepthFormat(
+		VkPipelineRenderingCreateInfo*		pRenderingCreateInfo,
+		VkFormat*							pOutColorAttachmentFormat,
+		VkFormat							depthAttachmentFormat,
+		VkFormat							colorAttachmentformat)
+{
+	*pOutColorAttachmentFormat						= colorAttachmentformat;
+
+	pRenderingCreateInfo->sType						= VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	/* NOTE: Connect the format to the renderingCreateInfo structure */
+	pRenderingCreateInfo->colorAttachmentCount		= 1;
+	pRenderingCreateInfo->pColorAttachmentFormats	= pOutColorAttachmentFormat;
+	pRenderingCreateInfo->depthAttachmentFormat		= depthAttachmentFormat;
+}
+
+inline void
+vkInputAssemblySetTopology(VkPipelineInputAssemblyStateCreateInfo* pInputAssembly, VkPrimitiveTopology topology)
+{
+	pInputAssembly->sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	pInputAssembly->topology				= topology;
+	/* NOTE: we are not going to use primitive restart on the entire tutorial so leave it on false */
+	pInputAssembly->primitiveRestartEnable	= VK_FALSE;
+}
+
+YND VkResult
+vkGraphicsPipelineCreate(
+		VkDevice							device,
+		GraphicsPipeline*					pPipeline,
+		VkAllocationCallbacks*				pAllocator,
+		VkPipeline*							pOutPipeline)
+{
+    /*
+     * NOTE: make viewport state from our stored viewport and scissor.
+     * at the moment we wont support multiple viewports or scissors
+     */
+	VkPipelineViewportStateCreateInfo viewportState	=	{
+		.sType			=	VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.viewportCount	=	1,
+		.scissorCount	=	1,
+	};
+    /*
+	 * NOTE: setup dummy color blending. We arent using transparent objects yet
+     * the blending is just "no blend", but we do write to the color attachment
+     */
+	VkPipelineColorBlendStateCreateInfo colorBlending	=	{
+		.sType				=	VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.logicOpEnable		=	VK_FALSE,
+		.logicOp			=	VK_LOGIC_OP_COPY,
+		.attachmentCount	=	1,
+		.pAttachments		=	&pPipeline->colorBlendAttachment,
+	};
+
+	/* NOTE: completely clear VertexInputStateCreateInfo, as we have no need for it */
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo	=	{
+		.sType	=	VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+	};
+
+    /*
+	 * NOTE: build the actual pipeline.
+     * we now use all of the info structs we have been writing into into this one
+     * to create the pipeline
+     */
+    VkGraphicsPipelineCreateInfo pipelineInfo = {
+		.sType					=	VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		/* NOTE: connect the renderInfo to the pNext extension mechanism */
+		.pNext					=	&pPipeline->renderingCreateInfo,
+
+		.stageCount				=	(uint32_t) DarrayCapacity(pPipeline->pShaderStages),
+		.pStages				=	pPipeline->pShaderStages,
+		.pVertexInputState		=	&vertexInputInfo,
+		.pInputAssemblyState	=	&pPipeline->inputAssembly,
+		.pViewportState			=	&viewportState,
+		.pRasterizationState	=	&pPipeline->rasterizer,
+		.pMultisampleState		=	&pPipeline->multisampling,
+		.pColorBlendState		=	&colorBlending,
+		.pDepthStencilState		=	&pPipeline->depthStencil,
+		.layout					=	pPipeline->pipelineLayout,
+	};
+
+	VkDynamicState state[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+	VkPipelineDynamicStateCreateInfo dynamicInfo = { 
+		.sType				=	VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.pDynamicStates		=	&state[0],
+		.dynamicStateCount	=	COUNT_OF(state),
+	};
+
+	pipelineInfo.pDynamicState		=	&dynamicInfo;
+	VkPipelineCache	pipelineCache	=	VK_NULL_HANDLE;
+	uint32_t		createInfoCount	=	1;
+
+	VK_CHECK(vkCreateGraphicsPipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&pipelineInfo,
+				pAllocator,
+				pOutPipeline));
+
+	return VK_SUCCESS;
+}
+
+YND VkResult
+vkTrianglePipelineInit(VkContext *pCtx, VkDevice device, TrianglePipeline* pTrianglePipeline)
+{
+	VkShaderModule	triangleFragmentShaderModule;
+	VK_CHECK(vkLoadShaderModule(pCtx, pTrianglePipeline->pFragmentShaderFilePath, device, &triangleFragmentShaderModule));
+	YINFO("Triangle fragment shader loaded.");
+
+	VkShaderModule	triangleVertexShaderModule;
+	VK_CHECK(vkLoadShaderModule(pCtx, pTrianglePipeline->pVertexShaderFilePath, device, &triangleVertexShaderModule));
+	YINFO("Triangle vertex shader loaded.");
+    /*
+	 * NOTE: build the pipeline layout that controls the inputs/outputs of the shader
+	 * we are not using descriptor sets or other systems yet, so no need to use anything other than empty default
+     */
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+		.sType	=	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+	};
+
+	VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, pCtx->pAllocator, &pTrianglePipeline->pipelineLayout));
+	pTrianglePipeline->graphicsPipeline.pipelineLayout	= pTrianglePipeline->pipelineLayout;
+
+	uint32_t	shaderCreateInfoCount	= 2 ;
+	pTrianglePipeline->graphicsPipeline.pShaderStages = DarrayReserve(VkPipelineShaderStageCreateInfo, 
+			shaderCreateInfoCount);
+
+	VkPipelineShaderStageCreateInfo triFragShaderStage = {
+		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.stage	= VK_SHADER_STAGE_FRAGMENT_BIT,
+		.module = triangleFragmentShaderModule,
+		.pName	= "main",
+	};
+	DarrayPush(pTrianglePipeline->graphicsPipeline.pShaderStages, triFragShaderStage);
+
+	VkPipelineShaderStageCreateInfo triVertexShaderStage = {
+		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.stage	= VK_SHADER_STAGE_VERTEX_BIT,
+		.module = triangleVertexShaderModule,
+		.pName	= "main",
+	};
+	DarrayPush(pTrianglePipeline->graphicsPipeline.pShaderStages, triVertexShaderStage);
+
+	vkInputAssemblySetTopology(&pTrianglePipeline->graphicsPipeline.inputAssembly, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
+	f32	lineWidth = 1.0f;
+	vkRasterizerSetModes(
+			&pTrianglePipeline->graphicsPipeline.rasterizer,
+			VK_POLYGON_MODE_FILL,
+			VK_CULL_MODE_NONE,
+			VK_FRONT_FACE_CLOCKWISE,
+			lineWidth);
+
+	vkSetMultisamplingNone(&pTrianglePipeline->graphicsPipeline.multisampling);
+
+	vkDisableBlending(&pTrianglePipeline->graphicsPipeline.colorBlendAttachment);
+	vkDepthTestDisable(&pTrianglePipeline->graphicsPipeline.depthStencil);
+
+	VkFormat	depthFormat = VK_FORMAT_UNDEFINED;
+	vkPipelineRenderingSetFormatAndDepthFormat(
+			&pTrianglePipeline->graphicsPipeline.renderingCreateInfo,
+			&pCtx->drawImage.format,
+			depthFormat,
+			pCtx->drawImage.format);
+
+	VkPipeline newPipeline;
+	VK_CHECK(vkGraphicsPipelineCreate(
+				device,
+				&pTrianglePipeline->graphicsPipeline,
+				pCtx->pAllocator,
+				&newPipeline));
+
+	pTrianglePipeline->pipeline = newPipeline;
+	vkDestroyShaderModule(device, triangleFragmentShaderModule, pCtx->pAllocator);
+	vkDestroyShaderModule(device, triangleVertexShaderModule, pCtx->pAllocator);
+	DarrayDestroy(pTrianglePipeline->graphicsPipeline.pShaderStages);
+	exit(1);
+
+	return VK_SUCCESS;
+}
+
+void
+vkGraphicsPipelineClear(GraphicsPipeline* pPipeline)
+{
+	pPipeline->inputAssembly		= (VkPipelineInputAssemblyStateCreateInfo) {
+		.sType =	VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO
+	};
+	pPipeline->rasterizer			= (VkPipelineRasterizationStateCreateInfo) {
+		.sType =	VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO
+	};
+	pPipeline->multisampling		= (VkPipelineMultisampleStateCreateInfo) {
+		.sType =	VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO
+	};
+	pPipeline->depthStencil			= (VkPipelineDepthStencilStateCreateInfo) {
+		.sType =	VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO
+	};
+	pPipeline->renderingCreateInfo			= (VkPipelineRenderingCreateInfo) {
+		.sType =	VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO
+	};
+	pPipeline->colorBlendAttachment	= (VkPipelineColorBlendAttachmentState) {0};
+	pPipeline->pipelineLayout		= (VkPipelineLayout) {0};
+	DarrayClear(pPipeline->pShaderStages);
+}

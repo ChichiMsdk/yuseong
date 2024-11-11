@@ -13,7 +13,6 @@ vkQueryPoolTimerCreate(VkDevice device, VkAllocationCallbacks* pAllocator, VkQue
 
 	pOutQueryPool = &gTimer;
 	VK_CHECK(vkCreateQueryPool(device, &queryPoolCreateInfo, pAllocator, pOutQueryPool));
-
 	/* NOTE: This is just temporary */
 	return VK_SUCCESS;
 }
@@ -42,18 +41,19 @@ vkTimerEnd(VkCommandBuffer command)
 	uint32_t secondQuery = 1;
 
 	/* NOTE: This is just temporary */
-	vkCmdResetQueryPool(command, gTimer, 1, 1);
+	vkCmdResetQueryPool(command, gTimer, secondQuery, 1);
 	vkCmdWriteTimestamp(command, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, gTimer, secondQuery);
 }
 
 YND VkResult
-vkTimerGetResults(VkDevice device, uint64_t* pOutTimeStamp)
+vkTimerGetResults(VkQueue queue, VkDevice device, uint64_t* pOutTimeStamp)
 {
-	uint32_t			firstQuery	= 0;
-	uint32_t			queryCount	= 2;
-	size_t				dataSize	= sizeof(uint64_t) * 2;
-	VkDeviceSize		stride		= sizeof(uint64_t);
-	VkQueryResultFlags	flags		= VK_QUERY_RESULT_64_BIT;
+	vkQueueWaitIdle(queue);
+	uint32_t			firstQuery	=	0;
+	uint32_t			queryCount	=	2;
+	size_t				dataSize	=	sizeof(uint64_t) * 2;
+	VkDeviceSize		stride		=	sizeof(uint64_t);
+	VkQueryResultFlags	flags		=	VK_QUERY_RESULT_64_BIT; // | VK_QUERY_RESULT_WAIT_BIT;
 
 	VK_CHECK(vkGetQueryPoolResults(
 				device,
@@ -69,13 +69,17 @@ vkTimerGetResults(VkDevice device, uint64_t* pOutTimeStamp)
 }
 
 VkResult
-vkTimerLog(VkDevice device, SECOND_UNIT unit)
+vkTimerLog(VkPhysicalDeviceProperties properties, VkQueue queue, VkDevice device, SECOND_UNIT unit)
 {
 	f64 unitScale = 1.0f;
 	char *pStrUnit = "ms";
 	switch (unit)
 	{
-		case NANOSECONDS:
+		case SECONDS:
+			unitScale *= 1000.0f * 1000.0f * 1000.0f;
+			pStrUnit = "s";
+			break;
+		case MILLISECONDS:
 			unitScale *= 1000.0f * 1000.0f;
 			pStrUnit = "ns";
 			break;
@@ -83,21 +87,19 @@ vkTimerLog(VkDevice device, SECOND_UNIT unit)
 			unitScale *= 1000.0f;
 			pStrUnit = "us";
 			break;
-		case MILLISECONDS:
+		case NANOSECONDS:
 			unitScale *= 1.0f;
 			pStrUnit = "ms";
-			break;
-		case SECONDS:
-			unitScale *= 0.1f;
-			pStrUnit = "s";
 			break;
 		default:
 			YERROR("Unknown unit %d defaults to milliseconds", unit);
 			break;
 	}
+
 	uint64_t pTimeStamp[2];
-	VK_CHECK(vkTimerGetResults(device, pTimeStamp));
-	f64 deltaTime = (pTimeStamp[1] - pTimeStamp[0]);
+	VK_CHECK(vkTimerGetResults(queue, device, pTimeStamp));
+	f64 timestampPeriod = properties.limits.timestampPeriod;
+	f64 deltaTime = (pTimeStamp[1] - pTimeStamp[0]) * timestampPeriod;
 	YINFO("Took: %.2f%s", deltaTime / unitScale, pStrUnit);
 	return VK_SUCCESS;
 }

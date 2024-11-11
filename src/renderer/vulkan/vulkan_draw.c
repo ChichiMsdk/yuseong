@@ -82,6 +82,9 @@ PrintColor(RgbaFloat c)
  * 	- Check Images actual state (Transition etc in yDrawImpl)
  */
 
+void 
+vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage drawImage, VkPipeline trianglePipeline);
+
 /* WARN: Leaking currently, needs to free at the beginning or at the end */
 /* TODO: Profile ImageCopy&Co's */
 YND VkResult
@@ -133,10 +136,19 @@ vkDrawImpl(VkContext* pCtx)
 
 	/* NOTE: Compute shader invocation */
 	VK_CHECK(vkComputeShaderInvocation(pCtx, pCmd, pCtx->pComputeShaders[gShaderFileIndex]));
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkExtent2D extent = {
+		.width	= pCtx->swapchain.extent.width,
+		.height = pCtx->swapchain.extent.height,
+	};
+	vkGeometryDraw(pCmd->handle, extent, pCtx->drawImage, pCtx->trianglePipeline.pipeline);
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/* NOTE: Make the swapchain image into presentable mode */
 	newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	currentLayout	= VK_IMAGE_LAYOUT_GENERAL;
+	currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -148,7 +160,7 @@ vkDrawImpl(VkContext* pCtx)
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	/* NOTE: Stop the timer and log */
 	vkTimerEnd(pCmd->handle);
-	vkTimerLog(device, NANOSECONDS);
+	/* vkTimerLog(pCtx->device.properties, pCtx->device.graphicsQueue, device, MICROSECONDS); */
 
 	/* NOTE: End command recording */
 	VK_CHECK(vkCommandBufferEnd(pCmd));
@@ -232,6 +244,64 @@ vkQueueSubmitAndSwapchainPresent(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 	return VK_SUCCESS;
 }
 
+void
+vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage drawImage, VkPipeline trianglePipeline)
+{
+	/* NOTE: begin a render pass  connected to our draw image */
+	VkRenderingAttachmentInfo	colorAttachment	= {
+		.sType			= VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+		.imageView		= drawImage.image.view,
+		.imageLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+
+	VkRenderingInfo	renderingInfo	= {
+		.sType					= VK_STRUCTURE_TYPE_RENDERING_INFO,
+		.colorAttachmentCount	= 1,
+		.pColorAttachments		= &colorAttachment,
+		.renderArea = {
+			.extent 			= drawExtent,
+		}			
+	}; 
+
+	vkCmdBeginRendering(commandBuffer, &renderingInfo);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, trianglePipeline);
+
+	/* NOTE: set dynamic viewport and scissor */
+	VkViewport	viewport	=	{
+		.x			=	0,
+		.y			=	0,
+		.width		=	drawExtent.width,
+		.height		=	drawExtent.height,
+		.minDepth	=	0.f,
+		.maxDepth	=	1.f,
+	};
+
+	uint32_t	firstViewport	=	0;
+	uint32_t	viewportCount	=	1;
+	vkCmdSetViewport(commandBuffer, firstViewport, viewportCount, &viewport);
+
+	VkRect2D	scissor	=	{
+		.offset.x		=	0,
+		.offset.y		=	0,
+		.extent.width	=	drawExtent.width,
+		.extent.height	=	drawExtent.height,
+	};
+
+	uint32_t	firstScissor	=	0;
+	uint32_t	scissorCount	=	1;
+	vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, &scissor);
+
+	/* NOTE: launch a draw command to draw 3 vertices */
+	uint32_t	vertexCount		=	3;
+	uint32_t	instanceCount	=	1;
+	uint32_t	firstVertex		=	0;
+	uint32_t	firstInstance	=	0;
+	vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+
+	vkCmdEndRendering(commandBuffer);
+}
+
 VkResult
 vkImmediateSubmit(VkContext* pCtx, VulkanDevice device, void (*function)(VkCommandBuffer cmd))
 {
@@ -266,3 +336,13 @@ vkImmediateSubmit(VkContext* pCtx, VulkanDevice device, void (*function)(VkComma
 
 	return VK_SUCCESS;
 }
+
+/*
+ * VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
+ * 	.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+ * 	.pNext	= VK_NULL_HANDLE,
+ * 	.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
+ * 	.pName	= "main",
+ * };
+ */
+

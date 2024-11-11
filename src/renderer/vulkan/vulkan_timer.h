@@ -9,6 +9,7 @@ YND VkResult vkQueryPoolTimerCreate(
 		VkQueryPool*						pOutQueryPool);
 
 YND VkResult vkTimerGetResults(
+		VkQueue								queue,
 		VkDevice							device,
 		uint64_t*							pOutTimeStamp);
 
@@ -24,6 +25,8 @@ void vkTimerEnd(
 		VkCommandBuffer						command);
 
 VkResult vkTimerLog(
+		VkPhysicalDeviceProperties			properties,
+		VkQueue								queue, 
 		VkDevice							device,
 		SECOND_UNIT							unit);
 

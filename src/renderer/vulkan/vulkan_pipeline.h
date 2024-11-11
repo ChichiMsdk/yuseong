@@ -27,4 +27,9 @@ YND VkResult vkPipelineReset(
 		VkDevice							device,
 		const char*							pFilePath);
 
+YND VkResult vkTrianglePipelineInit(
+		VkContext							*pCtx,
+		VkDevice							device,
+		TrianglePipeline*					pTrianglePipeline);
+
 #endif //VULKAN_PIPELINE_H

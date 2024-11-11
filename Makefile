@@ -107,7 +107,9 @@ SHADER_FILES	=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
 SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.frag')
 SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.vert')
 
-SHADER_OBJS		=$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
+SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
+SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.vert, $(OBJ_DIR)/%.vert.spv, $(SHADER_FILES))
+SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.frag, $(OBJ_DIR)/%.frag.spv, $(SHADER_FILES))
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
 
@@ -152,8 +154,18 @@ $(BUILD_DIR)/$(OBJ):
 
 #*************************** SHADERS ***********************************#
 
+$(OBJ_DIR)/%.frag.spv: $(SRC_DIR)/%.frag
+	@$(ECHO_E) "$(PURPLE)Compiling fragment shaders..$(NC)"
+	@mkdir -p $(dir $@)
+	@$(GLSLC) $< -o $@
+
+$(OBJ_DIR)/%.vert.spv: $(SRC_DIR)/%.vert
+	@$(ECHO_E) "$(PURPLE)Compiling vertex shaders..$(NC)"
+	@mkdir -p $(dir $@)
+	@$(GLSLC) $< -o $@
+
 $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
-	@$(ECHO_E) "$(PURPLE)Compiling shaders..$(NC)"
+	@$(ECHO_E) "$(PURPLE)Compiling compute shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 

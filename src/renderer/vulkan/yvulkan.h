@@ -192,6 +192,28 @@ typedef struct DescriptorAllocator
 	PoolSizeRatio		poolSizeRatio;
 } DescriptorAllocator;
 
+typedef struct GraphicsPipeline
+{
+	VkPipelineShaderStageCreateInfo*		pShaderStages;
+	VkPipelineInputAssemblyStateCreateInfo	inputAssembly;
+	VkPipelineRasterizationStateCreateInfo	rasterizer;
+	VkPipelineColorBlendAttachmentState		colorBlendAttachment;
+	VkPipelineMultisampleStateCreateInfo	multisampling;
+	VkPipelineLayout						pipelineLayout;
+	VkPipelineDepthStencilStateCreateInfo	depthStencil;
+	VkPipelineRenderingCreateInfo			renderingCreateInfo;
+	VkFormat								colorAttachmentFormat;
+} GraphicsPipeline;
+
+typedef struct TrianglePipeline
+{
+	VkPipelineLayout	pipelineLayout;
+	VkPipeline			pipeline;
+	char*				pFragmentShaderFilePath;
+	char*				pVertexShaderFilePath;
+	GraphicsPipeline	graphicsPipeline;
+} TrianglePipeline;
+
 typedef struct VkContext
 {
 	VkInstance						instance;
@@ -247,6 +269,8 @@ typedef struct VkContext
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
 
 	ComputeShaderFx					*pComputeShaders;
+
+	TrianglePipeline				trianglePipeline;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;

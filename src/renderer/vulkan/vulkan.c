@@ -163,9 +163,13 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath[gShaderFileIndex])); */
 	/* NOTE: ComputePipeline for shaders */
 	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gppShaderFilePath));
+	pCurrentCtx->trianglePipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle.vert.spv";
+	pCurrentCtx->trianglePipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
+	VK_CHECK(vkTrianglePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, &pCurrentCtx->trianglePipeline));
 
 	/* NOTE: Create queryPoolTimer, uses globals */
-	VK_CHECK(vkQueryPoolTimerCreate(pCurrentCtx->device.logicalDev, pCurrentCtx->pAllocator, VK_NULL_HANDLE));
+	VkQueryPool* pool = NULL;
+	VK_CHECK(vkQueryPoolTimerCreate(pCurrentCtx->device.logicalDev, pCurrentCtx->pAllocator, pool));
 
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredExtensions);
