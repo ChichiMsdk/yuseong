@@ -92,7 +92,7 @@ vkDrawImpl(VkContext* pCtx)
 {
 	TracyCZoneN(drawCtx, "yDraw", 1);
 
-	YMB VkDevice	device				= pCtx->device.logicalDev;
+	YMB VkDevice	device				= pCtx->device.handle;
 	uint64_t		fenceWaitTimeoutNs	= 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
 	VK_CHECK(vkFenceWait(pCtx, &pCtx->pFencesInFlight[pCtx->currentFrame], fenceWaitTimeoutNs));
 	/*
@@ -115,13 +115,14 @@ vkDrawImpl(VkContext* pCtx)
 	VkCommandBufferResetFlags	flags	= 0;
 	VK_CHECK(vkCommandBufferReset(pCmd, flags));
 
+	DrawImage		drawImage			= pCtx->drawImage;
+	DrawImage		depthImage			= pCtx->depthImage;
+	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
+
 	/* NOTE: Start command recording */
 	b8				bSingleUse			= TRUE;
 	b8				bSimultaneousUse	= FALSE;
 	b8				bRenderPassContinue	= FALSE;
-	DrawImage		drawImage			= pCtx->drawImage;
-	DrawImage		depthImage			= pCtx->depthImage;
-	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
 	vkCommandBufferBegin(pCmd, bSingleUse, bRenderPassContinue, bSimultaneousUse);
 
 	/* NOTE: Start counter */
@@ -132,45 +133,40 @@ vkDrawImpl(VkContext* pCtx)
 	VkImageLayout	newLayout			= VK_IMAGE_LAYOUT_GENERAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 
-	/* NOTE: Clear the background */
-	/* vkClearBackground(pCmd, drawImage.image.handle); */
-
 	/* NOTE: Compute shader invocation */
 	VK_CHECK(vkComputeShaderInvocation(pCtx, pCmd, pCtx->pComputeShaders[gShaderFileIndex]));
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+	/* NOTE: make the drawable image and the depth image into proper layout */
 	vkImageTransition(pCmd, drawImage.image.handle, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	vkImageTransition(pCmd, depthImage.image.handle, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+	/* NOTE: Draw the geometry pipeline */
 	YMB VkExtent2D extent = { .width	= pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
-	vkGeometryDraw(pCmd->handle, extent, pCtx->drawImage, pCtx->trianglePipeline.pipeline);
+	vkGeometryDraw(pCmd->handle, extent, pCtx->drawImage, pCtx->triPipeline.pipeline);
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/* NOTE: Make the swapchain image into presentable mode */
+	/* NOTE: make the drawable image and the swapchain image into layout for copies */
 	currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	/* NOTE: Copy the image */
+	/* NOTE: Copy the image to the swapchain*/
 	VkExtent2D drawExtent		= {.width = drawImage.extent.width, .height = drawImage.extent.height};
 	VkExtent2D swapchainExtent	= {.width = pCtx->swapchain.extent.width, .height = drawImage.extent.height};
 	vkImageCopy(pCmd->handle, drawImage.image.handle, swapchainImage, drawExtent, swapchainExtent);
 
+	/* NOTE: Make the swapchain image into presentable mode */
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
 	/* NOTE: Stop the timer and log */
 	vkTimerEnd(pCmd->handle);
-	/* vkTimerLog(pCtx->device.properties, pCtx->device.graphicsQueue, device, MICROSECONDS); */
+	vkTimerLog(pCtx->device.properties, pCtx->device.graphicsQueue, device, MICROSECONDS);
 
 	/* NOTE: End command recording */
 	VK_CHECK(vkCommandBufferEnd(pCmd));
-	/*
-	 * NOTE: submit command buffer to the queue and execute it.
-	 * 	_renderFence will now block until the graphic commands finish execution
-	 */
-	VK_CHECK(vkQueueSubmitAndSwapchainPresent(pCtx, pCmd));
 
+	/* NOTE: submit command buffer to the queue and execute it. */
+	VK_CHECK(vkQueueSubmitAndSwapchainPresent(pCtx, pCmd));
 
 	TracyCZoneEnd(drawCtx);
 	return VK_SUCCESS;
@@ -336,7 +332,7 @@ vkImmediateSubmit(VkContext* pCtx, VulkanDevice device, void (*function)(VkComma
 	uint32_t	submitCount	= 1;
 	uint32_t	fenceCount	= 1;
 	VK_CHECK(vkQueueSubmit2(device.graphicsQueue, submitCount, &submitInfo2, device.immediateSubmit.fence.handle));
-	VK_CHECK(vkWaitForFences(device.logicalDev, fenceCount, &device.immediateSubmit.fence.handle, TRUE, 9999999999));
+	VK_CHECK(vkWaitForFences(device.handle, fenceCount, &device.immediateSubmit.fence.handle, TRUE, 9999999999));
 
 	return VK_SUCCESS;
 }

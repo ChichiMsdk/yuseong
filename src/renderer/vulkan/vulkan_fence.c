@@ -21,7 +21,7 @@ vkFenceCreate(VkDevice device, b8 bSignaled, VkAllocationCallbacks* pAllocator, 
 void 
 vkFenceDestroy(VkContext *pCtx, VulkanFence *pFence)
 {
-	vkDestroyFence(pCtx->device.logicalDev, pFence->handle, pCtx->pAllocator);
+	vkDestroyFence(pCtx->device.handle, pFence->handle, pCtx->pAllocator);
 	pFence->handle = VK_NULL_HANDLE;
     pFence->bSignaled = FALSE;
 }
@@ -32,7 +32,7 @@ vkFenceWait(VkContext *pCtx, VulkanFence *pFence, uint64_t timeoutNs)
 	VkResult res = VK_SUCCESS;
 	if (!pFence->bSignaled) 
 	{
-		res = vkWaitForFences(pCtx->device.logicalDev, 1, &pFence->handle, TRUE, timeoutNs);
+		res = vkWaitForFences(pCtx->device.handle, 1, &pFence->handle, TRUE, timeoutNs);
 		switch (res) 
 		{
 			case VK_SUCCESS: pFence->bSignaled = TRUE; return res;
@@ -51,7 +51,7 @@ vkFenceReset(VkContext *pCtx, VulkanFence *pFence)
 {
     if (pFence->bSignaled) 
 	{
-        VK_CHECK(vkResetFences(pCtx->device.logicalDev, 1, &pFence->handle));
+        VK_CHECK(vkResetFences(pCtx->device.handle, 1, &pFence->handle));
         pFence->bSignaled = FALSE;
     }
 	return VK_SUCCESS;

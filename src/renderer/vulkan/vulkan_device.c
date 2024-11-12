@@ -120,12 +120,12 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		.ppEnabledExtensionNames = ppExtensionNames,
 		.pNext = &enabledFeatures2,
 	};
-	VK_CHECK(vkCreateDevice(pCtx->device.physicalDev, &deviceCreateInfo, pCtx->pAllocator, pOutDevice));
+	VK_CHECK(vkCreateDevice(pCtx->device.physicalDevice, &deviceCreateInfo, pCtx->pAllocator, pOutDevice));
 	YINFO("Logical device created.");
 
-	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
-	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.graphicsQueueIndex, 0, &pCtx->device.graphicsQueue);
-	vkGetDeviceQueue(pCtx->device.logicalDev, pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
+	vkGetDeviceQueue(pCtx->device.handle, pCtx->device.presentQueueIndex, 0, &pCtx->device.presentQueue);
+	vkGetDeviceQueue(pCtx->device.handle, pCtx->device.graphicsQueueIndex, 0, &pCtx->device.graphicsQueue);
+	vkGetDeviceQueue(pCtx->device.handle, pCtx->device.transferQueueIndex, 0, &pCtx->device.transferQueue);
 
 	DarrayDestroy(ppExtensionNames);
 
@@ -333,7 +333,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 				{ YINFO("Shared System memory: %.2f GiB", memorySizeGib); }
 			}
 
-			pCtx->device.physicalDev = pVkDevices[i];
+			pCtx->device.physicalDevice = pVkDevices[i];
 			pCtx->device.graphicsQueueIndex = queueInfo.graphicsFamilyIndex;
 			pCtx->device.presentQueueIndex = queueInfo.presentFamilyIndex;
 			pCtx->device.transferQueueIndex = queueInfo.transferFamilyIndex;
@@ -348,7 +348,7 @@ VulkanDeviceSelect(VkContext *pCtx)
 		}
 		DarrayDestroy(requirements.ppDeviceExtensionNames);
 	}
-	if (!pCtx->device.physicalDev)
+	if (!pCtx->device.physicalDevice)
 	{ 
 		YERROR("No physical device found met the requirements.");
 		return VK_ERROR_UNKNOWN;

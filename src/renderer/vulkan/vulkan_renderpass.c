@@ -120,7 +120,7 @@ vkRenderPassCreate(
 		.flags				= 0,
 	};
     VK_CHECK(vkCreateRenderPass(
-				pCtx->device.logicalDev,
+				pCtx->device.handle,
 				&renderPassCreateInfo,
 				pCtx->pAllocator,
 				&pOutRenderPass->handle));
@@ -134,7 +134,7 @@ vkRenderPassDestroy(VkContext* pCtx, VulkanRenderPass* pRenderPass)
 {
     if (pRenderPass && pRenderPass->handle) 
 	{
-        vkDestroyRenderPass(pCtx->device.logicalDev, pRenderPass->handle, pCtx->pAllocator);
+        vkDestroyRenderPass(pCtx->device.handle, pRenderPass->handle, pCtx->pAllocator);
         pRenderPass->handle = 0;
     }
 }

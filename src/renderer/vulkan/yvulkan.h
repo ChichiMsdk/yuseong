@@ -5,13 +5,7 @@
 #ifndef YVULKAN_H
 #define YVULKAN_H
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vk_enum_string_helper.h>
-
-#include "core/yvec4.h"
-
-#include "core/myassert.h"
-#include "renderer/renderer_defines.h"
+#include "renderer/vulkan/vulkan_types_utils.h"
 #include "renderer/vulkan/macro_utils.h"
 
 #ifdef PLATFORM_LINUX
@@ -21,41 +15,15 @@
 
 typedef struct OsState OsState;
 
-typedef struct ComputeShaderFx
+typedef struct VulkanBuffer
 {
-	ComputePushConstant pushConstant;
-	const char*			pFilePath;
-	VkPipeline			pipeline;
-	VkPipelineLayout	pipelineLayout;
-} ComputeShaderFx;
+	VkBuffer			handle;
+	VkDeviceMemory		memory;
+	VkDeviceSize		size;
+	VkDeviceSize		offset;
+	VkMemoryMapFlags	flags;
+} VulkanBuffer;
 
-typedef struct VkPhysicalDeviceRequirements
-{
-	const char**	ppDeviceExtensionNames;
-	b8				bGraphics;
-	b8				bPresent;
-	b8				bCompute;
-	b8				bTransfer;
-	b8				bSamplerAnisotropy;
-	b8				bDiscreteGpu;
-} VkPhysicalDeviceRequirements;
-
-typedef struct VkPhysicalDeviceQueueFamilyInfo
-{
-	uint32_t	graphicsFamilyIndex;
-	uint32_t 	presentFamilyIndex;
-	uint32_t 	computeFamilyIndex;
-	uint32_t 	transferFamilyIndex;
-} VkPhysicalDeviceQueueFamilyInfo;
-
-typedef struct VkSwapchainSupportInfo
-{
-	VkSurfaceCapabilitiesKHR	capabilities;
-	uint32_t					formatCount;
-	VkSurfaceFormatKHR*			pFormats;
-	uint32_t					presentModeCount;
-	VkPresentModeKHR*			pPresentModes;
-} VkSwapchainSupportInfo;
 
 typedef struct VulkanFence 
 {
@@ -86,11 +54,10 @@ typedef struct VulkanImmediateSubmit
 	VkCommandPool		commandPool;
 }VulkanImmediateSubmit;
 
-
 typedef struct VulkanDevice
 {
-	VkDevice							logicalDev;
-	VkPhysicalDevice					physicalDev;
+	VkDevice							handle;
+	VkPhysicalDevice					physicalDevice;
 
 	VkSwapchainSupportInfo				swapchainSupport;
 	VkQueue								graphicsQueue;
@@ -111,61 +78,6 @@ typedef struct VulkanDevice
 	VulkanImmediateSubmit				immediateSubmit;
 } VulkanDevice;
 
-typedef struct VulkanImage
-{
-	VkImage			handle;
-	VkImageView		view;
-	VkDeviceMemory	memory;
-	uint32_t		width;
-	uint32_t		height;
-} VulkanImage;
-
-typedef enum VulkanRenderPassState 
-{
-	READY,
-	RECORDING,
-	IN_RENDER_PASS,
-	RECORDING_ENDED,
-	SUBMITTED,
-	NOT_ALLOCATED
-} VkRenderPassState;
-
-typedef struct VulkanRenderPass 
-{
-	VkRenderPass		handle;
-	f32					x, y, w, h;
-	f32					r, g, b, a;
-	f32					depth;
-	uint32_t			stencil;
-	VkRenderPassState	state;
-} VulkanRenderPass;
-
-typedef struct VulkanFramebuffer
-{
-	VkFramebuffer		handle;
-	uint32_t			attachmentCount;
-	VkImageView*		pAttachments;
-	VulkanRenderPass*	pRenderpass;
-} VulkanFramebuffer;
-
-typedef struct VkSwapchain
-{
-	VkSwapchainKHR		handle;
-	uint32_t			imageCount;
-	VkSurfaceFormatKHR	imageFormat;
-	u8					maxFrameInFlight;
-	VkImage*			pImages;
-	VkImageView*		pViews;
-	VkExtent3D			extent;
-
-	// NOTE: framebuffers used for on-screen rendering.
-	VulkanFramebuffer*	pFramebuffers;
-
-	// TODO: This is an ambiguous name -> try having "VulkanImage" in the name
-	VulkanImage			depthAttachment;
-} VkSwapchain;
-
-
 typedef struct DrawImage
 {
 	VulkanImage	image;
@@ -174,7 +86,7 @@ typedef struct DrawImage
 	VkFormat	format;
 } DrawImage;
 
-typedef struct PoolSizeRation
+typedef struct PoolSizeRatio
 {
 	VkDescriptorType	type;
 	float				ratio;
@@ -204,6 +116,48 @@ typedef struct GraphicsPipeline
 	VkPipelineRenderingCreateInfo			renderingCreateInfo;
 	VkFormat								colorAttachmentFormat;
 } GraphicsPipeline;
+
+typedef struct GpuMeshBuffers
+{
+	VulkanBuffer	indexBuffer;
+	VulkanBuffer	vertexBuffer;
+	VkDeviceAddress	vertexBufferAddress;
+} GpuMeshBuffers;
+
+typedef struct GpuDrawPushConstants
+{
+	mat4			worldMatrix;
+	VkDeviceAddress	vertexBufferAddress;
+} GpuDrawPushConstants;
+
+typedef struct GenericPipeline
+{
+	char*				pFragmentShaderFilePath;
+	char*				pVertexShaderFilePath;
+	VkPipelineLayout	pipelineLayout;
+	VkPipeline			pipeline;
+	GpuMeshBuffers		rectangle;
+	GraphicsPipeline	graphicsPipeline;
+} GenericPipeline;
+
+typedef struct MeshPipeline
+{
+	char*				pFragmentShaderFilePath;
+	char*				pMeshVertexShaderFilePath;
+	VkPipelineLayout	pipelineLayout;
+	VkPipeline			pipeline;
+	GpuMeshBuffers		rectangle;
+	GraphicsPipeline	graphicsPipeline;
+} MeshPipeline;
+
+typedef struct ComputeShaderFx
+{
+	ComputePushConstant pushConstant;
+	const char*			pFilePath;
+	VkPipeline			pipeline;
+	VkPipelineLayout	pipelineLayout;
+	GraphicsPipeline	graphicsPipeline;
+} ComputeShaderFx;
 
 typedef struct TrianglePipeline
 {
@@ -255,7 +209,12 @@ typedef struct VkContext
 	uint32_t						imageIndex;
 	b8								bRecreatingSwapchain;
 
-	int32_t							(*MemoryFindIndex)(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t propertyFlags);
+	YND VkResult					(*MemoryFindIndex)(
+										VkPhysicalDevice	physicalDevice,
+										uint32_t			typeFilter,
+										uint32_t 			propertyFlags,
+										int32_t* 			pOutIndex);
+
 	uint64_t						nbFrames;
 
 	VkDescriptorSetLayoutBinding*	pBindings;
@@ -270,6 +229,9 @@ typedef struct VkContext
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
 
 	ComputeShaderFx					*pComputeShaders;
+
+	GenericPipeline					triPipeline;
+	GenericPipeline					meshPipeline;
 
 	TrianglePipeline				trianglePipeline;
 

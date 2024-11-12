@@ -25,7 +25,7 @@ vkImageViewCreate(VkContext* pContext, VkFormat format, VulkanImage* pImage, VkI
 	};
 
 	VK_CHECK(vkCreateImageView(
-				pContext->device.logicalDev,
+				pContext->device.handle,
 				&viewCreateInfo,
 				pContext->pAllocator,
 				&pImage->view));
@@ -70,29 +70,29 @@ vkImageCreate(
 		.sharingMode	= VK_SHARING_MODE_EXCLUSIVE	// TODO: Configurable sharing mode.
 	};
 
-    VK_CHECK(vkCreateImage(pContext->device.logicalDev, &imageCreateInfo, pContext->pAllocator, &pOutImage->handle));
+    VK_CHECK(vkCreateImage(pContext->device.handle, &imageCreateInfo, pContext->pAllocator, &pOutImage->handle));
 
     /* NOTE: Query memory requirements. */
     VkMemoryRequirements memoryRequirements;
-    vkGetImageMemoryRequirements(pContext->device.logicalDev, pOutImage->handle, &memoryRequirements);
+    vkGetImageMemoryRequirements(pContext->device.handle, pOutImage->handle, &memoryRequirements);
 
-    int32_t memoryType = pContext->MemoryFindIndex(
-			pContext->device.physicalDev,
-			memoryRequirements.memoryTypeBits,
-			memoryFlags);
+    int32_t memoryType;
 
-    if (memoryType == -1)
-        YERROR("Required memory type not found. Image not valid.");
+	VK_RESULT(pContext->MemoryFindIndex(
+				pContext->device.physicalDevice,
+				memoryRequirements.memoryTypeBits,
+				memoryFlags,
+				&memoryType));
 
     VkMemoryAllocateInfo memAllocInfo = {
 		.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize		= memoryRequirements.size,
 		.memoryTypeIndex	= memoryType,
 	};
-	VK_ASSERT(vkAllocateMemory(pContext->device.logicalDev, &memAllocInfo, pContext->pAllocator, &pOutImage->memory));
+	VK_ASSERT(vkAllocateMemory(pContext->device.handle, &memAllocInfo, pContext->pAllocator, &pOutImage->memory));
 
 	// TODO: configurable memory offset.
-    VK_ASSERT(vkBindImageMemory(pContext->device.logicalDev, pOutImage->handle, pOutImage->memory, 0));
+    VK_ASSERT(vkBindImageMemory(pContext->device.handle, pOutImage->handle, pOutImage->memory, 0));
     if (bCreateView)
 	{
         pOutImage->view = VK_NULL_HANDLE;
@@ -116,7 +116,7 @@ vkDeviceDetectDepthFormat(VulkanDevice *pDevice)
 	for (uint64_t i = 0; i < candidateCount; i++)
 	{
 		VkFormatProperties properties;
-		vkGetPhysicalDeviceFormatProperties(pDevice->physicalDev, pCandidates[i], &properties);
+		vkGetPhysicalDeviceFormatProperties(pDevice->physicalDevice, pCandidates[i], &properties);
 		if ((properties.linearTilingFeatures & flags) == flags )
 		{
 			pDevice->depthFormat = pCandidates[i];
@@ -171,7 +171,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     }
     /* NOTE: Requery swapchain support. */
     VK_CHECK(vkDeviceQuerySwapchainSupport(
-				pContext->device.physicalDev,
+				pContext->device.physicalDevice,
 				pContext->surface,
 				&pContext->device.swapchainSupport));
 
@@ -234,7 +234,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
     swapchainCreateInfo.oldSwapchain	= 0;
 
     VK_CHECK(vkCreateSwapchainKHR(
-				pContext->device.logicalDev,
+				pContext->device.handle,
 				&swapchainCreateInfo,
 				pContext->pAllocator,
 				&pSwapchain->handle));
@@ -244,13 +244,13 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
     /* NOTE: Images */
     pSwapchain->imageCount = 0;
-    VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.logicalDev, pSwapchain->handle, &pSwapchain->imageCount, 0));
+    VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.handle, pSwapchain->handle, &pSwapchain->imageCount, 0));
 
 	pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
 	pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
 
 	VK_CHECK(vkGetSwapchainImagesKHR(
-				pContext->device.logicalDev,
+				pContext->device.handle,
 				pSwapchain->handle,
 				&pSwapchain->imageCount,
 				pSwapchain->pImages));
@@ -271,7 +271,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
         viewInfo.subresourceRange.layerCount		= 1;
 
         VK_CHECK(vkCreateImageView(
-					pContext->device.logicalDev,
+					pContext->device.handle,
 					&viewInfo,
 					pContext->pAllocator,
 					&pSwapchain->pViews[i]));
@@ -389,7 +389,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 YND VkResult
 vkSwapchainRecreate(VkContext *pCtx, uint32_t width, uint32_t height, VkSwapchain *pSwapchain)
 {
-	YMB VkDevice device = pCtx->device.logicalDev;
+	YMB VkDevice device = pCtx->device.handle;
 
 	VK_RESULT(vkSwapchainDestroy(pCtx, pSwapchain));
 	VK_RESULT(vkSwapchainCreate(pCtx, width, height, pSwapchain));
@@ -406,7 +406,7 @@ vkSwapchainAcquireNextImageIndex(
 		uint32_t*							pOutImageIndex)
 {
     VkResult result = vkAcquireNextImageKHR(
-			pCtx->device.logicalDev,
+			pCtx->device.handle,
 			pSwapchain->handle,
 			timeoutNS,
 			semaphoreImageAvailable,
@@ -475,17 +475,17 @@ vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
 {
 	if (pImage->view)
 	{
-		vkDestroyImageView(pContext->device.logicalDev, pImage->view, pContext->pAllocator);
+		vkDestroyImageView(pContext->device.handle, pImage->view, pContext->pAllocator);
 		pImage->view = 0;
 	}
 	if (pImage->memory)
 	{
-		vkFreeMemory(pContext->device.logicalDev, pImage->memory, pContext->pAllocator);
+		vkFreeMemory(pContext->device.handle, pImage->memory, pContext->pAllocator);
 		pImage->memory = 0;
 	}
 	if (pImage->handle)
 	{
-		vkDestroyImage(pContext->device.logicalDev, pImage->handle, pContext->pAllocator);
+		vkDestroyImage(pContext->device.handle, pImage->handle, pContext->pAllocator);
 		pImage->handle = 0;
 	}
 }
@@ -493,7 +493,7 @@ vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
 YND VkResult
 vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
 {
-	VkDevice device = pCtx->device.logicalDev;
+	VkDevice device = pCtx->device.handle;
 	VK_CHECK(vkDeviceWaitIdle(device));
 		vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
 	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
