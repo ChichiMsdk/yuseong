@@ -169,72 +169,6 @@ vkComputePipelineInit(VkContext *pCtx, VkDevice device, const char** ppShaderPat
 	return VK_SUCCESS;
 }
 
-YND VkResult
-vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
-{
-	VkPushConstantRange pushConstantRange = {
-		.offset = 0,
-		.size = sizeof(ComputePushConstant),
-		.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
-	};
-	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo = {
-		.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		.pNext					= VK_NULL_HANDLE,
-		.pSetLayouts			= &pCtx->drawImageDescriptorSetLayout,
-		.setLayoutCount			= 1,
-		.pPushConstantRanges	= &pushConstantRange,
-		.pushConstantRangeCount	= 1,
-	};
-	VK_CHECK(vkCreatePipelineLayout(
-				device,
-				&computePipelineLayoutCreateInfo,
-				pCtx->pAllocator,
-				&pCtx->gradientComputePipelineLayout));
-
-	VkShaderModule computeDrawShader;
-	VK_CHECK(vkLoadShaderModule(pCtx, pFilePath, device, &computeDrawShader));
-
-	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
-		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		.pNext	= VK_NULL_HANDLE,
-		.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
-		.module	= computeDrawShader,
-		.pName	= "main",
-	};
-	VkComputePipelineCreateInfo computePipelineCreateInfo = {
-		.sType	= VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		.pNext	= VK_NULL_HANDLE,
-		.layout	= pCtx->gradientComputePipelineLayout,
-		.stage	= pipelineShaderStageInfo,
-	};
-
-	uint32_t createInfoCount = 1;
-	VkPipelineCache pipelineCache = VK_NULL_HANDLE;
-
-	VK_CHECK(vkCreateComputePipelines(
-				device,
-				pipelineCache,
-				createInfoCount,
-				&computePipelineCreateInfo,
-				pCtx->pAllocator,
-				&pCtx->gradientComputePipeline));
-
-	vkDestroyShaderModule(device, computeDrawShader, pCtx->pAllocator);
-
-	return VK_SUCCESS;
-}
-
-YND VkResult
-vkPipelineReset(VkContext *pCtx, VkDevice device, const char* pFilePath)
-{
-	VK_ASSERT(vkDeviceWaitIdle(device));
-	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pCtx->pAllocator);
-	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pCtx->pAllocator);
-
-	VK_CHECK(vkPipelineInit(pCtx, device, pFilePath));
-	YINFO("Pipeline was successfully reset.");
-	return VK_SUCCESS;
-}
 
 static inline void
 vkRasterizerSetModes(
@@ -396,64 +330,68 @@ vkGraphicsPipelineCreate(
 }
 
 YND VkResult
-vkTrianglePipelineInit(VkContext *pCtx, VkDevice device, TrianglePipeline* pTrianglePipeline)
+vkGenericPipelineInit(
+		VkContext*							pCtx,
+		VkDevice							device,
+		GenericPipeline*					pPipeline,
+		VkPushConstantRange*				pConstantRange,
+		uint32_t							pushConstantCount)
 {
-	VkShaderModule	triangleFragmentShaderModule;
-	VK_CHECK(vkLoadShaderModule(pCtx, pTrianglePipeline->pFragmentShaderFilePath, device, &triangleFragmentShaderModule));
-	YINFO("Triangle fragment shader loaded.");
+	VkShaderModule	fragmentShaderModule;
+	VK_CHECK(vkLoadShaderModule(pCtx, pPipeline->pFragmentShaderFilePath, device, &fragmentShaderModule));
+	YINFO("Fragment shader loaded.");
 
-	VkShaderModule	triangleVertexShaderModule;
-	VK_CHECK(vkLoadShaderModule(pCtx, pTrianglePipeline->pVertexShaderFilePath, device, &triangleVertexShaderModule));
-	YINFO("Triangle vertex shader loaded.");
-    /*
-	 * NOTE: build the pipeline layout that controls the inputs/outputs of the shader
-	 * we are not using descriptor sets or other systems yet, so no need to use anything other than empty default
-     */
+	VkShaderModule	VertexShaderModule;
+	VK_CHECK(vkLoadShaderModule(pCtx, pPipeline->pVertexShaderFilePath, device, &VertexShaderModule));
+	YINFO("Vertex shader loaded.");
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-		.sType	=	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.pPushConstantRanges	= pConstantRange,
+		.pushConstantRangeCount	= pushConstantCount,
 	};
 
-	VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, pCtx->pAllocator, &pTrianglePipeline->pipelineLayout));
-	pTrianglePipeline->graphicsPipeline.pipelineLayout	= pTrianglePipeline->pipelineLayout;
+	VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, pCtx->pAllocator, &pPipeline->pipelineLayout));
+	pPipeline->graphicsPipeline.pipelineLayout	= pPipeline->pipelineLayout;
 
 	uint32_t	shaderCreateInfoCount	= 2 ;
-	pTrianglePipeline->graphicsPipeline.pShaderStages = DarrayReserve(VkPipelineShaderStageCreateInfo, 
+	pPipeline->graphicsPipeline.pShaderStages = DarrayReserve(VkPipelineShaderStageCreateInfo, 
 			shaderCreateInfoCount);
 
-	VkPipelineShaderStageCreateInfo triFragShaderStage = {
+	VkPipelineShaderStageCreateInfo fragShaderStage = {
 		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage	= VK_SHADER_STAGE_FRAGMENT_BIT,
-		.module = triangleFragmentShaderModule,
+		.module = fragmentShaderModule,
 		.pName	= "main",
 	};
-	DarrayPush(pTrianglePipeline->graphicsPipeline.pShaderStages, triFragShaderStage);
+	DarrayPush(pPipeline->graphicsPipeline.pShaderStages, fragShaderStage);
 
-	VkPipelineShaderStageCreateInfo triVertexShaderStage = {
+	VkPipelineShaderStageCreateInfo vertexShaderStage = {
 		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage	= VK_SHADER_STAGE_VERTEX_BIT,
-		.module = triangleVertexShaderModule,
+		.module = VertexShaderModule,
 		.pName	= "main",
 	};
-	DarrayPush(pTrianglePipeline->graphicsPipeline.pShaderStages, triVertexShaderStage);
+	DarrayPush(pPipeline->graphicsPipeline.pShaderStages, vertexShaderStage);
 
-	vkInputAssemblySetTopology(&pTrianglePipeline->graphicsPipeline.inputAssembly, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	vkInputAssemblySetTopology(&pPipeline->graphicsPipeline.inputAssembly, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 	f32	lineWidth = 1.0f;
 	vkRasterizerSetModes(
-			&pTrianglePipeline->graphicsPipeline.rasterizer,
+			&pPipeline->graphicsPipeline.rasterizer,
 			VK_POLYGON_MODE_FILL,
 			VK_CULL_MODE_NONE,
 			VK_FRONT_FACE_CLOCKWISE,
 			lineWidth);
 
-	vkSetMultisamplingNone(&pTrianglePipeline->graphicsPipeline.multisampling);
+	vkSetMultisamplingNone(&pPipeline->graphicsPipeline.multisampling);
 
-	vkDisableBlending(&pTrianglePipeline->graphicsPipeline.colorBlendAttachment);
-	vkDepthTestDisable(&pTrianglePipeline->graphicsPipeline.depthStencil);
+	vkDisableBlending(&pPipeline->graphicsPipeline.colorBlendAttachment);
+	vkDepthTestDisable(&pPipeline->graphicsPipeline.depthStencil);
 
 	VkFormat	depthFormat = VK_FORMAT_UNDEFINED;
 	vkPipelineRenderingSetFormatAndDepthFormat(
-			&pTrianglePipeline->graphicsPipeline.renderingCreateInfo,
+			&pPipeline->graphicsPipeline.renderingCreateInfo,
 			&pCtx->drawImage.format,
 			depthFormat,
 			pCtx->drawImage.format);
@@ -461,14 +399,14 @@ vkTrianglePipelineInit(VkContext *pCtx, VkDevice device, TrianglePipeline* pTria
 	VkPipeline newPipeline;
 	VK_CHECK(vkGraphicsPipelineCreate(
 				device,
-				&pTrianglePipeline->graphicsPipeline,
+				&pPipeline->graphicsPipeline,
 				pCtx->pAllocator,
 				&newPipeline));
 
-	pTrianglePipeline->pipeline = newPipeline;
-	vkDestroyShaderModule(device, triangleFragmentShaderModule, pCtx->pAllocator);
-	vkDestroyShaderModule(device, triangleVertexShaderModule, pCtx->pAllocator);
-	DarrayDestroy(pTrianglePipeline->graphicsPipeline.pShaderStages);
+	pPipeline->pipeline = newPipeline;
+	vkDestroyShaderModule(device, fragmentShaderModule, pCtx->pAllocator);
+	vkDestroyShaderModule(device, VertexShaderModule, pCtx->pAllocator);
+	DarrayDestroy(pPipeline->graphicsPipeline.pShaderStages);
 
 	return VK_SUCCESS;
 }
@@ -494,4 +432,71 @@ vkGraphicsPipelineClear(GraphicsPipeline* pPipeline)
 	pPipeline->colorBlendAttachment	= (VkPipelineColorBlendAttachmentState) {0};
 	pPipeline->pipelineLayout		= (VkPipelineLayout) {0};
 	DarrayClear(pPipeline->pShaderStages);
+}
+
+YND VkResult
+vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
+{
+	VkPushConstantRange pushConstantRange = {
+		.offset = 0,
+		.size = sizeof(ComputePushConstant),
+		.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	};
+	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo = {
+		.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.pNext					= VK_NULL_HANDLE,
+		.pSetLayouts			= &pCtx->drawImageDescriptorSetLayout,
+		.setLayoutCount			= 1,
+		.pPushConstantRanges	= &pushConstantRange,
+		.pushConstantRangeCount	= 1,
+	};
+	VK_CHECK(vkCreatePipelineLayout(
+				device,
+				&computePipelineLayoutCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->gradientComputePipelineLayout));
+
+	VkShaderModule computeDrawShader;
+	VK_CHECK(vkLoadShaderModule(pCtx, pFilePath, device, &computeDrawShader));
+
+	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
+		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
+		.module	= computeDrawShader,
+		.pName	= "main",
+	};
+	VkComputePipelineCreateInfo computePipelineCreateInfo = {
+		.sType	= VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		.pNext	= VK_NULL_HANDLE,
+		.layout	= pCtx->gradientComputePipelineLayout,
+		.stage	= pipelineShaderStageInfo,
+	};
+
+	uint32_t createInfoCount = 1;
+	VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+
+	VK_CHECK(vkCreateComputePipelines(
+				device,
+				pipelineCache,
+				createInfoCount,
+				&computePipelineCreateInfo,
+				pCtx->pAllocator,
+				&pCtx->gradientComputePipeline));
+
+	vkDestroyShaderModule(device, computeDrawShader, pCtx->pAllocator);
+
+	return VK_SUCCESS;
+}
+
+YND VkResult
+vkPipelineReset(VkContext *pCtx, VkDevice device, const char* pFilePath)
+{
+	VK_ASSERT(vkDeviceWaitIdle(device));
+	vkDestroyPipeline(device, pCtx->gradientComputePipeline, pCtx->pAllocator);
+	vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pCtx->pAllocator);
+
+	VK_CHECK(vkPipelineInit(pCtx, device, pFilePath));
+	YINFO("Pipeline was successfully reset.");
+	return VK_SUCCESS;
 }

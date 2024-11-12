@@ -6,6 +6,13 @@
 
 #include "core/yvec4.h"
 
+YND VkResult vkGenericPipelineInit(
+		VkContext*							pCtx,
+		VkDevice							device,
+		GenericPipeline*					pPipeline,
+		VkPushConstantRange*				pConstantRange,
+		uint32_t							pushConstantCount);
+
 YND VkResult vkLoadShaderModule(
 		VkContext*							pCtx,
 		const char*							pFilePath,
@@ -26,10 +33,5 @@ YND VkResult vkPipelineReset(
 		VkContext*							pCtx,
 		VkDevice							device,
 		const char*							pFilePath);
-
-YND VkResult vkTrianglePipelineInit(
-		VkContext							*pCtx,
-		VkDevice							device,
-		TrianglePipeline*					pTrianglePipeline);
 
 #endif //VULKAN_PIPELINE_H

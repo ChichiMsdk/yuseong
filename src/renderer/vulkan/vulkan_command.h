@@ -4,6 +4,19 @@
 #include <vulkan/vulkan.h>
 #include "yvulkan.h"
 
+typedef void (*pfnSubmit)(void* pCtx, VulkanCommandBuffer command);
+
+YND VkResult vkCommandSubmitImmediate(
+		pfnSubmit							pfnSubmit,
+		VulkanDevice						device,
+		VulkanImmediateSubmit				submitCommand,
+		void*								pCtx);
+
+YND VkResult vkImmediateSubmitCommandCreate(
+		VulkanDevice						device,
+		VulkanImmediateSubmit*				pSubmit,
+		VkAllocationCallbacks*				pAllocator);
+
 YND VkResult vkCommandPoolCreate(
 		VulkanDevice						device,
 		VkAllocationCallbacks*				pAllocator,

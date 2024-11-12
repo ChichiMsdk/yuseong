@@ -130,6 +130,7 @@ typedef struct GpuDrawPushConstants
 	VkDeviceAddress	vertexBufferAddress;
 } GpuDrawPushConstants;
 
+/* TODO: Uniform struct for vertex, frag, compute and mesh */
 typedef struct GenericPipeline
 {
 	char*				pFragmentShaderFilePath;
@@ -140,16 +141,6 @@ typedef struct GenericPipeline
 	GraphicsPipeline	graphicsPipeline;
 } GenericPipeline;
 
-typedef struct MeshPipeline
-{
-	char*				pFragmentShaderFilePath;
-	char*				pMeshVertexShaderFilePath;
-	VkPipelineLayout	pipelineLayout;
-	VkPipeline			pipeline;
-	GpuMeshBuffers		rectangle;
-	GraphicsPipeline	graphicsPipeline;
-} MeshPipeline;
-
 typedef struct ComputeShaderFx
 {
 	ComputePushConstant pushConstant;
@@ -158,15 +149,6 @@ typedef struct ComputeShaderFx
 	VkPipelineLayout	pipelineLayout;
 	GraphicsPipeline	graphicsPipeline;
 } ComputeShaderFx;
-
-typedef struct TrianglePipeline
-{
-	VkPipelineLayout	pipelineLayout;
-	VkPipeline			pipeline;
-	char*				pFragmentShaderFilePath;
-	char*				pVertexShaderFilePath;
-	GraphicsPipeline	graphicsPipeline;
-} TrianglePipeline;
 
 typedef struct VkContext
 {
@@ -232,8 +214,6 @@ typedef struct VkContext
 
 	GenericPipeline					triPipeline;
 	GenericPipeline					meshPipeline;
-
-	TrianglePipeline				trianglePipeline;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;

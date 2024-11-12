@@ -11,6 +11,7 @@
 #include "vulkan_descriptor.h"
 #include "vulkan_pipeline.h"
 #include "vulkan_timer.h"
+#include "vulkan_memory.h"
 
 #include "core/darray.h"
 #include "core/darray_debug.h"
@@ -32,11 +33,6 @@ static GlobalContext gContext;
 static inline void SyncInit(
 		VkContext*										pCtx,
 		VulkanDevice									device);
-
-YND static int32_t MemoryFindIndex(
-		VkPhysicalDevice								physicalDevice,
-		uint32_t										typeFilter,
-		uint32_t										propertyFlags);
 
 YMB static inline VkResult DebugRequiredExtensionValidationLayers(
 		const char***									pppRequiredExtensions,
@@ -74,7 +70,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_EXTENSION_NAME);
 	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
 
-	pCurrentCtx->MemoryFindIndex = MemoryFindIndex;
+	pCurrentCtx->MemoryFindIndex = MemoryTypeFindIndex;
 	OsFramebufferGetDimensions(pOsState, &pCurrentCtx->framebufferWidth, &pCurrentCtx->framebufferHeight);
 
 #ifdef DEBUG
@@ -117,7 +113,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 #endif // DEBUG
 
 	/* NOTE: Creating the device */
-	VK_CHECK(VulkanCreateDevice(pCurrentCtx, &pCurrentCtx->device.logicalDev, pGPUName));
+	VK_CHECK(VulkanCreateDevice(pCurrentCtx, &pCurrentCtx->device.handle, pGPUName));
 
 	/* NOTE: Create Swapchain */
 	int32_t width = pCurrentCtx->framebufferWidth;
@@ -129,6 +125,13 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 
 	/* NOTE: Create commandBuffer */
 	VK_CHECK(vkCommandBufferCreate(pCurrentCtx));
+
+	/* NOTE: Create ImmediateCommandCreate */
+	VK_CHECK(vkImmediateSubmitCommandCreate(
+				pCurrentCtx->device,
+				&pCurrentCtx->device.immediateSubmit,
+				pCurrentCtx->pAllocator));
+
 
 	/* NOTE: Create RenderPass */
 	YMB RgbaFloat	color	= { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
@@ -159,17 +162,36 @@ vkInit(OsState *pOsState, void** ppOutCtx)
     }
 
 	/* NOTE: DescriptorSets allocation */
-	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.logicalDev));
+	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.handle));
 	/* VK_CHECK(vkPipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gpShaderFilePath[gShaderFileIndex])); */
+
 	/* NOTE: ComputePipeline for shaders */
-	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, gppShaderFilePath));
-	pCurrentCtx->trianglePipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle.vert.spv";
-	pCurrentCtx->trianglePipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
-	VK_CHECK(vkTrianglePipelineInit(pCurrentCtx, pCurrentCtx->device.logicalDev, &pCurrentCtx->trianglePipeline));
+	VK_CHECK(vkComputePipelineInit(pCurrentCtx, pCurrentCtx->device.handle, gppShaderFilePath));
+
+	/* NOTE: TrianglePipeline Setup */
+	pCurrentCtx->triPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle.vert.spv";
+	pCurrentCtx->triPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
+	VK_CHECK(vkGenericPipelineInit(pCurrentCtx, pCurrentCtx->device.handle, &pCurrentCtx->triPipeline, VK_NULL_HANDLE, 0));
+
+	/* NOTE: MeshPipeline Setup */
+	VkPushConstantRange	bufferRange			= {
+		.offset		= 0,
+		.size		= sizeof(GpuMeshBuffers),
+		.stageFlags	= VK_SHADER_STAGE_VERTEX_BIT,
+	};
+	uint32_t			pushConstantCount	= 1;
+	pCurrentCtx->meshPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle_mesh.vert.spv";
+	pCurrentCtx->meshPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
+	VK_CHECK(vkGenericPipelineInit(
+				pCurrentCtx,
+				pCurrentCtx->device.handle,
+				&pCurrentCtx->meshPipeline,
+				&bufferRange,
+				pushConstantCount));
 
 	/* NOTE: Create queryPoolTimer, uses globals */
 	VkQueryPool* pool = NULL;
-	VK_CHECK(vkQueryPoolTimerCreate(pCurrentCtx->device.logicalDev, pCurrentCtx->pAllocator, pool));
+	VK_CHECK(vkQueryPoolTimerCreate(pCurrentCtx->device.handle, pCurrentCtx->pAllocator, pool));
 
 	/* NOTE: Cleanup */
 	DarrayDestroy(ppRequiredExtensions);
@@ -185,7 +207,7 @@ void
 vkShutdown(void *pContext)
 {
 	VkContext *pCtx						= (VkContext*)pContext;
-	VkDevice device						= pCtx->device.logicalDev;
+	VkDevice device						= pCtx->device.handle;
 	VulkanDevice myDevice				= pCtx->device;
 	VkAllocationCallbacks* pAllocator	= pCtx->pAllocator;
 
@@ -197,11 +219,10 @@ vkShutdown(void *pContext)
 		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
 #endif // DEBUG
 
-    /*
-	 * VK_ASSERT(vkDeviceWaitIdle(device));
-	 * vkDestroyPipeline(device, pCtx->gradientComputePipeline, pAllocator);
-	 * vkDestroyPipelineLayout(device, pCtx->gradientComputePipelineLayout, pAllocator);
-     */
+	VulkanImmediateSubmit immediateSubmit = myDevice.immediateSubmit;
+	VK_ASSERT(vkCommandBufferFree(pCtx, &immediateSubmit.commandBuffer, &immediateSubmit.commandPool, 1));
+	VK_ASSERT(vkCommandPoolDestroy(pCtx, &immediateSubmit.commandPool, 1));
+	vkFenceDestroy(pCtx, &immediateSubmit.fence);
 
 	/* NOTE: temporary */
 	VkQueryPool dummy = 0;
@@ -216,18 +237,13 @@ vkShutdown(void *pContext)
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, poolCount));
 
 	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
+
 	vkDestroyImage(device, pCtx->depthImage.image.handle, pAllocator);
 	vkDestroyImageView(device, pCtx->depthImage.image.view, pAllocator);
 	vkFreeMemory(device, pCtx->depthImage.image.memory, pAllocator);
 	vkDestroyImage(device, pCtx->drawImage.image.handle, pAllocator);
 	vkDestroyImageView(device, pCtx->drawImage.image.view, pAllocator);
 	vkFreeMemory(device, pCtx->drawImage.image.memory, pAllocator);
-    /*
-	 * vkDestroyVulkanImage(&gVkCtx, &gVkCtx.swapchain.depthAttachment);
-	 * for (uint32_t i = 0; i < gVkCtx.swapchain.imageCount; i++)
-	 * 	vkDestroyImageView(device, gVkCtx.swapchain.pViews[i], gVkCtx.pAllocator);
-	 * vkDestroySwapchainKHR(device, gVkCtx.swapchain.handle, gVkCtx.pAllocator);
-     */
 
 	vkDestroySurfaceKHR(pCtx->instance, pCtx->surface, pAllocator);
 
@@ -235,7 +251,6 @@ vkShutdown(void *pContext)
 	{
 		vkFramebufferDestroy(device, pAllocator, &pCtx->swapchain.pFramebuffers[i]);
 	}
-
 	DarrayDestroy(pCtx->swapchain.pFramebuffers);
 
 	vkRenderPassDestroy(pCtx, &pCtx->mainRenderpass); 
@@ -245,6 +260,8 @@ vkShutdown(void *pContext)
 		vkDestroySemaphore(device, pCtx->pSemaphoresQueueComplete[i], pAllocator);
 		vkFenceDestroy(pCtx, &pCtx->pFencesInFlight[i]);
 	}
+
+	/* NOTE: Destroy Darrays */
 	DarrayDestroy(pCtx->pSemaphoresQueueComplete);
 	DarrayDestroy(pCtx->pSemaphoresAvailableImage);
 	DarrayDestroy(pCtx->pFencesInFlight);
@@ -266,7 +283,9 @@ vkShutdown(void *pContext)
 				pCtx->device.swapchainSupport.presentModeCount,
 				MEMORY_TAG_RENDERER);
 	}
-	vkDestroyDevice(pCtx->device.logicalDev, pAllocator);
+
+	/* NOTE: Finally destroy device and instance */
+	vkDestroyDevice(pCtx->device.handle, pAllocator);
 	vkDestroyInstance(pCtx->instance, pAllocator);
 
 	yFree(pCtx, 1, MEMORY_TAG_RENDERER_CONTEXT);
@@ -288,32 +307,14 @@ SyncInit(VkContext* pCtx, VulkanDevice device)
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
 		};
-		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresAvailableImage[i]);
-		vkCreateSemaphore(device.logicalDev, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresQueueComplete[i]);
+		vkCreateSemaphore(device.handle, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresAvailableImage[i]);
+		vkCreateSemaphore(device.handle, &semaphoreCreateInfo, pCtx->pAllocator, &pCtx->pSemaphoresQueueComplete[i]);
 
 		/* NOTE: Assuming that the app CANNOT run without fences therefore we abort() in case of failure */
-		VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
+		VK_ASSERT(vkFenceCreate(device.handle, bSignaled, pCtx->pAllocator, &pCtx->pFencesInFlight[i]));
 	}
 	/* NOTE: Fence for the immediate submit commands */
-	/* VK_ASSERT(vkFenceCreate(device.logicalDev, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence)) */
-}
-
-YND int32_t
-MemoryFindIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, uint32_t propertyFlags)
-{
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
-
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
-	{
-        // Check each memory type to see if its bit is set to 1.
-        if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
-		{
-            return i;
-        }
-    }
-    YWARN("Unable to find suitable memory type!");
-    return -1;
+	VK_ASSERT(vkFenceCreate(device.handle, bSignaled, pCtx->pAllocator, &device.immediateSubmit.fence))
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vkDebugCallback(
