@@ -132,7 +132,6 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 				&pCurrentCtx->device.immediateSubmit,
 				pCurrentCtx->pAllocator));
 
-
 	/* NOTE: Create RenderPass */
 	YMB RgbaFloat	color	= { .r = 30.0f, .g = 30.0f, .b = 200.0f, .a = 1.0f, };
 	YMB RectFloat	rect	= { .x = 0.0f, .y = 0.0f, .w = width, .h = height, };
@@ -147,9 +146,6 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	pCurrentCtx->pSemaphoresQueueComplete	= DarrayReserve(VkSemaphore, pCurrentCtx->swapchain.maxFrameInFlight);
 	pCurrentCtx->pFencesInFlight			= DarrayReserve(VulkanFence, pCurrentCtx->swapchain.maxFrameInFlight);
 
-	/* NOTE: Init semaphore and fences */
-	SyncInit(pCurrentCtx, pCurrentCtx->device);
-
 	/*
 	 * NOTE: In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
 	 * because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
@@ -160,6 +156,9 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	{
         pCurrentCtx->ppImagesInFlight[i] = 0;
     }
+
+	/* NOTE: Init semaphore and fences */
+	SyncInit(pCurrentCtx, pCurrentCtx->device);
 
 	/* NOTE: DescriptorSets allocation */
 	VK_CHECK(vkDescriptorsInit(pCurrentCtx, pCurrentCtx->device.handle));
@@ -218,7 +217,7 @@ vkShutdown(void *pContext)
 		YASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
 		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
 #endif // DEBUG
-
+	VK_ASSERT(vkDeviceWaitIdle(device));
 	VulkanImmediateSubmit immediateSubmit = myDevice.immediateSubmit;
 	VK_ASSERT(vkCommandBufferFree(pCtx, &immediateSubmit.commandBuffer, &immediateSubmit.commandPool, 1));
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &immediateSubmit.commandPool, 1));
