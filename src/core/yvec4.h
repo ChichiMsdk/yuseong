@@ -32,10 +32,17 @@ typedef Y_ALIGN(16) float y_vec4[4];
 
 typedef struct ComputePushConstant
 {
-	vec4 data1;
-	vec4 data2;
-	vec4 data3;
-	vec4 data4;
+	alignas(8) float data1[4];
+	alignas(8) float data2[4];
+	alignas(8) float data3[4];
+	alignas(8) float data4[4];
+
+    /*
+	 * vec4 data1;
+	 * vec4 data2;
+	 * vec4 data3;
+	 * vec4 data4;
+     */
 } ComputePushConstant;
 
 /*!
@@ -44,7 +51,7 @@ typedef struct ComputePushConstant
  * @param[in]  x, y, z, w    source
  * @param[out] v destination
  */
-Y_INLINE
+CGLM_INLINE
 void
 Vec4Fill(f32 x, f32 y, f32 z, f32 w, vec4 vOut)
 {
@@ -60,7 +67,7 @@ Vec4Fill(f32 x, f32 y, f32 z, f32 w, vec4 vOut)
  * @param[in]  v    source
  * @param[out] dest destination
  */
-Y_INLINE
+CGLM_INLINE
 void
 Vec4Copy(y_vec4 v, vec4 dest)
 {

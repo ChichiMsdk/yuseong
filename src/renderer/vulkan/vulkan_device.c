@@ -85,10 +85,15 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
 
+	VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering = {
+		.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+		.dynamicRendering	= TRUE,
+	};
+
 	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
 		.synchronization2 = VK_TRUE,
-		.pNext = NULL,
+		.pNext = &dynamicRendering,
 	};
 
 	/* TODO: shoud be config driven */

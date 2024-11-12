@@ -1,4 +1,5 @@
 CC				=clang-19
+C++				=clang++-19
 CLINKER			=mold
 
 IMGUI_DIR		=$(SRC_DIR)/imgui
@@ -22,7 +23,7 @@ OUTPUT			=$(NAME)
 
 DEBUG_LEVEL =-ggdb3
 
-ifdef TRACY_USE
+ifeq ($(TRACY_USE),$(filter $(TRACY_USE),on ON true TRUE yes YES))
 	LIBS			+= -lc++
 	LIB_PATH		+= -L/usr/lib/x86_64-unknown-linux-gnu
 	INCLUDE_DIRS	+= -I/usr/include/x86_64-unknown-linux-gnu/c++/v1
@@ -42,3 +43,17 @@ BLUE=\033[0;34m
 PURPLE=\033[0;35m
 CYAN=\033[0;36m
 WHITE=\033[0;37m
+
+NC=
+BOLD=
+UNDER=
+REV=
+
+GREY=
+RED=
+GREEN=
+YELLOW=
+BLUE=
+PURPLE=
+CYAN=
+WHITE=

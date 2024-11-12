@@ -23,10 +23,10 @@ typedef struct OsState OsState;
 
 typedef struct ComputeShaderFx
 {
+	ComputePushConstant pushConstant;
 	const char*			pFilePath;
 	VkPipeline			pipeline;
 	VkPipelineLayout	pipelineLayout;
-	ComputePushConstant pushConstant;
 } ComputeShaderFx;
 
 typedef struct VkPhysicalDeviceRequirements
@@ -248,6 +248,7 @@ typedef struct VkContext
 	VulkanFence**					ppImagesInFlight;
 
 	DrawImage						drawImage;
+	DrawImage						depthImage;
 
 	VkSwapchain						swapchain;
 	uint32_t						currentFrame;

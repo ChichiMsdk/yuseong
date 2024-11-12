@@ -236,7 +236,7 @@ vkPipelineReset(VkContext *pCtx, VkDevice device, const char* pFilePath)
 	return VK_SUCCESS;
 }
 
-inline void
+static inline void
 vkRasterizerSetModes(
 		VkPipelineRasterizationStateCreateInfo*	pRasterizer,
 		VkPolygonMode							polygonMode,
@@ -251,7 +251,7 @@ vkRasterizerSetModes(
 	pRasterizer->lineWidth		= lineWidth;
 }
 
-inline void
+static inline void
 vkSetMultisamplingNone(VkPipelineMultisampleStateCreateInfo* pMultisamplingCreateInfo)
 {
 	pMultisamplingCreateInfo->sType					= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -265,7 +265,7 @@ vkSetMultisamplingNone(VkPipelineMultisampleStateCreateInfo* pMultisamplingCreat
 	pMultisamplingCreateInfo->alphaToOneEnable		= VK_FALSE;
 }
 
-inline void
+static inline void
 vkDisableBlending(VkPipelineColorBlendAttachmentState* pColorBlendAttachment)
 {
 	/* NOTE: default write mask */
@@ -277,7 +277,7 @@ vkDisableBlending(VkPipelineColorBlendAttachmentState* pColorBlendAttachment)
 	pColorBlendAttachment->blendEnable		= VK_FALSE;
 }
 
-inline void
+static inline void
 vkDepthTestDisable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil)
 {
     pDepthStencil->sType					= VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -292,7 +292,7 @@ vkDepthTestDisable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil)
     pDepthStencil->maxDepthBounds			= 1.0f;
 }
 
-inline void
+static inline void
 vkPipelineRenderingSetFormatAndDepthFormat(
 		VkPipelineRenderingCreateInfo*		pRenderingCreateInfo,
 		VkFormat*							pOutColorAttachmentFormat,
@@ -308,7 +308,7 @@ vkPipelineRenderingSetFormatAndDepthFormat(
 	pRenderingCreateInfo->depthAttachmentFormat		= depthAttachmentFormat;
 }
 
-inline void
+static inline void
 vkInputAssemblySetTopology(VkPipelineInputAssemblyStateCreateInfo* pInputAssembly, VkPrimitiveTopology topology)
 {
 	pInputAssembly->sType					= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -469,7 +469,6 @@ vkTrianglePipelineInit(VkContext *pCtx, VkDevice device, TrianglePipeline* pTria
 	vkDestroyShaderModule(device, triangleFragmentShaderModule, pCtx->pAllocator);
 	vkDestroyShaderModule(device, triangleVertexShaderModule, pCtx->pAllocator);
 	DarrayDestroy(pTrianglePipeline->graphicsPipeline.pShaderStages);
-	exit(1);
 
 	return VK_SUCCESS;
 }

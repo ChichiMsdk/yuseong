@@ -59,7 +59,7 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 				}
 		}
 	}
-	else if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
+	if (code == EVENT_CODE_KEY_PRESSED || code == EVENT_CODE_KEY_RELEASED) 
 	{
 		uint16_t keyCode = context.data.uint16_t[0];
 		switch (keyCode)

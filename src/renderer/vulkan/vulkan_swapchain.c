@@ -345,6 +345,43 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
 	pContext->drawImage = drawImage;
 
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+	DrawImage depthImage = {
+		.format	= VK_FORMAT_D32_SFLOAT,
+
+		.extent	= {
+			.width	= width,
+			.height	= height,
+			.depth	= 1,
+		},
+
+	};
+	VkImageUsageFlags depthImageUsageFlag = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	bCreateView = TRUE;
+	mipLevels = 1;
+
+	VK_CHECK(vkImageCreate(
+				pContext,
+				VK_IMAGE_TYPE_2D,
+				depthImage.extent.width,
+				depthImage.extent.height,
+				depthImage.format,
+				VK_IMAGE_TILING_OPTIMAL,
+				depthImageUsageFlag,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				bCreateView,
+				VK_IMAGE_ASPECT_DEPTH_BIT,
+				&depthImage.image,
+				depthImage.extent,
+				mipLevels));
+
+	pContext->depthImage = depthImage;
+
     YINFO("Swapchain created successfully.");
 	return VK_SUCCESS;
 }

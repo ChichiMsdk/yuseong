@@ -120,6 +120,7 @@ vkDrawImpl(VkContext* pCtx)
 	b8				bSimultaneousUse	= FALSE;
 	b8				bRenderPassContinue	= FALSE;
 	DrawImage		drawImage			= pCtx->drawImage;
+	DrawImage		depthImage			= pCtx->depthImage;
 	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
 	vkCommandBufferBegin(pCmd, bSingleUse, bRenderPassContinue, bSimultaneousUse);
 
@@ -136,19 +137,19 @@ vkDrawImpl(VkContext* pCtx)
 
 	/* NOTE: Compute shader invocation */
 	VK_CHECK(vkComputeShaderInvocation(pCtx, pCmd, pCtx->pComputeShaders[gShaderFileIndex]));
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkExtent2D extent = {
-		.width	= pCtx->swapchain.extent.width,
-		.height = pCtx->swapchain.extent.height,
-	};
+	vkImageTransition(pCmd, drawImage.image.handle, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	vkImageTransition(pCmd, depthImage.image.handle, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	YMB VkExtent2D extent = { .width	= pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
 	vkGeometryDraw(pCmd->handle, extent, pCtx->drawImage, pCtx->trianglePipeline.pipeline);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	/* NOTE: Make the swapchain image into presentable mode */
-	newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	vkImageTransition(pCmd, drawImage.image.handle, currentLayout, newLayout);
 	vkImageTransition(pCmd, swapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -260,7 +261,10 @@ vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage d
 		.pColorAttachments		= &colorAttachment,
 		.renderArea = {
 			.extent 			= drawExtent,
-		}			
+		},
+		/* FIXME: THE FUCK?? */
+		/* NOTE: Seems to be the sum of all the attachments */
+		.layerCount				= 1,
 	}; 
 
 	vkCmdBeginRendering(commandBuffer, &renderingInfo);

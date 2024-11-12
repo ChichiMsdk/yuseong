@@ -113,7 +113,7 @@ SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.frag, $(OBJ_DIR)/%.frag.spv, $(SHADER_FIL
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
 
-ifeq ($(TRACY_USE),$(filter $(TRACY_USE), on ON true TRUE yes YES))
+ifeq ($(TRACY_USE),ON)
 	CDEFINES	+= -DTRACY_ENABLE
 	CPP_FILES	+= $(SRC_DIR)/TracyClient.cpp
 	CPP_OBJS	+= $(OBJ_DIR)/TracyClient.o
@@ -135,8 +135,11 @@ include $(FILE)$(OS_EXT)
 CFLAGS			+= $(CDEFINES)
 CPPFLAGS		+= $(CPPDEFINES)
 
+ifeq ($(CC),clang)
+MJJSON			=-MJ$@.json
+endif
 
-ifeq ($(CC),$(filter $(CC),clang clang-18 clang-19))
+ifeq ($(CC),clang-19)
 MJJSON			=-MJ$@.json
 endif
 

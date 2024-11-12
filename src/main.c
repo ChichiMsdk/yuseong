@@ -17,7 +17,7 @@ const char *gppShaderFilePath[] = {
 uint32_t gFilePathSize = COUNT_OF(gppShaderFilePath);
 int32_t gShaderFileIndex = 0;
 
-/* const char* __asan_default_options() { return "detect_leaks=0"; } */
+const char* __asan_default_options() { return "detect_leaks=0"; }
 #include "test.h"
 
 AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 1500, .h = 900, };
