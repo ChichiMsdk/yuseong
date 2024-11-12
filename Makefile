@@ -158,17 +158,17 @@ $(BUILD_DIR)/$(OBJ):
 #*************************** SHADERS ***********************************#
 
 $(OBJ_DIR)/%.frag.spv: $(SRC_DIR)/%.frag
-	@$(ECHO_E) "$(PURPLE)Compiling fragment shaders..$(NC)"
+	@$(ECHO_E) "$(PURPLE)Compiling $@ fragment shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
 $(OBJ_DIR)/%.vert.spv: $(SRC_DIR)/%.vert
-	@$(ECHO_E) "$(PURPLE)Compiling vertex shaders..$(NC)"
+	@$(ECHO_E) "$(PURPLE)Compiling $@ vertex shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
 $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
-	@$(ECHO_E) "$(PURPLE)Compiling compute shaders..$(NC)"
+	@$(ECHO_E) "$(PURPLE)Compiling $@ compute shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
@@ -200,10 +200,10 @@ $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB_OUT)
 
 clean:
 	@$(ECHO_E) "$(RED)Deleting files..$(NC)"
-	@rm -f $(BUILD_DIR)/$(OUTPUT)
-	@rm -rf $(OBJ_DIR)
-	@$(RM_EXTRA)
-	@$(RM_EXTRA2)
+	rm -f $(BUILD_DIR)/$(OUTPUT)
+	rm -rf $(OBJ_DIR)
+	$(RM_EXTRA)
+	$(RM_EXTRA2)
 
 fclean: clean
 	rm -f compile_commands.json
