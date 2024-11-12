@@ -34,7 +34,7 @@ vkFramebufferCreate(
 	};
 
     VK_ASSERT(vkCreateFramebuffer(
-				pCtx->device.logicalDev,
+				pCtx->device.handle,
 				&framebufferCreateInfo,
 				pCtx->pAllocator,
 				&pOutFramebuffer->handle));
