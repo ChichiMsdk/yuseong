@@ -2,6 +2,7 @@ TODO:
 
 - Remove .cmds and .make
 
+- One fence is not destroyed somehow
 - Runtime shader's compilation
 - Threading
 - Wrap VkResult errorcode
