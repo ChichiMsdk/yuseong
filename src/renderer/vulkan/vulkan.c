@@ -216,6 +216,9 @@ vkShutdown(void *pContext)
 	VK_ASSERT(vkCommandPoolDestroy(pCtx, &myDevice.graphicsCommandPool, poolCount));
 
 	VK_ASSERT(vkSwapchainDestroy(pCtx, &pCtx->swapchain));
+	vkDestroyImage(device, pCtx->depthImage.image.handle, pAllocator);
+	vkDestroyImageView(device, pCtx->depthImage.image.view, pAllocator);
+	vkFreeMemory(device, pCtx->depthImage.image.memory, pAllocator);
 	vkDestroyImage(device, pCtx->drawImage.image.handle, pAllocator);
 	vkDestroyImageView(device, pCtx->drawImage.image.view, pAllocator);
 	vkFreeMemory(device, pCtx->drawImage.image.memory, pAllocator);

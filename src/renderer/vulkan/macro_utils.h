@@ -38,6 +38,8 @@
 			vkDestroyPipeline(device, pCtx->pComputeShaders[i].pipeline, pCtx->pAllocator); \
 		} \
 		DarrayDestroy(pCtx->pComputeShaders);\
+		vkDestroyPipeline(device, pCtx->trianglePipeline.pipeline, pCtx->pAllocator); \
+		vkDestroyPipelineLayout(device, pCtx->trianglePipeline.pipelineLayout, pCtx->pAllocator); \
 	} while(0);
 
 #endif  // MACRO_UTILS_H

@@ -22,6 +22,7 @@ vkQueryPoolTimerDestroy(VkDevice device, VkAllocationCallbacks* pAllocator, VkQu
 {
 	/* NOTE: This is just temporary */
 	queryPool = gTimer;
+	vkDeviceWaitIdle(device);
 	vkDestroyQueryPool(device, queryPool, pAllocator);
 }
 
