@@ -23,7 +23,7 @@ OUTPUT			=$(NAME)
 
 DEBUG_LEVEL =-ggdb3
 
-ifeq ($(TRACY_USE),$(filter $(TRACY_USE),on ON true TRUE yes YES))
+ifeq ($(TRACY_USE),ON)
 	LIBS			+= -lc++
 	LIB_PATH		+= -L/usr/lib/x86_64-unknown-linux-gnu
 	INCLUDE_DIRS	+= -I/usr/include/x86_64-unknown-linux-gnu/c++/v1

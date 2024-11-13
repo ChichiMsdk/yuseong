@@ -14,6 +14,8 @@ else
 	MYFIND :=find
 endif
 
+MAKEFILES =Makefile $(FILE)$(OS_EXT)
+
 TESTING					=
 ASAN_USE				=
 RELEASE_USE				=
@@ -58,6 +60,7 @@ JASB_FILE		=jasb.c
 JASB_CMD		=*.o.json
 CCJSON			=compile_commands.json
 GLSLC			=glslc
+DEPENDS_FLAGS	=-MMD -MP
 CC				=clang
 CLINKER			=clang
 CFLAGS			=$(COMMAND_CFLAGS)
@@ -112,6 +115,11 @@ SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.vert, $(OBJ_DIR)/%.vert.spv, $(SHADER_FIL
 SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.frag, $(OBJ_DIR)/%.frag.spv, $(SHADER_FILES))
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
+
+ALL_C_FILES		=$(ROOT) $(CORE_FILES) $(RENDERER_FILES)
+ALL_CPP_FILES	=
+
+DEPENDS			=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.d,$(ALL_C_FILES))
 
 ifeq ($(TRACY_USE),ON)
 	CDEFINES	+= -DTRACY_ENABLE
@@ -180,15 +188,17 @@ $(BUILD_DIR)/$(OUTPUT): $(C_OBJS) $(CPP_OBJS)
 
 #*************************** COMPILE_FILES *****************************#
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+-include $(DEPENDS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(MAKEFILES)
 	@mkdir -p $(dir $@)
 	@$(cpp_compile)
-	@$(CPP) $(DEBUG_LEVEL) $(CPPFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CPP) $(DEBUG_LEVEL) $(CPPFLAGS) $(DEPENDS_FLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(MAKEFILES)
 	@mkdir -p $(dir $@)
 	@$(c_compile)
-	@$(CC) $(DEBUG_LEVEL) $(CFLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
+	@$(CC) $(DEBUG_LEVEL) $(CFLAGS) $(DEPENDS_FLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
 #*************************** COMPILE_JSON ******************************#
 
