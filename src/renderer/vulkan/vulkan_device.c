@@ -84,10 +84,6 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		pQueueCreateInfos[i].pNext = 0;
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
-	VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = {
-		.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-	};
-
 	VkPhysicalDeviceBufferDeviceAddressFeatures deviceAddressFeature = {
 		.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
 		.bufferDeviceAddress	= VK_TRUE,
