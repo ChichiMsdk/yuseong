@@ -335,7 +335,8 @@ vkGenericPipelineInit(
 		VkDevice							device,
 		GenericPipeline*					pPipeline,
 		VkPushConstantRange*				pConstantRange,
-		uint32_t							pushConstantCount)
+		uint32_t							pushConstantCount,
+		VkFormat							depthFormat)
 {
 	VkShaderModule	fragmentShaderModule;
 	VK_CHECK(vkLoadShaderModule(pCtx, pPipeline->pFragmentShaderFilePath, device, &fragmentShaderModule));
@@ -389,7 +390,6 @@ vkGenericPipelineInit(
 	vkDisableBlending(&pPipeline->graphicsPipeline.colorBlendAttachment);
 	vkDepthTestDisable(&pPipeline->graphicsPipeline.depthStencil);
 
-	VkFormat	depthFormat = VK_FORMAT_UNDEFINED;
 	vkPipelineRenderingSetFormatAndDepthFormat(
 			&pPipeline->graphicsPipeline.renderingCreateInfo,
 			&pCtx->drawImage.format,

@@ -175,7 +175,14 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: TrianglePipeline Setup */
 	pCurrentCtx->triPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle.vert.spv";
 	pCurrentCtx->triPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
-	VK_CHECK(vkGenericPipelineInit(pCurrentCtx, pCurrentCtx->device.handle, &pCurrentCtx->triPipeline, VK_NULL_HANDLE, 0));
+	VkFormat	depthFormat	= VK_FORMAT_UNDEFINED;
+	VK_CHECK(vkGenericPipelineInit(
+				pCurrentCtx,
+				pCurrentCtx->device.handle,
+				&pCurrentCtx->triPipeline,
+				VK_NULL_HANDLE,
+				0,
+				depthFormat));
 
 	/* NOTE: MeshPipeline Setup */
 	VkPushConstantRange	bufferRange			= {
@@ -184,6 +191,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 		.stageFlags	= VK_SHADER_STAGE_VERTEX_BIT,
 	};
 	uint32_t			pushConstantCount	= 1;
+
 	pCurrentCtx->meshPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle_mesh.vert.spv";
 	pCurrentCtx->meshPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
 	VK_CHECK(vkGenericPipelineInit(
@@ -191,7 +199,8 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 				pCurrentCtx->device.handle,
 				&pCurrentCtx->meshPipeline,
 				&bufferRange,
-				pushConstantCount));
+				pushConstantCount,
+				pCurrentCtx->depthImage.format));
 
 	VK_CHECK(DefaultDataInit(pCurrentCtx->device, pCurrentCtx->pAllocator, &pCurrentCtx->gpuMeshBuffers));
 

@@ -312,9 +312,9 @@ vkGeometryDraw(
 	vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pMeshPipeline->pipeline);
+
 	GpuDrawPushConstants	pushConstants;
-	mat4 matrice = GLM_MAT4_ZERO_INIT;
-	matrice[0][0] = 1.0f;
+	mat4 matrice = GLM_MAT4_IDENTITY_INIT;
 	glm_mat4_copy(matrice, pushConstants.worldMatrix);
 	pushConstants.vertexBufferAddress = pCtx->gpuMeshBuffers.vertexBufferAddress;
 

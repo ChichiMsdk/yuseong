@@ -138,8 +138,6 @@ vkMeshUpload(
 	/* NOTE: Copy index buffer */
 	memcpy(pData + vertexBufferSize, pIndices, indexBufferSize);
 
-	vkUnmapMemory(device.handle, staging.memory);
-
 	/* NOTE: Prepare to submit commands */
 	void Submit(void* pCtx, VulkanCommandBuffer cmd);
 	struct ContextTemp ctx = {
@@ -152,6 +150,7 @@ vkMeshUpload(
 	/* NOTE: Submit immediate command with pfn */
 	VK_RESULT(vkCommandSubmitImmediate(Submit, device, device.immediateSubmit, &ctx));
 
+	vkUnmapMemory(device.handle, staging.memory);
 	vkDestroyBuffer(device.handle, staging.handle, pAllocator);
 	vkFreeMemory(device.handle, staging.memory, pAllocator);
 

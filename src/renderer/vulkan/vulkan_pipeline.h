@@ -11,7 +11,8 @@ YND VkResult vkGenericPipelineInit(
 		VkDevice							device,
 		GenericPipeline*					pPipeline,
 		VkPushConstantRange*				pConstantRange,
-		uint32_t							pushConstantCount);
+		uint32_t							pushConstantCount,
+		VkFormat							depthFormat);
 
 YND VkResult vkLoadShaderModule(
 		VkContext*							pCtx,
