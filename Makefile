@@ -14,8 +14,6 @@ else
 	MYFIND :=find
 endif
 
-MAKEFILES =Makefile $(FILE)$(OS_EXT)
-
 TESTING					=
 ASAN_USE				=
 RELEASE_USE				=
@@ -87,8 +85,8 @@ VULKAN_DIR		=$(RENDERER_DIR)/vulkan
 # OPENGL_DIR		=$(RENDERER_DIR)/opengl
 DIRECTX_DIR		=$(RENDERER_DIR)/directx
 METAL_DIR		=$(RENDERER_DIR)/metal
-ROOT			=$(shell $(MYFIND) $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
-ROOT_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(ROOT))
+ROOT_FOLDER		=$(shell $(MYFIND) $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
+ROOT_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(ROOT_FOLDER))
 CORE_FILES		=$(shell $(MYFIND) $(CORE_DIR) -type f -name '*.c')
 CORE_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_FILES))
 RENDERER_FILES	=$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
@@ -116,10 +114,7 @@ SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.frag, $(OBJ_DIR)/%.frag.spv, $(SHADER_FIL
 
 C_OBJS			=$(ROOT_OBJS) $(CORE_OBJS) $(RENDERER_OBJS)
 
-ALL_C_FILES		=$(ROOT) $(CORE_FILES) $(RENDERER_FILES)
-ALL_CPP_FILES	=
-
-DEPENDS			=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.d,$(ALL_C_FILES))
+ALL_C_FILES		=$(ROOT_FOLDER) $(CORE_FILES) $(RENDERER_FILES)
 
 ifeq ($(TRACY_USE),ON)
 	CDEFINES	+= -DTRACY_ENABLE
@@ -139,6 +134,8 @@ cpp_compile		=$(ECHO_E) "$(PURPLE)$(CPP)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(
 c_compile		=$(ECHO_E) "$(PURPLE)$(CC)$(NC) -c $(YELLOW)$<$(NC) -o $(BLUE)$@$(NC) $(YELLOW)$(DEBUG_LEVEL)$(NC) $(CFLAGS) $(INCLUDE_DIRS)"
 
 include $(FILE)$(OS_EXT)
+
+DEPENDS			=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.d,$(ALL_C_FILES))
 
 CFLAGS			+= $(CDEFINES)
 CPPFLAGS		+= $(CPPDEFINES)
@@ -166,17 +163,14 @@ $(BUILD_DIR)/$(OBJ):
 #*************************** SHADERS ***********************************#
 
 $(OBJ_DIR)/%.frag.spv: $(SRC_DIR)/%.frag
-	@$(ECHO_E) "$(PURPLE)Compiling $@ fragment shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
 $(OBJ_DIR)/%.vert.spv: $(SRC_DIR)/%.vert
-	@$(ECHO_E) "$(PURPLE)Compiling $@ vertex shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
 $(OBJ_DIR)/%.comp.spv: $(SRC_DIR)/%.comp
-	@$(ECHO_E) "$(PURPLE)Compiling $@ compute shaders..$(NC)"
 	@mkdir -p $(dir $@)
 	@$(GLSLC) $< -o $@
 
@@ -188,14 +182,12 @@ $(BUILD_DIR)/$(OUTPUT): $(C_OBJS) $(CPP_OBJS)
 
 #*************************** COMPILE_FILES *****************************#
 
--include $(DEPENDS)
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(MAKEFILES)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
 	@$(cpp_compile)
 	@$(CPP) $(DEBUG_LEVEL) $(CPPFLAGS) $(DEPENDS_FLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(MAKEFILES)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@$(c_compile)
 	@$(CC) $(DEBUG_LEVEL) $(CFLAGS) $(DEPENDS_FLAGS) $(MJJSON) -c $< -o $@ $(INCLUDE_DIRS)
@@ -207,6 +199,8 @@ $(CCJSON): $(OBJS) $(BUILD_DIR)/$(JASB_OUT)
 	@$(BUILD_DIR)/$(JASB_OUT) $(JASB_CMD)
 
 #*************************** CLEAN *************************************#
+
+-include $(DEPENDS)
 
 clean:
 	@$(ECHO_E) "$(RED)Deleting files..$(NC)"
