@@ -9,7 +9,6 @@
 
 #include "renderer/vulkan/yvulkan.h"
 #include "renderer/vulkan/vulkan_draw.h"
-#include "renderer/opengl/opengl.h"
 #include "renderer/directx/11/directx11.h"
 #include "renderer/metal/metal.h"
 
