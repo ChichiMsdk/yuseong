@@ -268,6 +268,7 @@ vkShutdown(void *pContext)
 		YASSERT_MSG(pfnDestroyDebug, "Failed to create debug destroy messenger!");
 		pfnDestroyDebug(pCtx->instance, pCtx->debugMessenger, pAllocator);
 #endif // DEBUG
+
 	VK_ASSERT(vkDeviceWaitIdle(device));
 
 	vkDestroyBuffer(device, pCtx->gpuMeshBuffers.vertexBuffer.handle, pAllocator);

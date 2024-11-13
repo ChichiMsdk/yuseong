@@ -73,7 +73,7 @@ _OnKey(uint16_t code, YMB void* pSender, YMB void* pListenerInst, EventContext c
 				}
 			default:
 				{
-					YINFO("%d -> '%c' key pressed in window.\n", keyCode, keyCode);
+					/* YINFO("%d -> '%c' key pressed in window.\n", keyCode, keyCode); */
 				}
 		}
 	}

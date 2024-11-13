@@ -153,6 +153,7 @@ vkMeshUpload(
 	VK_RESULT(vkCommandSubmitImmediate(Submit, device, device.immediateSubmit, &ctx));
 
 	vkDestroyBuffer(device.handle, staging.handle, pAllocator);
+	vkFreeMemory(device.handle, staging.memory, pAllocator);
 
 	*pOutGpuMeshBuffers = newSurface;
 	return VK_SUCCESS;

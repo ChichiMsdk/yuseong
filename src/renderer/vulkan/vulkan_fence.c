@@ -5,14 +5,14 @@
 YND VkResult
 vkFenceCreate(VkDevice device, b8 bSignaled, VkAllocationCallbacks* pAllocator, VulkanFence *pOutFence)
 {
-    // Make sure to signal the fence if required.
+    /* NOTE: Make sure to signal the fence if required. */
     pOutFence->bSignaled = bSignaled;
     VkFenceCreateInfo fenceCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
+		.sType	= VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
 	};
 
     if (pOutFence->bSignaled)
-		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		fenceCreateInfo.flags	= VK_FENCE_CREATE_SIGNALED_BIT;
 
     VK_CHECK(vkCreateFence(device, &fenceCreateInfo, pAllocator, &pOutFence->handle));
 	return VK_SUCCESS;
