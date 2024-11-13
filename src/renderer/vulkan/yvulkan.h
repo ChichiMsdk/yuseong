@@ -49,7 +49,7 @@ typedef struct VulkanCommandBuffer
 
 typedef struct VulkanImmediateSubmit
 {
-	VulkanFence			fence;
+	VulkanFence		fence;
 	VulkanCommandBuffer	commandBuffer;
 	VkCommandPool		commandPool;
 }VulkanImmediateSubmit;
@@ -214,6 +214,7 @@ typedef struct VkContext
 
 	GenericPipeline					triPipeline;
 	GenericPipeline					meshPipeline;
+	GpuMeshBuffers					gpuMeshBuffers;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;

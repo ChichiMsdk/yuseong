@@ -21,16 +21,23 @@ typedef struct Vertex
 
 } Vertex;
 
+YND VkResult vkMeshUpload(
+		VulkanDevice						device,
+		VkAllocationCallbacks*				pAllocator,
+		uint32_t*							pIndices,
+		Vertex*								pVertices,
+		GpuMeshBuffers*						pOutGpuMeshBuffers);
+
 YND VkResult vkMappedBufferGetData(
 		VkDevice							device,
 		VulkanBuffer*						pBuffer,
 		void**								ppOutData);
 
 YND VkResult MemoryTypeFindIndex(
-		VkPhysicalDevice								physicalDevice,
-		uint32_t										typeFilter,
-		uint32_t										propertyFlags,
-		int32_t*										pOutIndex);
+		VkPhysicalDevice					physicalDevice,
+		uint32_t							typeFilter,
+		uint32_t							propertyFlags,
+		int32_t*							pOutIndex);
 
 YND VkResult vkBufferCreate(
 		VulkanDevice						device,

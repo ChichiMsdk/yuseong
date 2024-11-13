@@ -10,6 +10,7 @@
 
 #include "core/yvec4.h"
 #include "core/logger.h"
+#include "cglm/mat4.h"
 
 #include "profiler.h"
 
@@ -82,8 +83,13 @@ PrintColor(RgbaFloat c)
  * 	- Check Images actual state (Transition etc in yDrawImpl)
  */
 
-void 
-vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage drawImage, VkPipeline trianglePipeline);
+void vkGeometryDraw(
+		VkContext*							pCtx,
+		VkCommandBuffer						commandBuffer,
+		VkExtent2D							drawExtent,
+		DrawImage							drawImage,
+		GenericPipeline*					pMeshPipeline,
+		VkPipeline							trianglePipeline);
 
 /* WARN: Leaking currently, needs to free at the beginning or at the end */
 /* TODO: Profile ImageCopy&Co's */
@@ -142,7 +148,7 @@ vkDrawImpl(VkContext* pCtx)
 
 	/* NOTE: Draw the geometry pipeline */
 	YMB VkExtent2D extent = { .width	= pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
-	vkGeometryDraw(pCmd->handle, extent, pCtx->drawImage, pCtx->triPipeline.pipeline);
+	vkGeometryDraw(pCtx, pCmd->handle, extent, pCtx->drawImage, &pCtx->meshPipeline, pCtx->triPipeline.pipeline);
 
 	/* NOTE: make the drawable image and the swapchain image into layout for copies */
 	currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -160,7 +166,7 @@ vkDrawImpl(VkContext* pCtx)
 
 	/* NOTE: Stop the timer and log */
 	vkTimerEnd(pCmd->handle);
-	vkTimerLog(pCtx->device.properties, pCtx->device.graphicsQueue, device, MICROSECONDS);
+	/* vkTimerLog(pCtx->device.properties, pCtx->device.graphicsQueue, device, MICROSECONDS); */
 
 	/* NOTE: End command recording */
 	VK_CHECK(vkCommandBufferEnd(pCmd));
@@ -242,7 +248,13 @@ vkQueueSubmitAndSwapchainPresent(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 }
 
 void
-vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage drawImage, VkPipeline trianglePipeline)
+vkGeometryDraw(
+		VkContext*							pCtx,
+		VkCommandBuffer						commandBuffer,
+		VkExtent2D							drawExtent,
+		DrawImage							drawImage,
+		GenericPipeline*					pMeshPipeline,
+		VkPipeline							trianglePipeline)
 {
 	/* NOTE: begin a render pass  connected to our draw image */
 	VkRenderingAttachmentInfo	colorAttachment	= {
@@ -298,6 +310,34 @@ vkGeometryDraw(VkCommandBuffer commandBuffer, VkExtent2D drawExtent, DrawImage d
 	uint32_t	firstVertex		=	0;
 	uint32_t	firstInstance	=	0;
 	vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pMeshPipeline->pipeline);
+	GpuDrawPushConstants	pushConstants;
+	mat4 matrice = GLM_MAT4_ZERO_INIT;
+	matrice[0][0] = 1.0f;
+	glm_mat4_copy(matrice, pushConstants.worldMatrix);
+	pushConstants.vertexBufferAddress = pCtx->gpuMeshBuffers.vertexBufferAddress;
+
+	uint32_t			offset		= 0;
+	uint32_t			size		= sizeof(GpuDrawPushConstants);
+	VkShaderStageFlags	stageFlags	= VK_SHADER_STAGE_VERTEX_BIT;
+	vkCmdPushConstants(
+			commandBuffer,
+			pMeshPipeline->pipelineLayout,
+			stageFlags,
+			offset,
+			size,
+			&pushConstants);
+
+	VkIndexType	indexType	= VK_INDEX_TYPE_UINT32;
+	vkCmdBindIndexBuffer(commandBuffer, pCtx->gpuMeshBuffers.indexBuffer.handle, offset, indexType);
+
+	uint32_t	indexCount		= 6;
+	uint32_t	vertexOffset	= 0;
+	uint32_t	firstIndex		= 0;
+	instanceCount	= 1;
+
+	vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 
 	vkCmdEndRendering(commandBuffer);
 }

@@ -25,7 +25,6 @@ vkBufferCreate(
 	/* NOTE: Get memory requirements before allocating */
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(device.handle, pOutBuffer->handle, &memoryRequirements);
-	YDEBUG("MemoryRequirements.deviceSize = %llu", memoryRequirements.size);
 
 	int32_t		memoryTypeIndex;
 
@@ -35,10 +34,16 @@ vkBufferCreate(
 				propertyFlags,
 				&memoryTypeIndex));
 
+	VkMemoryAllocateFlagsInfo	allocateFlagsInfo = {
+		.sType	= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+		.flags	= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+	};
+
 	VkMemoryAllocateInfo memoryAllocateInfo = {
 		.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize		= memoryRequirements.size,
 		.memoryTypeIndex	= (uint32_t) memoryTypeIndex,
+		.pNext				= &allocateFlagsInfo,
 	};
 
 	/* NOTE: Allocate the memory */
@@ -116,7 +121,7 @@ vkMeshUpload(
 				device,
 				pAllocator,
 				indexBufferSize + vertexBufferSize, 
-				VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 
 				/* WARN: CHECK THIS GPT BULLSHIT ! */
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,

@@ -84,10 +84,19 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		pQueueCreateInfos[i].pNext = 0;
 		pQueueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
+	VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures = {
+		.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+	};
+
+	VkPhysicalDeviceBufferDeviceAddressFeatures deviceAddressFeature = {
+		.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+		.bufferDeviceAddress	= VK_TRUE,
+	};
 
 	VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering = {
 		.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-		.dynamicRendering	= TRUE,
+		.dynamicRendering	= VK_TRUE,
+		.pNext				= &deviceAddressFeature,
 	};
 
 	VkPhysicalDeviceSynchronization2Features physicalDeviceSynch2Features =  {
@@ -101,14 +110,17 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		.samplerAnisotropy = VK_TRUE,
 	};
 
-	YMB VkPhysicalDeviceFeatures2 enabledFeatures2 = {
+	VkPhysicalDeviceFeatures2 enabledFeatures2 = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
 		.features = enabledFeatures,
 		.pNext = &physicalDeviceSynch2Features,
 	};
-
+	vkGetPhysicalDeviceFeatures2(pCtx->device.physicalDevice, &enabledFeatures2);
+	YDEBUG("deviceAddressFeature.bufferDeviceAddress %d", deviceAddressFeature.bufferDeviceAddress);
+	YASSERT(deviceAddressFeature.bufferDeviceAddress);
 	const char **ppExtensionNames = DarrayCreate(const char *);
 	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	DarrayPush(ppExtensionNames, &VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME );
 	/* DarrayPush(ppExtensionNames, &VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME); */
 	YMB uint32_t extensionCount = DarrayLength(ppExtensionNames);
 
