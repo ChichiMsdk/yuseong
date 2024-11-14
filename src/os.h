@@ -48,6 +48,9 @@ typedef struct AppConfig
 
 extern b8 gRunning;
 
+YND const char** OsGetRequiredInstanceExtensions(
+		uint32_t*							pCount);
+
 void FramebufferUpdateInternalDimensions(
 		OsState*							pOsState,
 		uint32_t							width,

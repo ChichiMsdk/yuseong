@@ -89,6 +89,12 @@ OsInit(OsState *pOsState, AppConfig appConfig)
 	return pState->bGlfwInit ;
 }
 
+YND const char**
+OsGetRequiredInstanceExtensions(uint32_t* pCount)
+{
+	return glfwGetRequiredInstanceExtensions(pCount);
+}
+
 YND VkResult
 OsCreateVkSurface(OsState *pOsState, VkContext *pContext)
 {
