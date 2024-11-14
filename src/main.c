@@ -8,7 +8,7 @@
 
 b8 gRunning = TRUE;
 
-/* TODO: Make it a function that looks config file for the folder ?*/
+/* TODO: Make it a function that looks config file for the folder ? */
 const char *gppShaderFilePath[] = {
 	"./build/obj/shaders/gradient_color.comp.spv",
 	"./build/obj/shaders/gradient.comp.spv",
@@ -17,7 +17,7 @@ const char *gppShaderFilePath[] = {
 uint32_t gFilePathSize = COUNT_OF(gppShaderFilePath);
 int32_t gShaderFileIndex = 0;
 
-/* const char* __asan_default_options() { return "detect_leaks=0"; } */
+const char* __asan_default_options() { return "detect_leaks=0"; }
 #include "test.h"
 
 AppConfig gAppConfig = { .pAppName = "yuseong", .x = 100, .y = 100, .w = 1500, .h = 900, };
@@ -30,7 +30,7 @@ OsState gOsState = {0};
 int
 main(int argc, char **ppArgv)
 {
-	RendererType defaultType = RENDERER_TYPE_VULKAN;
+	RendererType	defaultType	= RENDERER_TYPE_VULKAN;
 
 	ArgvCheck(argc, ppArgv, &defaultType);
 	RendererConfig config = {.type = defaultType};
@@ -45,14 +45,14 @@ main(int argc, char **ppArgv)
 	YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
 	YASSERT(gAppConfig.pRenderer);
 
-	f64 deltaFrameTime = 0.0f;
-	f64 startFrameTime = 0.0f;
-	f64 endFrameTime = 0.0f;
+	f64	deltaFrameTime	= 0.0f;
+	f64	startFrameTime	= 0.0f;
+	f64	endFrameTime	= 0.0f;
 
 	while (gRunning)
 	{
-		deltaFrameTime = endFrameTime - startFrameTime;
-		startFrameTime = OsGetAbsoluteTime(NANOSECONDS);
+		deltaFrameTime	= endFrameTime - startFrameTime;
+		startFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
 
 		OsPumpMessages(&gOsState);
 		if (!gAppConfig.bSuspended)
@@ -61,7 +61,7 @@ main(int argc, char **ppArgv)
 			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer));
 		}
 
-		endFrameTime = OsGetAbsoluteTime(NANOSECONDS);
+		endFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
 	}
 	YuShutdown(gAppConfig.pRenderer);
 	InputShutdown();

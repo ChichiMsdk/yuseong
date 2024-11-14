@@ -118,6 +118,13 @@ OsShutdown(OsState *pState)
     }
 }
 
+YND char**
+OsGetRequiredInstanceExtensions(uint32_t* pCount)
+{
+	*pCount	= 2;
+	return {VK_KHR_SURFACE_EXTENSION_NAME, "VK_KHR_win32_surface"} ;
+}
+
 b8
 OsPumpMessages(YMB OsState *pState) 
 {

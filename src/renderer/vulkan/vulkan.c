@@ -71,9 +71,19 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	gContext.contextCount++;
 	pCurrentCtx = gContext.ppCtx[gContext.currentContext];
 
-	ppRequiredExtensions = DarrayCreate(const char *);
-	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_EXTENSION_NAME);
-	DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
+	/* NOTE: I don't think this could ever fail */
+	uint32_t			count		= 0;
+	const char**		ppSurfaceOs	= OsGetRequiredInstanceExtensions(&count);
+	ppRequiredExtensions			= DarrayCreate(const char *);
+	for (uint32_t i = 0; i < count; i++)
+	{
+		DarrayPush(ppRequiredExtensions, ppSurfaceOs[i]);
+	}
+
+    /*
+	 * DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_EXTENSION_NAME);
+	 * DarrayPush(ppRequiredExtensions, &VK_KHR_SURFACE_OS);
+     */
 
 	pCurrentCtx->MemoryFindIndex = MemoryTypeFindIndex;
 	OsFramebufferGetDimensions(pOsState, &pCurrentCtx->framebufferWidth, &pCurrentCtx->framebufferHeight);
@@ -246,15 +256,6 @@ DefaultDataInit(VulkanDevice device, VkAllocationCallbacks* pAllocator, GpuMeshB
 	pRectIndices[5] = 3;
 
 	VK_RESULT(vkMeshUpload(device, pAllocator, pRectIndices, pRectVertices, pMeshBuffer));
-
-	//delete the rectangle data on engine shutdown
-
-    /*
-	 * _mainDeletionQueue.push_function([&](){
-	 * 	destroy_buffer(rectangle.indexBuffer);
-	 * 	destroy_buffer(rectangle.vertexBuffer);
-	 * });
-     */
 
 	DarrayDestroy(pRectIndices);
 	DarrayDestroy(pRectVertices);

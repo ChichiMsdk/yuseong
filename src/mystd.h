@@ -15,14 +15,14 @@
 #define C99 199901L
 #define C95 199409L
 
-/*
- * TODO: nothrow attribute ?
- */
+/* TODO: nothrow attribute ? */
 
-// WARN: <attribute.h> might not be found
-// #ifdef __GNUC__
-// #include <attribute.h>
-// #endif // __GNUC__
+/*
+ * WARN: <attribute.h> might not be found
+ * #ifdef __GNUC__
+ * #include <attribute.h>
+ * #endif // __GNUC__
+ */
 
 #if defined(__clang__) || defined(__GNUC__)
 #define YND [[nodiscard]]
