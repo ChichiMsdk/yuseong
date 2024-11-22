@@ -19,3 +19,4 @@ test/
 tags
 a.out
 *.out
+*.cap
