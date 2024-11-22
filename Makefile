@@ -22,7 +22,7 @@ GLFW3					=
 
 COMMAND_CDEFINES		=-DCHICHI
 COMMAND_CFLAGS			=-Wvarargs
-DEBUG_LEVEL				=-g3 
+DEBUG_LEVEL				=-g3
 
 ifeq ($(OPTI),none)
 	COMMAND_CFLAGS		+= -O0
@@ -62,6 +62,7 @@ DEPENDS_FLAGS	=-MMD -MP
 CC				=clang
 CLINKER			=clang
 CFLAGS			=$(COMMAND_CFLAGS)
+CFLAGS			+= -fdiagnostics-absolute-paths
 CFLAGS			+= -std=c23
 CFLAGS			+= -fno-inline -fno-omit-frame-pointer
 CFLAGS			+= -Wno-missing-field-initializers -Wno-unused-but-set-variable
