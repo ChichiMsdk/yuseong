@@ -118,11 +118,13 @@ OsShutdown(OsState *pState)
     }
 }
 
-YND char**
+const char *ppRequiredExtensions[] = {VK_KHR_SURFACE_EXTENSION_NAME, "VK_KHR_win32_surface"};
+
+YND const char**
 OsGetRequiredInstanceExtensions(uint32_t* pCount)
 {
 	*pCount	= 2;
-	return {VK_KHR_SURFACE_EXTENSION_NAME, "VK_KHR_win32_surface"} ;
+	return ppRequiredExtensions;
 }
 
 b8
