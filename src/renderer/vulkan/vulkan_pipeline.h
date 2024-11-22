@@ -12,7 +12,8 @@ YND VkResult vkGenericPipelineInit(
 		GenericPipeline*					pPipeline,
 		VkPushConstantRange*				pConstantRange,
 		uint32_t							pushConstantCount,
-		VkFormat							depthFormat);
+		VkFormat							depthFormat,
+		bool								bDepthTest);
 
 YND VkResult vkLoadShaderModule(
 		VkContext*							pCtx,

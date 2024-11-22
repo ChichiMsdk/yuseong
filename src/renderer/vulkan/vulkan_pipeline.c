@@ -212,6 +212,20 @@ vkDisableBlending(VkPipelineColorBlendAttachmentState* pColorBlendAttachment)
 }
 
 static inline void
+vkDepthTestEnable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil, VkBool32 bDepthWriteEnable, VkCompareOp op)
+{
+    pDepthStencil->depthTestEnable			= VK_TRUE;
+    pDepthStencil->depthWriteEnable			= bDepthWriteEnable;
+    pDepthStencil->depthCompareOp			= op;
+    pDepthStencil->depthBoundsTestEnable	= VK_FALSE;
+    pDepthStencil->stencilTestEnable		= VK_FALSE;
+    pDepthStencil->front					= (VkStencilOpState){0};
+    pDepthStencil->back						= (VkStencilOpState){0};
+    pDepthStencil->minDepthBounds			= 0.f;
+    pDepthStencil->maxDepthBounds			= 1.f;
+}
+
+static inline void
 vkDepthTestDisable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil)
 {
     pDepthStencil->sType					= VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -226,20 +240,23 @@ vkDepthTestDisable(VkPipelineDepthStencilStateCreateInfo* pDepthStencil)
     pDepthStencil->maxDepthBounds			= 1.0f;
 }
 
-static inline void
+YMB static inline void
 vkPipelineRenderingSetFormatAndDepthFormat(
 		VkPipelineRenderingCreateInfo*		pRenderingCreateInfo,
-		VkFormat*							pOutColorAttachmentFormat,
 		VkFormat							depthAttachmentFormat,
 		VkFormat							colorAttachmentformat)
 {
-	*pOutColorAttachmentFormat						= colorAttachmentformat;
+	VkPipelineRenderingCreateInfo	createInfo	= {
+		.sType						= VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		.depthAttachmentFormat		= depthAttachmentFormat,
+		.colorAttachmentCount		= 1,
+		.pColorAttachmentFormats	= &colorAttachmentformat,
+		.pNext						= VK_NULL_HANDLE,
+		.stencilAttachmentFormat	= 0,
+		.viewMask					= 0,
+	};
 
-	pRenderingCreateInfo->sType						= VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-	/* NOTE: Connect the format to the renderingCreateInfo structure */
-	pRenderingCreateInfo->colorAttachmentCount		= 1;
-	pRenderingCreateInfo->pColorAttachmentFormats	= pOutColorAttachmentFormat;
-	pRenderingCreateInfo->depthAttachmentFormat		= depthAttachmentFormat;
+	*pRenderingCreateInfo = createInfo;
 }
 
 static inline void
@@ -304,6 +321,7 @@ vkGraphicsPipelineCreate(
 		.pColorBlendState		=	&colorBlending,
 		.pDepthStencilState		=	&pPipeline->depthStencil,
 		.layout					=	pPipeline->pipelineLayout,
+		.subpass				=	0,
 	};
 
 	VkDynamicState state[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -317,6 +335,11 @@ vkGraphicsPipelineCreate(
 	pipelineInfo.pDynamicState		=	&dynamicInfo;
 	VkPipelineCache	pipelineCache	=	VK_NULL_HANDLE;
 	uint32_t		createInfoCount	=	1;
+	YDEBUG("Depth format: %s", string_VkFormat(pPipeline->renderingCreateInfo.depthAttachmentFormat));
+	YDEBUG("Image format: %s", string_VkFormat(pPipeline->renderingCreateInfo.pColorAttachmentFormats[0]));
+
+	YDEBUG("Depth format: %d", pPipeline->renderingCreateInfo.depthAttachmentFormat);
+	YDEBUG("Image format: %d", pPipeline->renderingCreateInfo.pColorAttachmentFormats[0]);
 
 	VK_CHECK(vkCreateGraphicsPipelines(
 				device,
@@ -336,7 +359,8 @@ vkGenericPipelineInit(
 		GenericPipeline*					pPipeline,
 		VkPushConstantRange*				pConstantRange,
 		uint32_t							pushConstantCount,
-		VkFormat							depthFormat)
+		VkFormat							depthFormat,
+		bool								bDepthTest)
 {
 	VkShaderModule	fragmentShaderModule;
 	VK_CHECK(vkLoadShaderModule(pCtx, pPipeline->pFragmentShaderFilePath, device, &fragmentShaderModule));
@@ -388,15 +412,26 @@ vkGenericPipelineInit(
 	vkSetMultisamplingNone(&pPipeline->graphicsPipeline.multisampling);
 
 	vkDisableBlending(&pPipeline->graphicsPipeline.colorBlendAttachment);
-	vkDepthTestDisable(&pPipeline->graphicsPipeline.depthStencil);
+	if (bDepthTest == TRUE)
+		vkDepthTestEnable(&pPipeline->graphicsPipeline.depthStencil, VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL);
+	else
+		vkDepthTestDisable(&pPipeline->graphicsPipeline.depthStencil);
 
-	vkPipelineRenderingSetFormatAndDepthFormat(
-			&pPipeline->graphicsPipeline.renderingCreateInfo,
-			&pCtx->drawImage.format,
-			depthFormat,
-			pCtx->drawImage.format);
+	depthFormat = pCtx->depthImage.format;
+	VkFormat	imageFormat	= pCtx->drawImage.format;
 
-	VkPipeline newPipeline;
+	VkPipelineRenderingCreateInfo	createInfo	= {
+		.sType						= VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		.depthAttachmentFormat		= depthFormat,
+		.colorAttachmentCount		= 1,
+		.pColorAttachmentFormats	= &imageFormat,
+		.pNext						= VK_NULL_HANDLE,
+		.stencilAttachmentFormat	= 0,
+		.viewMask					= 0,
+	};
+	pPipeline->graphicsPipeline.renderingCreateInfo = createInfo;
+
+	VkPipeline newPipeline = {0};
 	VK_CHECK(vkGraphicsPipelineCreate(
 				device,
 				&pPipeline->graphicsPipeline,
@@ -417,18 +452,23 @@ vkGraphicsPipelineClear(GraphicsPipeline* pPipeline)
 	pPipeline->inputAssembly		= (VkPipelineInputAssemblyStateCreateInfo) {
 		.sType =	VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO
 	};
+
 	pPipeline->rasterizer			= (VkPipelineRasterizationStateCreateInfo) {
 		.sType =	VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO
 	};
+
 	pPipeline->multisampling		= (VkPipelineMultisampleStateCreateInfo) {
 		.sType =	VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO
 	};
+
 	pPipeline->depthStencil			= (VkPipelineDepthStencilStateCreateInfo) {
 		.sType =	VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO
 	};
-	pPipeline->renderingCreateInfo			= (VkPipelineRenderingCreateInfo) {
+
+	pPipeline->renderingCreateInfo	= (VkPipelineRenderingCreateInfo) {
 		.sType =	VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO
 	};
+
 	pPipeline->colorBlendAttachment	= (VkPipelineColorBlendAttachmentState) {0};
 	pPipeline->pipelineLayout		= (VkPipelineLayout) {0};
 	DarrayClear(pPipeline->pShaderStages);
@@ -437,12 +477,13 @@ vkGraphicsPipelineClear(GraphicsPipeline* pPipeline)
 YND VkResult
 vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 {
-	VkPushConstantRange pushConstantRange = {
-		.offset = 0,
-		.size = sizeof(ComputePushConstant),
-		.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	VkPushConstantRange pushConstantRange						= {
+		.offset		= 0,
+		.size		= sizeof(ComputePushConstant),
+		.stageFlags	= VK_SHADER_STAGE_COMPUTE_BIT,
 	};
-	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo = {
+
+	VkPipelineLayoutCreateInfo computePipelineLayoutCreateInfo	= {
 		.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.pNext					= VK_NULL_HANDLE,
 		.pSetLayouts			= &pCtx->drawImageDescriptorSetLayout,
@@ -459,14 +500,14 @@ vkPipelineInit(VkContext *pCtx, VkDevice device, const char* pFilePath)
 	VkShaderModule computeDrawShader;
 	VK_CHECK(vkLoadShaderModule(pCtx, pFilePath, device, &computeDrawShader));
 
-	VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
+	VkPipelineShaderStageCreateInfo	pipelineShaderStageInfo	= {
 		.sType	= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.pNext	= VK_NULL_HANDLE,
 		.stage	= VK_SHADER_STAGE_COMPUTE_BIT,
 		.module	= computeDrawShader,
 		.pName	= "main",
 	};
-	VkComputePipelineCreateInfo computePipelineCreateInfo = {
+	VkComputePipelineCreateInfo	computePipelineCreateInfo	= {
 		.sType	= VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 		.pNext	= VK_NULL_HANDLE,
 		.layout	= pCtx->gradientComputePipelineLayout,
