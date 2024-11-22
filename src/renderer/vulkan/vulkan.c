@@ -185,14 +185,17 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 	/* NOTE: TrianglePipeline Setup */
 	pCurrentCtx->triPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle.vert.spv";
 	pCurrentCtx->triPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
-	VkFormat	depthFormat	= VK_FORMAT_UNDEFINED;
+
+	DrawImage		depthImage	= pCurrentCtx->depthImage;
+	VkBool32		bDepthTest	= VK_FALSE;
 	VK_CHECK(vkGenericPipelineInit(
 				pCurrentCtx,
 				pCurrentCtx->device.handle,
 				&pCurrentCtx->triPipeline,
 				VK_NULL_HANDLE,
 				0,
-				depthFormat));
+				depthImage.format,
+				bDepthTest));
 
 	/* NOTE: MeshPipeline Setup */
 	VkPushConstantRange	bufferRange			= {
@@ -204,13 +207,15 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 
 	pCurrentCtx->meshPipeline.pVertexShaderFilePath		= "./build/obj/shaders/colored_triangle_mesh.vert.spv";
 	pCurrentCtx->meshPipeline.pFragmentShaderFilePath	= "./build/obj/shaders/colored_triangle.frag.spv";
+	bDepthTest = VK_TRUE;
 	VK_CHECK(vkGenericPipelineInit(
 				pCurrentCtx,
 				pCurrentCtx->device.handle,
 				&pCurrentCtx->meshPipeline,
 				&bufferRange,
 				pushConstantCount,
-				pCurrentCtx->depthImage.format));
+				depthImage.format,
+				bDepthTest));
 
 	VK_CHECK(DefaultDataInit(pCurrentCtx->device, pCurrentCtx->pAllocator, &pCurrentCtx->gpuMeshBuffers));
 
@@ -234,15 +239,15 @@ DefaultDataInit(VulkanDevice device, VkAllocationCallbacks* pAllocator, GpuMeshB
 	Vertex* pRectVertices = DarrayReserve(Vertex, 4);
 	/* Vertex	pRectVertices[4]; */
 
-	glm_vec3_copy((vec3) {0.5,-0.5,0}, pRectVertices[0].position);
-	glm_vec3_copy((vec3) {0.5,0.5,0}, pRectVertices[1].position);
-	glm_vec3_copy((vec3) {-0.5,-0.5,0}, pRectVertices[2].position);
-	glm_vec3_copy((vec3) {-0.5,0.5,0}, pRectVertices[3].position);
+	glm_vec3_copy((vec3) { 0.5, -0.5, 0}, pRectVertices[0].position);
+	glm_vec3_copy((vec3) { 0.5,  0.5, 0}, pRectVertices[1].position);
+	glm_vec3_copy((vec3) {-0.5, -0.5, 0}, pRectVertices[2].position);
+	glm_vec3_copy((vec3) {-0.5,  0.5, 0}, pRectVertices[3].position);
 
-	glm_vec4_ucopy((vec4) {0,0,0,1},	pRectVertices[0].color);
-	glm_vec4_ucopy((vec4) {0.5,0.5,0.5,1}, pRectVertices[1].color);
-	glm_vec4_ucopy((vec4) {1,0,0,1},	pRectVertices[2].color);
-	glm_vec4_ucopy((vec4) {0,1,0,1},	pRectVertices[3].color);
+	glm_vec4_ucopy((vec4) {0,	0,	 0,	  1},	pRectVertices[0].color);
+	glm_vec4_ucopy((vec4) {0.5,	0.5, 0.5, 1},	pRectVertices[1].color);
+	glm_vec4_ucopy((vec4) {1,	0,	 0,	  1},	pRectVertices[2].color);
+	glm_vec4_ucopy((vec4) {0,	1,	 0,	  1},	pRectVertices[3].color);
 
 	uint32_t* pRectIndices = DarrayReserve(uint32_t, 6);
 	/* uint32_t	pRectIndices[6]; */

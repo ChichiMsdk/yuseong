@@ -353,18 +353,18 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
 	DrawImage depthImage = {
 		.format	= VK_FORMAT_D32_SFLOAT,
-
+    
 		.extent	= {
 			.width	= width,
 			.height	= height,
 			.depth	= 1,
 		},
-
+    
 	};
 	VkImageUsageFlags depthImageUsageFlag = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	bCreateView = TRUE;
 	mipLevels = 1;
-
+    
 	VK_CHECK(vkImageCreate(
 				pContext,
 				VK_IMAGE_TYPE_2D,
@@ -379,8 +379,14 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 				&depthImage.image,
 				depthImage.extent,
 				mipLevels));
-
+    
 	pContext->depthImage = depthImage;
+
+    /*
+	 * pContext->depthImage.format = pContext->device.depthFormat;
+	 * pContext->depthImage.image = pContext->swapchain.depthAttachment;
+	 * pContext->depthImage.handle = pContext->swapchain.depthAttachment.handle;
+     */
 
     YINFO("Swapchain created successfully.");
 	return VK_SUCCESS;

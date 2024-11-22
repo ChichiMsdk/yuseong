@@ -88,6 +88,7 @@ void vkGeometryDraw(
 		VkCommandBuffer						commandBuffer,
 		VkExtent2D							drawExtent,
 		DrawImage							drawImage,
+		DrawImage							depthImage,
 		GenericPipeline*					pMeshPipeline,
 		VkPipeline							trianglePipeline);
 
@@ -122,6 +123,8 @@ vkDrawImpl(VkContext* pCtx)
 	VK_CHECK(vkCommandBufferReset(pCmd, flags));
 
 	DrawImage		drawImage			= pCtx->drawImage;
+	/* YDEBUG("Format is: %s", string_VkFormat(depthImage.format)); */
+	/* exit(1); */
 	DrawImage		depthImage			= pCtx->depthImage;
 	VkImage			swapchainImage		= pCtx->swapchain.pImages[pCtx->imageIndex];
 
@@ -147,8 +150,15 @@ vkDrawImpl(VkContext* pCtx)
 	vkImageTransition(pCmd, depthImage.image.handle, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 	/* NOTE: Draw the geometry pipeline */
-	YMB VkExtent2D extent = { .width	= pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
-	vkGeometryDraw(pCtx, pCmd->handle, extent, pCtx->drawImage, &pCtx->meshPipeline, pCtx->triPipeline.pipeline);
+	YMB VkExtent2D extent = { .width = pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
+	vkGeometryDraw(
+			pCtx,
+			pCmd->handle,
+			extent,
+			pCtx->drawImage,
+			depthImage,
+			&pCtx->meshPipeline,
+			pCtx->triPipeline.pipeline);
 
 	/* NOTE: make the drawable image and the swapchain image into layout for copies */
 	currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -247,12 +257,15 @@ vkQueueSubmitAndSwapchainPresent(VkContext* pCtx, VulkanCommandBuffer* pCmd)
 	return VK_SUCCESS;
 }
 
+#include <stdio.h>
+
 void
 vkGeometryDraw(
 		VkContext*							pCtx,
 		VkCommandBuffer						commandBuffer,
 		VkExtent2D							drawExtent,
 		DrawImage							drawImage,
+		DrawImage							depthImage,
 		GenericPipeline*					pMeshPipeline,
 		VkPipeline							trianglePipeline)
 {
@@ -261,17 +274,30 @@ vkGeometryDraw(
 		.sType			= VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
 		.imageView		= drawImage.image.view,
 		.imageLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.loadOp			= VK_ATTACHMENT_LOAD_OP_LOAD,
+		.storeOp		= VK_ATTACHMENT_STORE_OP_STORE,
+	};
+
+	VkRenderingAttachmentInfo	depthAttachment	= {
+		.sType							= VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+		.imageView						= depthImage.image.view,
+		.imageLayout					= VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		.loadOp							= VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp						= VK_ATTACHMENT_STORE_OP_STORE,
+		.clearValue.depthStencil.depth	= 0.f,
+
 	};
 
 	VkRenderingInfo	renderingInfo	= {
 		.sType					= VK_STRUCTURE_TYPE_RENDERING_INFO,
 		.colorAttachmentCount	= 1,
+		.pStencilAttachment		= VK_NULL_HANDLE,
 		.pColorAttachments		= &colorAttachment,
+		.pDepthAttachment		= &depthAttachment,
 		.renderArea = {
+			.offset				= (VkOffset2D) {0}, 
 			.extent 			= drawExtent,
 		},
-		/* FIXME: THE FUCK?? */
-		/* NOTE: Seems to be the sum of all the attachments */
 		.layerCount				= 1,
 	}; 
 
@@ -296,8 +322,8 @@ vkGeometryDraw(
 	VkRect2D	scissor	=	{
 		.offset.x		=	0,
 		.offset.y		=	0,
-		.extent.width	=	drawExtent.width,
-		.extent.height	=	drawExtent.height,
+		.extent.width	=	viewport.width,
+		.extent.height	=	viewport.height,
 	};
 
 	uint32_t	firstScissor	=	0;
@@ -305,16 +331,17 @@ vkGeometryDraw(
 	vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, &scissor);
 
 	/* NOTE: launch a draw command to draw 3 vertices */
-	uint32_t	vertexCount		=	3;
+	YMB uint32_t	vertexCount		=	3;
 	uint32_t	instanceCount	=	1;
-	uint32_t	firstVertex		=	0;
+	YMB uint32_t	firstVertex		=	0;
 	uint32_t	firstInstance	=	0;
 	vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pMeshPipeline->pipeline);
 
-	GpuDrawPushConstants	pushConstants;
-	mat4 matrice = GLM_MAT4_IDENTITY_INIT;
+	GpuDrawPushConstants	pushConstants	= {0};
+	mat4					matrice			= GLM_MAT4_IDENTITY_INIT;
+
 	glm_mat4_copy(matrice, pushConstants.worldMatrix);
 	pushConstants.vertexBufferAddress = pCtx->gpuMeshBuffers.vertexBufferAddress;
 
@@ -335,8 +362,9 @@ vkGeometryDraw(
 	uint32_t	indexCount		= 6;
 	uint32_t	vertexOffset	= 0;
 	uint32_t	firstIndex		= 0;
-	instanceCount	= 1;
 
+	instanceCount	= 1;
+	firstInstance	= 0;
 	vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 
 	vkCmdEndRendering(commandBuffer);

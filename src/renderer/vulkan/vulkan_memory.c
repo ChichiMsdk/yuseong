@@ -83,7 +83,7 @@ vkMeshUpload(
 		Vertex*								pVertices,
 		GpuMeshBuffers*						pOutGpuMeshBuffers)
 {
-	const uint64_t vertexBufferSize	= DarrayCapacity(pVertices) * sizeof(uint32_t);
+	const uint64_t vertexBufferSize	= DarrayCapacity(pVertices) * sizeof(Vertex);
 	const uint64_t indexBufferSize	= DarrayCapacity(pIndices) * sizeof(uint32_t);
 
 	GpuMeshBuffers	newSurface;
@@ -112,6 +112,8 @@ vkMeshUpload(
 				pAllocator,
 				indexBufferSize, 
 				VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+
+				/* NOTE: GPU only ! */
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				&newSurface.indexBuffer));
 
@@ -123,7 +125,7 @@ vkMeshUpload(
 				indexBufferSize + vertexBufferSize, 
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 
-				/* WARN: CHECK THIS GPT BULLSHIT ! */
+				/* NOTE: CPU only ! */
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 
 				&staging));
@@ -150,18 +152,21 @@ vkMeshUpload(
 	/* NOTE: Submit immediate command with pfn */
 	VK_RESULT(vkCommandSubmitImmediate(Submit, device, device.immediateSubmit, &ctx));
 
-	vkUnmapMemory(device.handle, staging.memory);
+	/* NOTE: should this be done ? */
+	/* vkUnmapMemory(device.handle, staging.memory); */
+
 	vkDestroyBuffer(device.handle, staging.handle, pAllocator);
 	vkFreeMemory(device.handle, staging.memory, pAllocator);
 
-	*pOutGpuMeshBuffers = newSurface;
+	(*pOutGpuMeshBuffers).vertexBufferAddress = newSurface.vertexBufferAddress;
+	(*pOutGpuMeshBuffers).indexBuffer = newSurface.indexBuffer;
+	(*pOutGpuMeshBuffers).vertexBuffer = newSurface.vertexBuffer;
 	return VK_SUCCESS;
 }
 
 void
 Submit(void* pCtx, VulkanCommandBuffer command)
 {
-
 	struct ContextTemp*	pContext			= (struct ContextTemp*)pCtx;
 	uint32_t			vertexBufferSize	= pContext->vertexBufferSize;
 	uint32_t			indexBufferSize 	= pContext->indexBufferSize; 

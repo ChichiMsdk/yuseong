@@ -13,7 +13,8 @@ typedef struct Vertex
 	f32				uvX;
 	vec3			normal;
 	f32				uvY;
-	alignas(8) f32	color[4];
+	vec4			color;
+	// alignas(8) f32	color[4];
 /*
  * FIXME: This doesnt work for now, alignment issues
  * 	vec4	color;
