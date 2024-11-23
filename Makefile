@@ -145,9 +145,7 @@ ifeq ($(CC),clang)
 MJJSON			=-MJ$@.json
 endif
 
-ifeq ($(CC),clang-19)
-MJJSON			=-MJ$@.json
-endif
+.PHONY: all re clean fclean fc re_fast
 
 #*************************** ALL ***************************************#
 
@@ -219,5 +217,3 @@ re: clean all
 
 re_fast: clean
 	@make --no-print-directory -f $(FILE) -j24 all
-
-.PHONY: all re clean fclean fc re_fast
