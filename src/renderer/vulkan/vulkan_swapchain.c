@@ -156,14 +156,16 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
         }
     }
     if (!bFound)
-        pSwapchain->imageFormat = pContext->device.swapchainSupport.pFormats[0];
+		pSwapchain->imageFormat = pContext->device.swapchainSupport.pFormats[0];
 
     /* VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR; */
-    VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+	/* VkPresentModeKHR desiredMode = VK_PRESENT_MODE_MAILBOX_KHR; */
+	VkPresentModeKHR desiredMode = VK_PRESENT_MODE_FIFO_KHR;
+	VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     for (uint32_t i = 0; i < pContext->device.swapchainSupport.presentModeCount; ++i)
 	{
         VkPresentModeKHR mode = pContext->device.swapchainSupport.pPresentModes[i];
-        if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+        if (mode == desiredMode)
 		{
             presentMode = mode;
             break;

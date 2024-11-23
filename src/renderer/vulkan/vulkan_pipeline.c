@@ -335,11 +335,6 @@ vkGraphicsPipelineCreate(
 	pipelineInfo.pDynamicState		=	&dynamicInfo;
 	VkPipelineCache	pipelineCache	=	VK_NULL_HANDLE;
 	uint32_t		createInfoCount	=	1;
-	YDEBUG("Depth format: %s", string_VkFormat(pPipeline->renderingCreateInfo.depthAttachmentFormat));
-	YDEBUG("Image format: %s", string_VkFormat(pPipeline->renderingCreateInfo.pColorAttachmentFormats[0]));
-
-	YDEBUG("Depth format: %d", pPipeline->renderingCreateInfo.depthAttachmentFormat);
-	YDEBUG("Image format: %d", pPipeline->renderingCreateInfo.pColorAttachmentFormats[0]);
 
 	VK_CHECK(vkCreateGraphicsPipelines(
 				device,
