@@ -9,34 +9,34 @@ typedef struct DescriptorLayout
 
 YND VkResult
 vkDescriptorSetLayoutCreate(
-		VkDescriptorSetLayoutBinding*		pBindings,
-		VkDevice							device,
-		VkContext*							pCtx,
-		VkShaderStageFlags					shaderStageFlags,
-		void*								pNext,
-		VkDescriptorSetLayoutCreateFlags	flags,
-		VkDescriptorSetLayout*				pOutDescriptorSetLayout);
+		VkDescriptorSetLayoutBinding*	    pBindings,
+		VkDevice			    device,
+		VkContext*			    pCtx,
+		VkShaderStageFlags		    shaderStageFlags,
+		void*				    pNext,
+		VkDescriptorSetLayoutCreateFlags    flags,
+		VkDescriptorSetLayout*		    pOutDescriptorSetLayout);
 
 void vkDescriptorSetLayoutAddBinding(
-		VkDescriptorSetLayoutBinding*		pBindings,
-		uint32_t							binding,
-		VkDescriptorType					type);
+		VkDescriptorSetLayoutBinding*	pBindings,
+		uint32_t			binding,
+		VkDescriptorType		type);
 
 YND VkResult vkDescriptorAllocatorPoolInit(
-		VkContext*							pCtx,
-		VkDescriptorPool*					pOutPool,
-		VkDevice							device,
-		uint32_t							maxSets,
-		PoolSizeRatio*						pPoolRatios);
+		VkContext*		    pCtx,
+		VkDescriptorPool*	    pOutPool,
+		VkDevice		    device,
+		uint32_t		    maxSets,
+		PoolSizeRatio*		    pPoolRatios);
 
 YND VkResult vkDescriptorsInit(
-		VkContext*							pCtx,
-		VkDevice							device);
+		VkContext*		    pCtx,
+		VkDevice		    device);
 
 YND VkResult vkDescriptorSetAllocate(
-		VkDevice							device,
-		VkDescriptorSetLayout				layout,
-		VkDescriptorSet						*pOutDescriptorSet,
-		VkDescriptorPool					pool);
+		VkDevice		    device,
+		VkDescriptorSetLayout	    layout,
+		VkDescriptorSet		    *pOutDescriptorSet,
+		VkDescriptorPool	    pool);
 
 #endif // VULKAN_DESCRIPTOR_H

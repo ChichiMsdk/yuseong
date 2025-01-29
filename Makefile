@@ -68,7 +68,7 @@ CFLAGS			+= -fdiagnostics-absolute-paths
 CFLAGS			+= -std=c23
 CFLAGS			+= -fno-inline -fno-omit-frame-pointer
 CFLAGS			+= -Wno-missing-field-initializers -Wno-unused-but-set-variable
-CFLAGS			+= -Wno-unused-parameter
+CFLAGS			+= -Wno-unused-parameter -Wno-unused-variable
 CDEFINES		=$(COMMAND_CDEFINES)
 CPP			=clang++
 CPPFLAGS		=-Wno-format

@@ -22,10 +22,10 @@ vkComputeShaderInvocation(VkContext* pCtx, VulkanCommandBuffer* pCmd, ComputeSha
     VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
     vkCmdBindPipeline(pCmd->handle, pipelineBindPoint, computeShader.pipeline);
 
-    const uint32_t*	pDynamicOffsets		= VK_NULL_HANDLE;
-    uint32_t		firstSet		= 0;
-    uint32_t		descriptorSetCount	= 1;
-    uint32_t		dynamicOffsetCount	= 0;
+    const uint32_t* pDynamicOffsets	= VK_NULL_HANDLE;
+    uint32_t	    firstSet		= 0;
+    uint32_t	    descriptorSetCount	= 1;
+    uint32_t	    dynamicOffsetCount	= 0;
 
     vkCmdBindDescriptorSets(
 	    pCmd->handle,
@@ -100,8 +100,8 @@ vkDrawImpl(VkContext* pCtx)
 {
     TracyCZoneN(drawCtx, "yDraw", 1);
 
-    YMB VkDevice	device			= pCtx->device.handle;
-    uint64_t		fenceWaitTimeoutNs	= 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
+    YMB VkDevice    device		= pCtx->device.handle;
+    uint64_t	    fenceWaitTimeoutNs	= 1000 * 1000 * 1000; // 1 sec || 1 billion nanoseconds
     VK_CHECK(vkFenceWait(pCtx, &pCtx->pFencesInFlight[pCtx->currentFrame], fenceWaitTimeoutNs));
     /*
      * NOTE: Fences have to be reset between uses, you can’t use the same
@@ -128,21 +128,24 @@ vkDrawImpl(VkContext* pCtx)
     VkImage	swapchainImage	= pCtx->swapchain.pImages[pCtx->imageIndex];
 
     /* NOTE: Start command recording */
-    b8	bSingleUse		= TRUE;
     b8	bRenderPassContinue	= FALSE;
-    b8	bSimultaneousUse	= FALSE;
+    /* NOTE: This solves a bug captured when the window is moved around */
+    b8	bSimultaneousUse	= TRUE;
+    b8	bSingleUse		= FALSE;
     vkCommandBufferBegin(pCmd, bSingleUse, bRenderPassContinue, bSimultaneousUse);
 
     /* NOTE: Start counter */
     vkTimerStart(pCmd->handle);
 
     /* NOTE: Make the swapchain image into general mode */
-    VkImageLayout	currentLayout	= VK_IMAGE_LAYOUT_UNDEFINED;
-    VkImageLayout	newLayout	= VK_IMAGE_LAYOUT_GENERAL;
+    VkImageLayout   currentLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImageLayout   newLayout	    = VK_IMAGE_LAYOUT_GENERAL;
     vkImageTransition(pCmd->handle, drawImage.image.handle, currentLayout, newLayout);
 
+#if 0
     /* NOTE: Compute shader invocation */
     VK_CHECK(vkComputeShaderInvocation(pCtx, pCmd, pCtx->pComputeShaders[gShaderFileIndex]));
+#endif
 
     /* NOTE: make the drawable image and the depth image into proper layout */
     vkImageTransition(
@@ -156,7 +159,7 @@ vkDrawImpl(VkContext* pCtx)
 	    depthImage.image.handle,
 	    VK_IMAGE_LAYOUT_UNDEFINED,			/* NOTE: Current layout */
 	    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);	/* NOTE: New layout */
-
+#if 0
     /* NOTE: Draw the geometry pipeline */
     VkExtent2D extent2D = { .width = pCtx->swapchain.extent.width, .height = pCtx->swapchain.extent.height, };
     vkGeometryDraw(
@@ -167,7 +170,7 @@ vkDrawImpl(VkContext* pCtx)
 	    depthImage,
 	    &pCtx->meshPipeline,
 	    pCtx->triPipeline.pipeline);
-
+#endif
     /* NOTE: make the drawable image and the swapchain image into layout for copies */
     currentLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -178,7 +181,6 @@ vkDrawImpl(VkContext* pCtx)
     VkExtent2D drawExtent		= {.width = drawImage.extent.width, .height = drawImage.extent.height};
     VkExtent2D swapchainExtent	= {.width = pCtx->swapchain.extent.width, .height = drawImage.extent.height};
     vkImageCopy(pCmd->handle, drawImage.image.handle, swapchainImage, drawExtent, swapchainExtent);
-
     /* NOTE: Make the swapchain image into presentable mode */
     vkImageTransition(
 	    pCmd->handle,

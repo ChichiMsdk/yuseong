@@ -6,7 +6,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 YND VkResult VulkanCreateDevice(
-		VkContext*							pVulkanContext,
-		VkDevice*							pOutDevice,
-		char*								pGPUName);
+		VkContext*		    pVulkanContext,
+		VkDevice*		    pOutDevice,
+		char*			    pGPUName);
 #endif  // VULKAN_DEVICE_H
