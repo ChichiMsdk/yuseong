@@ -54,12 +54,12 @@ extern const char *gppShaderFilePath[];
 YND VkResult
 vkInit(OsState *pOsState, void** ppOutCtx)
 {
-    char*		pGPUName			= "NVIDIA GeForce RTX 3080";
-    const char**	ppRequiredValidationLayerNames	= NULL;
-    uint32_t		requiredValidationLayerCount	= 0;
-    const char**	ppRequiredExtensions		= NULL;
-    uint32_t		requiredExtensionCount		= 0;
-    VkContext*		pCurrentCtx			= NULL;
+    char*	    pGPUName			    = "NVIDIA GeForce RTX 3080";
+    const char**    ppRequiredValidationLayerNames  = NULL;
+    uint32_t	    requiredValidationLayerCount    = 0;
+    const char**    ppRequiredExtensions	    = NULL;
+    uint32_t	    requiredExtensionCount	    = 0;
+    VkContext*	    pCurrentCtx			    = NULL;
 
     /* 
      * NOTE: This is just for fun, multiple context is complex
