@@ -1,5 +1,5 @@
 /******************************************************************************
- * 						JASB. Just A Simple Builder.                          *
+ * 			JASB. Just A Simple Builder.                          *
  ******************************************************************************
  * JASB will look for all the ".o.json" files and put them in one             *
  * compile_commands.json at the root directory. It is intended to be used with*
@@ -223,23 +223,25 @@ AddToBuffer(char *pLine, char* buffer, int* count)
     int outputCount = sprintf(buffer, "\n%s", pLine);
     memset(pLine, 0, outputCount);
 
-    /* NOTE: Jumps the just added '\n' */
+    /* NOTE: Jumps the just added by sprintf'\n' */
     char *temp = buffer + 1;
+    int tempCount = outputCount;
     for (int i = 0; i < outputCount; i++)
     {
+	/* NOTE: clang produced .json files on windows have "\r\n" added */
 	if (temp[i] == '\r' || temp[i] == '\n')
 	{
 	    temp[i] = 0;
-	    outputCount--;
+	    tempCount--;
 	}
     }
-    *count += outputCount;
+    *count += tempCount;
 }
 
 int
 ConstructCompileCommandsJson(FileList *pList, const char *pName)
 {
-    FILE *pFd1 = c_Fopen(pName, "w");
+    FILE *pStream = c_Fopen(pName, "w");
 
     bool error = true;
     int bufferCount = 0;
@@ -253,21 +255,18 @@ ConstructCompileCommandsJson(FileList *pList, const char *pName)
     {
 	int fd = OPEN(pList->pFiles[i].pFullPath, YO_RDONLY);
 	if (!fd) { error = false; goto exiting;} 
-	do
-	{
-	    charRead = READ(fd, pLine, STEPS);
-	} while(charRead > 0);
+	do { charRead = READ(fd, pLine, STEPS); } while(charRead > 0);
 	AddToBuffer(pLine, buffer, &bufferCount);
 	CLOSE(fd);
     }
 
-    /* NOTE: Removes the last ',' */
+    /* NOTE: Overwrite the last ',' */
     sprintf(buffer + bufferCount - 1, "\n%s", CCJSON_END);
-    fprintf(pFd1, "%s", buffer);
+    fprintf(pStream, "%s", buffer);
 
     free(buffer);
 exiting:
-    c_Fclose(pFd1);
+    c_Fclose(pStream);
     return error;
 }
 
@@ -440,29 +439,6 @@ bool
 MkdirImpl(char *pStr)
 {
     return CreateDirectory(pStr, NULL);
-}
-
-void
-findDirWin(const char *path)
-{
-    WIN32_FIND_DATA findData;
-    char newPath[MAX_PATH];
-    sprintf(newPath, "%s%s*", path, SLASH);
-    HANDLE hFind = FindFirstFile(newPath, &findData);
-    memset(newPath, 0, sizeof(newPath) / sizeof(newPath[0]));
-
-    if (hFind == INVALID_HANDLE_VALUE) { printf("FindFirstDir failed (%lu)\n", GetLastError()); return; } 
-    do
-    {
-	if (IsValidDir(findData.cFileName, findData.dwFileAttributes))
-	{
-	    /* printf("Dir: %s\n", findData.cFileName); */
-	    sprintf(newPath, "%s%s%s", path, SLASH, findData.cFileName);
-	    printf("Dir: %s\n", newPath);
-	    findDirWin(newPath);
-	}
-    }
-    while (FindNextFile(hFind, &findData) != 0);
 }
 
 void

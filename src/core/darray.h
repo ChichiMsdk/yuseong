@@ -21,7 +21,7 @@ enum
     DARRAY_FIELD_LENGTH
 };
 
-YND void* _DarrayCreate(
+void* _DarrayCreate(
 		uint64_t							length,
 		uint64_t							stride);
 

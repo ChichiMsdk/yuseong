@@ -1,18 +1,13 @@
 JASB_OUT 		=$(JASB_NAME).exe
-IMGUI_DIR		=$(SRC_DIR)/cimgui
-CIMGUI_DIR		=$(SRC_DIR)/cimgui
 
 INCLUDE_DIRS	+= -IC:/Lib/tracy-0.11.1/public -IC:/Lib/tracy-0.11.1/public/tracy
 INCLUDE_DIRS	+= -IC:/vulkan/Include
-INCLUDE_DIRS	+= -IC:/Lib/glfw/include
-# INCLUDE_DIRS +=-Isrc/renderer/opengl
 
-LIBS			+= -lshell32 -lgdi32 -lwinmm -luser32 -lvulkan-1 -lopengl32
-LIBS			+= -lglfw3_mt
-LIBS			+= -ld3dcompiler -ld3d11 -ldxgi -ldxguid
+LIBS			+= -lshell32 -lgdi32 -lwinmm -luser32
+LIBS			+= -lvulkan-1
+# LIBS			+= -ld3dcompiler -ld3d11 -ldxgi -ldxguid
 
 LIB_PATH		+= -LC:/vulkan/Lib
-LIB_PATH		+= -LC:/Lib/glfw/lib-vc2022
 
 CDEFINES		+=-DPLATFORM_WINDOWS
 
@@ -21,8 +16,8 @@ ECHO_E			+= -e
 OUTPUT			=$(NAME).exe
 C_OBJS			+= $(WIN32_OBJS) $(VULKAN_OBJS)
 ALL_C_FILES		+= $(WIN32_FILES) $(VULKAN_FILES)
-RM_EXTRA		=rm -f $(BUILD_DIR)/$(NAME).pdb,$(BUILD_DIR)/$(NAME).exp,$(BUILD_DIR)/$(NAME).lib
-RM_EXTRA2		=rm -f $(BUILD_DIR)/$(NAME).rdi,$(BUILD_DIR)/*.ilk,$(BUILD_DIR)/vc140.pdb,$(BUILD_DIR)/*.obj
+RM_EXTRA		=rm -f $(BUILD_DIR)/$(NAME).pdb $(BUILD_DIR)/$(NAME).exp $(BUILD_DIR)/$(NAME).lib
+RM_EXTRA2		=rm -f $(BUILD_DIR)/$(NAME).rdi $(BUILD_DIR)/*.ilk $(BUILD_DIR)/vc140.pdb $(BUILD_DIR)/*.obj
 ############################## COLORS ###################################
 NC=\e[0m
 BOLD=\e[1m

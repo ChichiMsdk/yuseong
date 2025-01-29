@@ -236,6 +236,7 @@ OsSleep(uint64_t ms)
     Sleep(ms);
 }
 
+#ifdef RENDERER_OPEN_GL
 YND void *
 OsGetGLFuncAddress(const char *pName)
 {
@@ -294,6 +295,7 @@ failed:
 	fprintf(stderr, "Failed to %s", ppGLContextError[errcode]);
 	return FALSE;
 }
+#endif
 
 // Surface creation for Vulkan
 YND VkResult

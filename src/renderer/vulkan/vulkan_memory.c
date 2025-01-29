@@ -83,6 +83,7 @@ vkMeshUpload(
 		Vertex*								pVertices,
 		GpuMeshBuffers*						pOutGpuMeshBuffers)
 {
+	/* FIXME: Unacceptable */
 	const uint64_t vertexBufferSize	= DarrayCapacity(pVertices) * sizeof(Vertex);
 	const uint64_t indexBufferSize	= DarrayCapacity(pIndices) * sizeof(uint32_t);
 

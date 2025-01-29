@@ -236,6 +236,7 @@ vkInit(OsState *pOsState, void** ppOutCtx)
 YND VkResult
 DefaultDataInit(VulkanDevice device, VkAllocationCallbacks* pAllocator, GpuMeshBuffers* pMeshBuffer)
 {
+	/* FIXME: Unacceptable */
 	Vertex* pRectVertices = DarrayReserve(Vertex, 4);
 	/* Vertex	pRectVertices[4]; */
 
@@ -262,6 +263,7 @@ DefaultDataInit(VulkanDevice device, VkAllocationCallbacks* pAllocator, GpuMeshB
 
 	VK_RESULT(vkMeshUpload(device, pAllocator, pRectIndices, pRectVertices, pMeshBuffer));
 
+	/* FIXME: Unacceptable */
 	DarrayDestroy(pRectIndices);
 	DarrayDestroy(pRectVertices);
 

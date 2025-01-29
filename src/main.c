@@ -10,10 +10,11 @@ b8 gRunning = TRUE;
 
 /* TODO: Make it a function that looks config file for the folder ? */
 const char *gppShaderFilePath[] = {
-	"./build/obj/shaders/gradient_color.comp.spv",
-	"./build/obj/shaders/gradient.comp.spv",
-	"./build/obj/shaders/sky.comp.spv",
+    "./build/obj/shaders/gradient_color.comp.spv",
+    "./build/obj/shaders/gradient.comp.spv",
+    "./build/obj/shaders/sky.comp.spv",
 };
+
 uint32_t gFilePathSize = COUNT_OF(gppShaderFilePath);
 int32_t gShaderFileIndex = 0;
 
@@ -27,48 +28,48 @@ OsState gOsState = {0};
 /* FIXME: xmm0 registry bug alignment is wrong */
 
 #ifndef TESTING
+
 int
 main(int argc, char **ppArgv)
 {
-	RendererType	defaultType	= RENDERER_TYPE_VULKAN;
+    RendererType	defaultType	= RENDERER_TYPE_VULKAN;
 
-	ArgvCheck(argc, ppArgv, &defaultType);
-	RendererConfig config = {.type = defaultType};
-	gAppConfig.pRendererConfig = &config;
+    ArgvCheck(argc, ppArgv, &defaultType);
+    RendererConfig config = {.type = defaultType};
+    gAppConfig.pRendererConfig = &config;
 
-	if (!OsInit(&gOsState, gAppConfig))
-		exit(1);
+    if (!OsInit(&gOsState, gAppConfig))
+	exit(1);
 
-	AddEventCallbackAndInit();
-	InputInitialize();
+    AddEventCallbackAndInit();
+    InputInitialize();
 
-	YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
-	YASSERT(gAppConfig.pRenderer);
+    YU_ASSERT(RendererInit(&gOsState, &gAppConfig.pRenderer, config));
+    YASSERT(gAppConfig.pRenderer);
 
-	f64	deltaFrameTime	= 0.0f;
-	f64	startFrameTime	= 0.0f;
-	f64	endFrameTime	= 0.0f;
+    f64	deltaFrameTime	= 0.0f;
+    f64	startFrameTime	= 0.0f;
+    f64	endFrameTime	= 0.0f;
 
-	while (gRunning)
+    while (gRunning)
+    {
+	deltaFrameTime	= endFrameTime - startFrameTime;
+	startFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
+
+	OsPumpMessages(&gOsState);
+	if (!gAppConfig.bSuspended)
 	{
-		deltaFrameTime	= endFrameTime - startFrameTime;
-		startFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
-
-		OsPumpMessages(&gOsState);
-		if (!gAppConfig.bSuspended)
-		{
-			InputUpdate(deltaFrameTime);
-			YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer));
-		}
-
-		endFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
+	    InputUpdate(deltaFrameTime);
+	    YU_ASSERT(YuDraw(&gOsState, gAppConfig.pRenderer));
 	}
-	YuShutdown(gAppConfig.pRenderer);
-	InputShutdown();
-	EventShutdown();
-	OsShutdown(&gOsState);
-	GetLeaks();
-	SystemMemoryUsagePrint();
-	return 0;
+	endFrameTime	= OsGetAbsoluteTime(NANOSECONDS);
+    }
+    YuShutdown(gAppConfig.pRenderer);
+    InputShutdown();
+    EventShutdown();
+    OsShutdown(&gOsState);
+    GetLeaks();
+    SystemMemoryUsagePrint();
+    return 0;
 }
 #endif // TESTING

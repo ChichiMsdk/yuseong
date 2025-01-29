@@ -15,22 +15,22 @@ typedef enum RendererType
     RENDERER_TYPE_D3D11 	= 0x02,
     RENDERER_TYPE_D3D12 	= 0x03,
     RENDERER_TYPE_METAL 	= 0x04,
-	RENDERER_TYPE_SOFTWARE	= 0x05,
-	MAX_RENDERER_TYPE
+    RENDERER_TYPE_SOFTWARE	= 0x05,
+    MAX_RENDERER_TYPE
 } RendererType;
 
 typedef struct RendererConfig
 {
-	RendererType	type;
-	b8				bVsync;
+    RendererType    type;
+    b8		    bVsync;
 } RendererConfig;
 
 typedef struct YuRenderer
 {
-	YuResult	(*YuDraw)(OsState* pOsState, void* pCtx);
-	YuResult	(*YuResize)(OsState* pOsState, uint32_t width, uint32_t height);
-	void		(*YuShutdown)(void* pCtx);
-	void*		internalContext;
+    YuResult	(*YuDraw)(OsState* pOsState, void* pCtx);
+    YuResult	(*YuResize)(OsState* pOsState, uint32_t width, uint32_t height);
+    void	(*YuShutdown)(void* pCtx);
+    void*	internalContext;
 } YuRenderer;
 
 
@@ -44,22 +44,22 @@ typedef struct YuRenderer
  *			`pOutRenderer` is set to `NULL` on failure.
  */
 YND YuResult RendererInit(
-		OsState*							pState,
-		YuRenderer**						ppOutRenderer,
-		RendererConfig						rendererConfig);
+		OsState*		    pState,
+		YuRenderer**		    ppOutRenderer,
+		RendererConfig		    rendererConfig);
 
 YND YuResult YuDraw(
-		OsState*							pOsState,
-		YuRenderer*							pRenderer);
+		OsState*		    pOsState,
+		YuRenderer*		    pRenderer);
 
 YND YuResult YuResizeWindow(
-		OsState*							pOsState,
-		YuRenderer*							pRenderer,
-		uint32_t							width,
-		uint32_t							height);
+		OsState*		    pOsState,
+		YuRenderer*		    pRenderer,
+		uint32_t		    width,
+		uint32_t		    height);
 
-void		 YuShutdown(
-		YuRenderer*							pRenderer);
+void	     YuShutdown(
+		YuRenderer*		    pRenderer);
 
 #endif //RENDERER_H
 

@@ -70,14 +70,17 @@ vkImageCreate(
 		.sharingMode	= VK_SHARING_MODE_EXCLUSIVE	// TODO: Configurable sharing mode.
 	};
 
-    VK_CHECK(vkCreateImage(pContext->device.handle, &imageCreateInfo, pContext->pAllocator, &pOutImage->handle));
+    VK_CHECK(vkCreateImage(
+				pContext->device.handle,
+				&imageCreateInfo,
+				pContext->pAllocator,
+				&pOutImage->handle));
 
     /* NOTE: Query memory requirements. */
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(pContext->device.handle, pOutImage->handle, &memoryRequirements);
 
     int32_t memoryType;
-
 	VK_RESULT(pContext->MemoryFindIndex(
 				pContext->device.physicalDevice,
 				memoryRequirements.memoryTypeBits,
@@ -246,7 +249,11 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 
     /* NOTE: Images */
     pSwapchain->imageCount = 0;
-    VK_CHECK(vkGetSwapchainImagesKHR(pContext->device.handle, pSwapchain->handle, &pSwapchain->imageCount, 0));
+    VK_CHECK(vkGetSwapchainImagesKHR(
+				pContext->device.handle,
+				pSwapchain->handle,
+				&pSwapchain->imageCount,
+				VK_NULL_HANDLE));
 
 	pSwapchain->pImages = yAlloc(sizeof(VkImage) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
 	pSwapchain->pViews = yAlloc(sizeof(VkImageView) * pSwapchain->imageCount, MEMORY_TAG_RENDERER);
@@ -257,6 +264,7 @@ vkSwapchainCreate(VkContext* pContext, uint32_t width, uint32_t height, VkSwapch
 				&pSwapchain->imageCount,
 				pSwapchain->pImages));
 
+	/* TODO: This should probably be a function or macro. */
 	VkImageViewCreateInfo viewInfo = {0};
     /* NOTE: Views */
     for (uint32_t i = 0; i < pSwapchain->imageCount; ++i)
@@ -481,6 +489,10 @@ vkSwapchainPresent(VkContext* pCtx, VkSwapchain* pSwapchain, YMB VkQueue gfxQueu
 void
 vkDestroyVulkanImage(VkContext *pContext, VulkanImage *pImage)
 {
+	/* 
+	 * NOTE: I don't like those "if exists" checks.
+	 * Should just call vkDestroyImageView anyway.
+	 */
 	if (pImage->view)
 	{
 		vkDestroyImageView(pContext->device.handle, pImage->view, pContext->pAllocator);
@@ -503,7 +515,7 @@ vkSwapchainDestroy(VkContext* pCtx, VkSwapchain* pSwapchain)
 {
 	VkDevice device = pCtx->device.handle;
 	VK_CHECK(vkDeviceWaitIdle(device));
-		vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
+	vkDestroyVulkanImage(pCtx, &pSwapchain->depthAttachment);
 	for (uint32_t i = 0; i < pCtx->swapchain.imageCount; i++)
 	{
 		vkDestroyImageView(device, pCtx->swapchain.pViews[i], pCtx->pAllocator);

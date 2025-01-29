@@ -17,7 +17,7 @@ typedef struct OsState OsState;
 
 typedef struct VulkanBuffer
 {
-	VkBuffer			handle;
+	VkBuffer		handle;
 	VkDeviceMemory		memory;
 	VkDeviceSize		size;
 	VkDeviceSize		offset;
@@ -28,7 +28,7 @@ typedef struct VulkanBuffer
 typedef struct VulkanFence 
 {
 	VkFence	handle;
-	b8		bSignaled;
+	b8	bSignaled;
 } VulkanFence;
 
 typedef enum VulkanCommandBufferState 
@@ -43,7 +43,7 @@ typedef enum VulkanCommandBufferState
 
 typedef struct VulkanCommandBuffer 
 {
-	VkCommandBuffer			handle;
+	VkCommandBuffer		handle;
 	VkCommandBufferState	state;
 } VulkanCommandBuffer;
 
@@ -56,26 +56,26 @@ typedef struct VulkanImmediateSubmit
 
 typedef struct VulkanDevice
 {
-	VkDevice							handle;
-	VkPhysicalDevice					physicalDevice;
+	VkDevice				handle;
+	VkPhysicalDevice			physicalDevice;
 
-	VkSwapchainSupportInfo				swapchainSupport;
-	VkQueue								graphicsQueue;
-	VkQueue 							presentQueue;
-	VkQueue 							transferQueue;
+	VkSwapchainSupportInfo			swapchainSupport;
+	VkQueue					graphicsQueue;
+	VkQueue 				presentQueue;
+	VkQueue 				transferQueue;
 
-	int32_t								graphicsQueueIndex;
-	int32_t								presentQueueIndex;
-	int32_t								transferQueueIndex;
+	int32_t					graphicsQueueIndex;
+	int32_t					presentQueueIndex;
+	int32_t					transferQueueIndex;
 
-	VkPhysicalDeviceProperties			properties;
-	VkPhysicalDeviceFeatures			features;
+	VkPhysicalDeviceProperties		properties;
+	VkPhysicalDeviceFeatures		features;
 	VkPhysicalDeviceMemoryProperties	memory;
 
-	VkCommandPool						graphicsCommandPool;
-	VkFormat							depthFormat;
+	VkCommandPool				graphicsCommandPool;
+	VkFormat				depthFormat;
 
-	VulkanImmediateSubmit				immediateSubmit;
+	VulkanImmediateSubmit			immediateSubmit;
 } VulkanDevice;
 
 typedef struct DrawImage
@@ -89,7 +89,7 @@ typedef struct DrawImage
 typedef struct PoolSizeRatio
 {
 	VkDescriptorType	type;
-	float				ratio;
+	float			ratio;
 } PoolSizeRatio;
 
 typedef struct VulkanDescriptorPool
@@ -106,15 +106,15 @@ typedef struct DescriptorAllocator
 
 typedef struct GraphicsPipeline
 {
-	VkPipelineShaderStageCreateInfo*		pShaderStages;
+	VkPipelineShaderStageCreateInfo*	pShaderStages;
 	VkPipelineInputAssemblyStateCreateInfo	inputAssembly;
 	VkPipelineRasterizationStateCreateInfo	rasterizer;
-	VkPipelineColorBlendAttachmentState		colorBlendAttachment;
+	VkPipelineColorBlendAttachmentState	colorBlendAttachment;
 	VkPipelineMultisampleStateCreateInfo	multisampling;
-	VkPipelineLayout						pipelineLayout;
+	VkPipelineLayout			pipelineLayout;
 	VkPipelineDepthStencilStateCreateInfo	depthStencil;
-	VkPipelineRenderingCreateInfo			renderingCreateInfo;
-	VkFormat								colorAttachmentFormat;
+	VkPipelineRenderingCreateInfo		renderingCreateInfo;
+	VkFormat				colorAttachmentFormat;
 } GraphicsPipeline;
 
 typedef struct GpuMeshBuffers
@@ -126,17 +126,17 @@ typedef struct GpuMeshBuffers
 
 typedef struct GpuDrawPushConstants
 {
-	mat4			worldMatrix;
+	mat4		worldMatrix;
 	VkDeviceAddress	vertexBufferAddress;
 } GpuDrawPushConstants;
 
 /* TODO: Uniform struct for vertex, frag, compute and mesh */
 typedef struct GenericPipeline
 {
-	char*				pFragmentShaderFilePath;
-	char*				pVertexShaderFilePath;
+	char*			pFragmentShaderFilePath;
+	char*			pVertexShaderFilePath;
 	VkPipelineLayout	pipelineLayout;
-	VkPipeline			pipeline;
+	VkPipeline		pipeline;
 	GpuMeshBuffers		rectangle;
 	GraphicsPipeline	graphicsPipeline;
 } GenericPipeline;
@@ -144,77 +144,77 @@ typedef struct GenericPipeline
 typedef struct ComputeShaderFx
 {
 	ComputePushConstant pushConstant;
-	const char*			pFilePath;
-	VkPipeline			pipeline;
+	const char*		pFilePath;
+	VkPipeline		pipeline;
 	VkPipelineLayout	pipelineLayout;
 	GraphicsPipeline	graphicsPipeline;
 } ComputeShaderFx;
 
 typedef struct VkContext
 {
-	VkInstance						instance;
+	VkInstance				instance;
 	VkAllocationCallbacks*			pAllocator;
-	VkSurfaceKHR					surface;
-	VulkanDevice					device;
+	VkSurfaceKHR				surface;
+	VulkanDevice				device;
 
 	// NOTE: Darray
 	VulkanCommandBuffer*			pGfxCommands;
-	uint32_t						framebufferWidth;
-	uint32_t						framebufferHeight;
+	uint32_t				framebufferWidth;
+	uint32_t				framebufferHeight;
 
 	/*
 	 * NOTE: Current framebuffer size gen. If it does not match 
 	 * framebufferSizeLastGeneration new one should be generated.
 	 */
-	uint64_t						framebufferSizeGeneration;
+	uint64_t				framebufferSizeGeneration;
 
 	/*
 	 * NOTE: Framebuffer gen when it was last created.
 	 * Set to framebufferSizeGeneration when updated.
 	 */
-	uint64_t						framebufferSizeLastGeneration;
-	VulkanRenderPass				mainRenderpass;
+	uint64_t				framebufferSizeLastGeneration;
+	VulkanRenderPass			mainRenderpass;
 
 	// NOTE: Darrays
-	VkSemaphore*					pSemaphoresAvailableImage;
-	VkSemaphore*					pSemaphoresQueueComplete;
-	VulkanFence*					pFencesInFlight;
+	VkSemaphore*				pSemaphoresAvailableImage;
+	VkSemaphore*				pSemaphoresQueueComplete;
+	VulkanFence*				pFencesInFlight;
 
 	// NOTE: Holds pointers to fences which exist and are owned elsewhere.
-	VulkanFence**					ppImagesInFlight;
+	VulkanFence**				ppImagesInFlight;
 
-	DrawImage						drawImage;
-	DrawImage						depthImage;
+	DrawImage				drawImage;
+	DrawImage				depthImage;
 
-	VkSwapchain						swapchain;
-	uint32_t						currentFrame;
-	uint32_t						imageIndex;
-	b8								bRecreatingSwapchain;
+	VkSwapchain				swapchain;
+	uint32_t				currentFrame;
+	uint32_t				imageIndex;
+	b8					bRecreatingSwapchain;
 
-	YND VkResult					(*MemoryFindIndex)(
-										VkPhysicalDevice	physicalDevice,
-										uint32_t			typeFilter,
-										uint32_t 			propertyFlags,
-										int32_t* 			pOutIndex);
+	YND VkResult				(*MemoryFindIndex)(
+	VkPhysicalDevice			physicalDevice,
+	uint32_t				typeFilter,
+	uint32_t				propertyFlags,
+	int32_t*				pOutIndex);
 
-	uint64_t						nbFrames;
+	uint64_t				nbFrames;
 
 	VkDescriptorSetLayoutBinding*	pBindings;
 
-	DescriptorAllocator				descriptorAllocator;
+	DescriptorAllocator			descriptorAllocator;
 	VulkanDescriptorPool			descriptorPool;
 
-	VkPipeline						gradientComputePipeline;
-	VkPipelineLayout				gradientComputePipelineLayout;
+	VkPipeline				gradientComputePipeline;
+	VkPipelineLayout			gradientComputePipelineLayout;
 
-	VkDescriptorSet					drawImageDescriptorSet;
+	VkDescriptorSet				drawImageDescriptorSet;
 	VkDescriptorSetLayout			drawImageDescriptorSetLayout;
 
-	ComputeShaderFx					*pComputeShaders;
+	ComputeShaderFx				*pComputeShaders;
 
-	GenericPipeline					triPipeline;
-	GenericPipeline					meshPipeline;
-	GpuMeshBuffers					gpuMeshBuffers;
+	GenericPipeline				triPipeline;
+	GenericPipeline				meshPipeline;
+	GpuMeshBuffers				gpuMeshBuffers;
 
 #ifdef DEBUG
 	VkDebugUtilsMessengerEXT		debugMessenger;
@@ -232,11 +232,11 @@ typedef struct GlobalContext
 } GlobalContext;
 
 YND VkResult vkInit(
-		OsState*							pState,
-		void**								ppOutContext);
+		OsState*		    pState,
+		void**			    ppOutContext);
 
 void vkShutdown(
-		void*								pCtx);
+		void*			    pCtx);
 
 #endif // YVULKAN_H
 

@@ -1,7 +1,7 @@
 #include "vulkan_image.h"
 
 void
-vkImageTransition(VulkanCommandBuffer* pCmd, VkImage pImg, VkImageLayout currentLayout, VkImageLayout newLayout)
+vkImageTransition(VkCommandBuffer commandBuffer, VkImage pImg, VkImageLayout currentLayout, VkImageLayout newLayout)
 {
 	/* NOTE: This is vulkan 1.3 only use renderpass otherwise */
     VkImageMemoryBarrier2 imageBarrier = {
@@ -37,7 +37,7 @@ vkImageTransition(VulkanCommandBuffer* pCmd, VkImage pImg, VkImageLayout current
 		.pImageMemoryBarriers		= &imageBarrier,
 	};
 
-    vkCmdPipelineBarrier2(pCmd->handle, &dependencyInfo);
+    vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
 }
 /**
  * VkCmdCopyImage or VkCmdBlitImage. CopyImage is faster, but its much more restricted,

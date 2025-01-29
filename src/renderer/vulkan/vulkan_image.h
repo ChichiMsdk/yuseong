@@ -4,7 +4,7 @@
 #include "yvulkan.h"
 
 void vkImageTransition(
-		VulkanCommandBuffer*				pCmd,
+		VkCommandBuffer						cmd,
 		VkImage								pImg,
 		VkImageLayout						currentLayout,
 		VkImageLayout						newLayout);

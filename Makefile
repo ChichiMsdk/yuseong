@@ -1,8 +1,9 @@
 FILE := Makefile
 OS_EXT =
 ifeq ($(OS),Windows_NT)
-	OS_EXT := .win32
-	MYFIND :=C:/msys64/usr/bin/find.exe
+	OS_EXT	:= .win32
+	MYFIND	:=C:/msys64/usr/bin/find.exe
+	MYCTAGS	:=myctags --languages="C,C++" -R -h [".h.H.hh.hpp.hxx.h++.inc.def"]
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
@@ -14,15 +15,16 @@ else
 	MYFIND :=find
 endif
 
-TESTING					=
-ASAN_USE				=
-RELEASE_USE				=
-TRACY_USE				=
-GLFW3					=
+TESTING				=
+ASAN_USE			=
+RELEASE_USE			=
+TRACY_USE			=
+GLFW3				=
 
+TAGS				=tags
 COMMAND_CDEFINES		=-DCHICHI
 COMMAND_CFLAGS			=-Wvarargs
-DEBUG_LEVEL				=-g3
+DEBUG_LEVEL			=-g3
 
 ifeq ($(OPTI),none)
 	COMMAND_CFLAGS		+= -O0
@@ -41,7 +43,7 @@ endif
 ifeq ($(GLFW_USE),ON)
 	COMMAND_CDEFINES	+= -DYGLFW3
 endif
-ifeq ($(RELEASE_USE),ON)
+ifeq ($(RELEASE_USE),ON)	
 	COMMAND_CDEFINES	+= -D_RELEASE -DRELEASE -DYURELEASE=1
 else
 	COMMAND_CDEFINES	+= -D_DEBUG -DDEBUG -DYUDEBUG
@@ -50,7 +52,7 @@ endif
 NAME			=yuseong
 BUILD_DIR		=build
 OBJ_DIR			=$(BUILD_DIR)/obj
-OBJ				=obj
+OBJ			=obj
 ECHO_E			=echo
 JASB_NAME		=jasb
 JASB_OUT		=jasb
@@ -58,56 +60,60 @@ JASB_FILE		=jasb.c
 JASB_CMD		=*.o.json
 CCJSON			=compile_commands.json
 GLSLC			=glslc
-DEPENDS_FLAGS	=-MMD -MP
-CC				=clang
+DEPENDS_FLAGS		=-MMD -MP
+CC			=clang
 CLINKER			=clang
 CFLAGS			=$(COMMAND_CFLAGS)
 CFLAGS			+= -fdiagnostics-absolute-paths
 CFLAGS			+= -std=c23
 CFLAGS			+= -fno-inline -fno-omit-frame-pointer
 CFLAGS			+= -Wno-missing-field-initializers -Wno-unused-but-set-variable
+CFLAGS			+= -Wno-unused-parameter
 CDEFINES		=$(COMMAND_CDEFINES)
-CPP				=clang++
+CPP			=clang++
 CPPFLAGS		=-Wno-format
 CPPDEFINES		=
 
-INCLUDE_DIRS	=-Isrc -Isrc/core -Ithirdparty
+INCLUDE_DIRS		=-Isrc -Isrc/core -Ithirdparty
 LIB_PATH		=
 LIBS			=
 
 SRC_DIR			=src
 SHADER_DIR		=$(SRC_DIR)/shaders
 CORE_DIR		=$(SRC_DIR)/core
-RENDERER_DIR	=$(SRC_DIR)/renderer
+RENDERER_DIR		=$(SRC_DIR)/renderer
 WIN32_DIR		=$(SRC_DIR)/win32
-LINUX_DIR		=$(SRC_DIR)/linux
-APPLE_DIR		=$(SRC_DIR)/apple
 VULKAN_DIR		=$(RENDERER_DIR)/vulkan
-# OPENGL_DIR		=$(RENDERER_DIR)/opengl
+OPENGL_DIR		=$(RENDERER_DIR)/opengl
 DIRECTX_DIR		=$(RENDERER_DIR)/directx
-METAL_DIR		=$(RENDERER_DIR)/metal
+
+# LINUX_DIR		=$(SRC_DIR)/linux
+# APPLE_DIR		=$(SRC_DIR)/apple
+# METAL_DIR		=$(RENDERER_DIR)/metal
+
 ROOT_FOLDER		=$(shell $(MYFIND) $(SRC_DIR) -maxdepth 1 -type f -name '*.c')
 ROOT_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(ROOT_FOLDER))
 CORE_FILES		=$(shell $(MYFIND) $(CORE_DIR) -type f -name '*.c')
 CORE_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CORE_FILES))
-RENDERER_FILES	=$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
-RENDERER_OBJS	=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
+RENDERER_FILES		=$(shell $(MYFIND) $(RENDERER_DIR) -maxdepth 1 -type f -name '*.c')
+RENDERER_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(RENDERER_FILES))
 WIN32_FILES		=$(shell $(MYFIND) $(WIN32_DIR) -type f -name '*.c')
 WIN32_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(WIN32_FILES))
-LINUX_FILES		=$(shell $(MYFIND) $(LINUX_DIR) -type f -name '*.c')
-LINUX_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(LINUX_FILES))
-VULKAN_FILES	=$(shell $(MYFIND) $(VULKAN_DIR) -type f -name '*.c')
+VULKAN_FILES		=$(shell $(MYFIND) $(VULKAN_DIR) -type f -name '*.c')
 VULKAN_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(VULKAN_FILES))
-# OPENGL_FILES	=$(shell $(MYFIND) $(OPENGL_DIR) -type f -name '*.c')
-# OPENGL_OBJS		=$(patsubst $(OPENGL_DIR)/%.c, $(OBJ_DIR)/%.o, $(OPENGL_FILES))
-DIRECTX_FILES	=$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
-DIRECTX_OBJS	=$(patsubst $(DIRECTX_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
-METAL_FILES		=$(shell $(MYFIND) $(METAL_DIR) -type f -name '*.c')
-METAL_OBJS		=$(patsubst $(METAL_DIR)/%.c, $(OBJ_DIR)/%.o, $(METAL_FILES))
+OPENGL_FILES		=$(shell $(MYFIND) $(OPENGL_DIR) -type f -name '*.c')
+OPENGL_OBJS		=$(patsubst $(OPENGL_DIR)/%.c, $(OBJ_DIR)/%.o, $(OPENGL_FILES))
+DIRECTX_FILES		=$(shell $(MYFIND) $(DIRECTX_DIR) -type f -name '*.c')
+DIRECTX_OBJS		=$(patsubst $(DIRECTX_DIR)/%.c, $(OBJ_DIR)/%.o, $(DIRECTX_FILES))
 
-SHADER_FILES	=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
-SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.frag')
-SHADER_FILES	+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.vert')
+# LINUX_FILES		=$(shell $(MYFIND) $(LINUX_DIR) -type f -name '*.c')
+# LINUX_OBJS		=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(LINUX_FILES))
+# METAL_FILES		=$(shell $(MYFIND) $(METAL_DIR) -type f -name '*.c')
+# METAL_OBJS		=$(patsubst $(METAL_DIR)/%.c, $(OBJ_DIR)/%.o, $(METAL_FILES))
+
+SHADER_FILES		=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.comp')
+SHADER_FILES		+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.frag')
+SHADER_FILES		+=$(shell $(MYFIND) $(SRC_DIR) -type f -name '*.vert')
 
 SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.comp, $(OBJ_DIR)/%.comp.spv, $(SHADER_FILES))
 SHADER_OBJS		+=$(patsubst $(SRC_DIR)/%.vert, $(OBJ_DIR)/%.vert.spv, $(SHADER_FILES))
@@ -145,11 +151,14 @@ ifeq ($(CC),clang)
 MJJSON			=-MJ$@.json
 endif
 
-.PHONY: all re clean fclean fc re_fast
+.PHONY: all re clean fclean fc re_fast $(TAGS)
 
 #*************************** ALL ***************************************#
 
-all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(CCJSON) $(SHADER_OBJS)
+all: $(OBJ_DIR) $(BUILD_DIR)/$(OUTPUT) $(SHADER_OBJS) $(TAGS)
+
+$(TAGS):
+	./build.bat
 
 #*************************** BUILDER ***********************************#
 
