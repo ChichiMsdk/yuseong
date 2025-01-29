@@ -11,12 +11,12 @@
 typedef struct VkPhysicalDeviceRequirements
 {
 	const char**	ppDeviceExtensionNames;
-	b8				bGraphics;
-	b8				bPresent;
-	b8				bCompute;
-	b8				bTransfer;
-	b8				bSamplerAnisotropy;
-	b8				bDiscreteGpu;
+	b8		bGraphics;
+	b8		bPresent;
+	b8		bCompute;
+	b8		bTransfer;
+	b8		bSamplerAnisotropy;
+	b8		bDiscreteGpu;
 } VkPhysicalDeviceRequirements;
 
 typedef struct VkPhysicalDeviceQueueFamilyInfo
@@ -29,11 +29,11 @@ typedef struct VkPhysicalDeviceQueueFamilyInfo
 
 typedef struct VkSwapchainSupportInfo
 {
-	VkSurfaceCapabilitiesKHR	capabilities;
-	uint32_t					formatCount;
-	VkSurfaceFormatKHR*			pFormats;
-	uint32_t					presentModeCount;
-	VkPresentModeKHR*			pPresentModes;
+	VkSurfaceCapabilitiesKHR    capabilities;
+	uint32_t		    formatCount;
+	VkSurfaceFormatKHR*	    pFormats;
+	uint32_t		    presentModeCount;
+	VkPresentModeKHR*	    pPresentModes;
 } VkSwapchainSupportInfo;
 
 typedef enum VulkanRenderPassState 
@@ -49,17 +49,17 @@ typedef enum VulkanRenderPassState
 typedef struct VulkanRenderPass 
 {
 	VkRenderPass		handle;
-	f32					x, y, w, h;
-	f32					r, g, b, a;
-	f32					depth;
-	uint32_t			stencil;
+	f32			x, y, w, h;
+	f32			r, g, b, a;
+	f32			depth;
+	uint32_t		stencil;
 	VkRenderPassState	state;
 } VulkanRenderPass;
 
 typedef struct VulkanFramebuffer
 {
 	VkFramebuffer		handle;
-	uint32_t			attachmentCount;
+	uint32_t		attachmentCount;
 	VkImageView*		pAttachments;
 	VulkanRenderPass*	pRenderpass;
 } VulkanFramebuffer;
@@ -68,7 +68,7 @@ typedef struct VulkanImage
 {
 	VkImage			handle;
 	VkImageView		view;
-	VkDeviceMemory	memory;
+	VkDeviceMemory		memory;
 	uint32_t		width;
 	uint32_t		height;
 } VulkanImage;
@@ -76,18 +76,18 @@ typedef struct VulkanImage
 typedef struct VkSwapchain
 {
 	VkSwapchainKHR		handle;
-	uint32_t			imageCount;
+	uint32_t		imageCount;
 	VkSurfaceFormatKHR	imageFormat;
-	u8					maxFrameInFlight;
-	VkImage*			pImages;
+	u8			maxFrameInFlight;
+	VkImage*		pImages;
 	VkImageView*		pViews;
-	VkExtent3D			extent;
+	VkExtent3D		extent;
 
 	// NOTE: framebuffers used for on-screen rendering.
 	VulkanFramebuffer*	pFramebuffers;
 
 	// TODO: This is an ambiguous name -> try having "VulkanImage" in the name
-	VulkanImage			depthAttachment;
+	VulkanImage		depthAttachment;
 } VkSwapchain;
 
 #endif // VULKAN_TYPES_UTILS_H

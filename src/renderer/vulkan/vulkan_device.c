@@ -112,7 +112,6 @@ VulkanCreateDevice(VkContext *pCtx, VkDevice *pOutDevice, YMB char *pGPUName)
 		.pNext = &physicalDeviceSynch2Features,
 	};
 	vkGetPhysicalDeviceFeatures2(pCtx->device.physicalDevice, &enabledFeatures2);
-	YDEBUG("deviceAddressFeature.bufferDeviceAddress %d", deviceAddressFeature.bufferDeviceAddress);
 	YASSERT(deviceAddressFeature.bufferDeviceAddress);
 	const char **ppExtensionNames = DarrayCreate(const char *);
 	DarrayPush(ppExtensionNames, &VK_KHR_SWAPCHAIN_EXTENSION_NAME);

@@ -4,22 +4,22 @@
 #include "yvulkan.h"
 
 YND VkResult vkFenceCreate(
-		VkDevice							device,
-		b8									bSignaled,
-		VkAllocationCallbacks*				pAllocator,
-		VulkanFence*						pOutFence);
+		VkDevice		    device,
+		b8			    bSignaled,
+		VkAllocationCallbacks*	    pAllocator,
+		VulkanFence*		    pOutFence);
 
 void vkFenceDestroy(
-		VkContext*							pCtx,
-		VulkanFence*						pFence);
+		VkContext*		    pCtx,
+		VulkanFence*		    pFence);
 
 YND VkResult vkFenceWait(
-		VkContext*							pCtx,
-		VulkanFence*						pFence,
+		VkContext*		    pCtx,
+		VulkanFence*		    pFence,
 		uint64_t timeoutNs);
 
 YND VkResult vkFenceReset(
-		VkContext*							pCtx, 
-		VulkanFence*						pFence);
+		VkContext*		    pCtx, 
+		VulkanFence*		    pFence);
 
 #endif // VULKAN_FENCE_H
