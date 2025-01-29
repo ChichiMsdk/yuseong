@@ -31,21 +31,21 @@ YMB static VkContext gVkCtx;
 static GlobalContext gContext;
 
 static inline void SyncInit(
-	VkContext*										pCtx,
-	VulkanDevice*									pDevice);
+	VkContext*			    pCtx,
+	VulkanDevice*			    pDevice);
 
 YMB static inline VkResult DebugRequiredExtensionValidationLayers(
-	const char***									pppRequiredExtensions,
-	const char***									pppRequiredValidationLayerNames,
-	uint32_t*										pRequiredValidationLayerCount);
+	const char***			    pppRequiredExtensions,
+	const char***			    pppRequiredValidationLayerNames,
+	uint32_t*			    pRequiredValidationLayerCount);
 
 YMB static inline VkResult DebugCallbackSetup(
-	VkContext*										pCtx);
+	VkContext*			    pCtx);
 
 YND static inline VkResult DefaultDataInit(
-	VulkanDevice						device,
-	VkAllocationCallbacks*				pAllocator,
-	GpuMeshBuffers*						pMeshBuffer);
+	VulkanDevice			    device,
+	VkAllocationCallbacks*		    pAllocator,
+	GpuMeshBuffers*			    pMeshBuffer);
 
 /* TODO: Make it a function that looks config file for the folder ?*/
 extern int32_t gShaderFileIndex;
